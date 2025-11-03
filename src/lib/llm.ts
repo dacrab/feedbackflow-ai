@@ -4,13 +4,13 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
 
-export const AnalysisSchema = z.object({
+const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
   topics: z.array(z.string()).min(1).max(10),
   severity_score: z.number().int().min(1).max(5),
   summary: z.string().min(5).max(500),
 });
-export type Analysis = z.infer<typeof AnalysisSchema>;
+type Analysis = z.infer<typeof AnalysisSchema>;
 
 const SYSTEM_PROMPT = `You analyze user feedback and return strict JSON with fields:
 sentiment: one of positive|neutral|negative;
@@ -18,7 +18,7 @@ topics: array of short topic labels like Bug Report, Feature Request, Pricing, P
 severity_score: integer 1..5 (5=critical);
 summary: one concise sentence.`;
 
-export type LLMOptions = {
+type LLMOptions = {
   provider?: "google" | "openai" | "anthropic";
   model?: string;
   apiKey?: string;

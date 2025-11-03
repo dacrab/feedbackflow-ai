@@ -41,4 +41,5 @@ export async function createRouteHandlerClient() {
   });
 }
 
+// Alias for compatibility with route handlers
 export const createServerClient = createRSCClient;

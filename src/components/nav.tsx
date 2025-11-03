@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/cn";
 import type { ComponentType } from "react";
 import { InboxIcon, LayoutIcon, SettingsIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 
 type NavProps = {
   orientation?: "vertical" | "horizontal";
@@ -51,7 +51,9 @@ export default function Nav({ orientation = "vertical" }: NavProps) {
     <nav
       className={cn(
         "gap-1",
-        orientation === "vertical" ? "flex flex-col" : "flex flex-wrap items-center justify-start gap-2",
+        orientation === "vertical"
+          ? "flex flex-col"
+          : "flex flex-wrap items-center justify-start gap-2",
       )}
     >
       {items.map((item) => (

@@ -53,21 +53,6 @@ export function GoogleIcon({ size = 16, ...props }: IconProps) {
   );
 }
 
-export function ArrowLeftIcon({ size = 16, ...props }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-hidden="true"
-      focusable="false"
-      {...props}
-    >
-      <path fill="currentColor" d="M14 6l-6 6 6 6 1.4-1.4L11.8 12l3.6-4.6L14 6z" />
-    </svg>
-  );
-}
-
 export function ArrowRightIcon({ size = 16, ...props }: IconProps) {
   return (
     <svg
@@ -139,24 +124,6 @@ export function UserPlusIcon({ size = 16, ...props }: IconProps) {
   );
 }
 
-export function KeyIcon({ size = 16, ...props }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-hidden="true"
-      focusable="false"
-      {...props}
-    >
-      <path
-        fill="currentColor"
-        d="M14 2a6 6 0 00-5.657 8H2v4h4v4h4v-4h2.343A6 6 0 1014 2zm0 8a2 2 0 110-4 2 2 0 010 4z"
-      />
-    </svg>
-  );
-}
-
 export function DownloadIcon({ size = 16, ...props }: IconProps) {
   return (
     <svg
@@ -212,10 +179,7 @@ export function LayoutIcon({ size = 16, ...props }: IconProps) {
       focusable="false"
       {...props}
     >
-      <path
-        fill="currentColor"
-        d="M4 4h7v7H4V4zm9 0h7v4h-7V4zm0 6h7v10h-7V10zM4 13h7v7H4v-7z"
-      />
+      <path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v4h-7V4zm0 6h7v10h-7V10zM4 13h7v7H4v-7z" />
     </svg>
   );
 }

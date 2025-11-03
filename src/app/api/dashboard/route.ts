@@ -1,18 +1,19 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { errorResponse, requireAuth, successResponse } from "@/lib/utils/api";
+import type { DashboardData } from "@/lib/types";
+import { successResponse } from "@/lib/utils/api";
+import { getDateString } from "@/lib/utils/date";
+import { withAuthGet } from "@/lib/utils/route-handler";
 
-export async function GET() {
-  try {
-    const user = await requireAuth();
+export const GET = withAuthGet(async (user) => {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("feedback_analyses")
+    .select("sentiment, topics, severity_score, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1000);
 
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("feedback_analyses")
-      .select("sentiment, topics, severity_score, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (error) return errorResponse(error.message, 500);
+  if (error) throw new Error(error.message);
 
   const countsBySentiment: Record<string, number> = {
     positive: 0,
@@ -30,18 +31,16 @@ export async function GET() {
     }
     severityHist[row.severity_score as 1 | 2 | 3 | 4 | 5] =
       (severityHist[row.severity_score as 1 | 2 | 3 | 4 | 5] || 0) + 1;
-    const day = new Date(row.created_at as string).toISOString().slice(0, 10);
+    const day = getDateString(row.created_at as string);
     trendByDay[day] = (trendByDay[day] || 0) + 1;
   }
 
-    return successResponse({
-      countsBySentiment,
-      topicCounts,
-      severityHist,
-      trendByDay,
-    });
-  } catch (error) {
-    if (error instanceof Response) return error;
-    return errorResponse(String(error), 500);
-  }
-}
+  const dashboardData: DashboardData = {
+    countsBySentiment,
+    topicCounts,
+    severityHist,
+    trendByDay,
+  };
+
+  return successResponse(dashboardData);
+});

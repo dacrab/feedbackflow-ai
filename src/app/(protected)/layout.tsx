@@ -12,58 +12,56 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
   if (!data.user) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-background/80 text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col md:flex-row md:gap-10 md:px-6 md:py-8 lg:px-10">
-        <aside className="relative hidden w-full max-w-[248px] flex-col gap-6 rounded-3xl border border-border/70 bg-[color-mix(in_oklab,var(--sidebar)_76%,transparent)] p-6 shadow-xl backdrop-blur-xl md:flex">
-          <Link href="/dashboard" className="block">
-            <div className="text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">FeedbackFlow</div>
-            <div className="mt-2 text-xl font-semibold">Operations Hub</div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Monitor sentiment, severity, and topics in a single command center.
-            </p>
+    <div className="relative min-h-screen bg-background text-foreground antialiased">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.18),transparent_68%)]" />
+
+      <header className="border-b border-border/60 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-5 sm:px-6 lg:px-8">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3 rounded-2xl border border-border/40 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] px-4 py-2 shadow-sm transition hover:border-border"
+          >
+            <span className="text-[11px] font-semibold uppercase text-muted-foreground">
+              FeedbackFlow
+            </span>
+            <span className="hidden text-sm text-muted-foreground md:inline">Command Center</span>
           </Link>
-          <div className="mt-6 flex-1">
-            <Nav orientation="vertical" />
+
+          <div className="hidden md:block">
+            <Nav orientation="horizontal" />
           </div>
-          <div className="mt-auto space-y-3 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_88%,transparent)] p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Theme</span>
-              <ThemeToggle />
-            </div>
-            <form action="/logout" method="post" className="flex">
-              <Button type="submit" variant="outline" size="sm" className="w-full">
+
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+            <form action="/logout" method="post">
+              <Button type="submit" variant="outline" size="sm" className="rounded-xl">
                 Sign out
               </Button>
             </form>
           </div>
-        </aside>
-
-        <div className="relative flex min-h-screen flex-1 flex-col overflow-hidden rounded-none border-none bg-transparent md:rounded-3xl md:border md:border-border/60 md:bg-[color-mix(in_oklab,var(--background)_94%,transparent)] md:shadow-[0_40px_80px_rgba(15,23,42,0.12)] md:backdrop-blur-xl">
-          <header className="sticky top-0 z-30 border-b border-border/60 bg-[color-mix(in_oklab,var(--background)_85%,transparent)]/95 px-4 py-4 backdrop-blur-xl sm:px-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Workspace</p>
-                <h1 className="mt-1 text-lg font-semibold">Feedback intelligence</h1>
-              </div>
-              <div className="ml-auto flex items-center gap-2 md:hidden">
-                <ThemeToggle />
-                <form action="/logout" method="post">
-                  <Button type="submit" variant="outline" size="sm">
-                    Sign out
-                  </Button>
-                </form>
-              </div>
-            </div>
-            <div className="mt-4 md:hidden">
-              <Nav orientation="horizontal" />
-            </div>
-          </header>
-          <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-10">{children}</main>
-          <footer className="border-t border-border/50 px-4 py-4 text-xs text-muted-foreground sm:px-6">
-            © {new Date().getFullYear()} FeedbackFlow AI · Built for proactive customer insight
-          </footer>
         </div>
-      </div>
+        <div className="border-t border-border/40 bg-background/60 px-4 py-3 backdrop-blur md:hidden">
+          <div className="mx-auto max-w-6xl">
+            <Nav orientation="horizontal" />
+          </div>
+        </div>
+      </header>
+
+      <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-16 pt-10 sm:px-6 lg:px-8">
+        <div className="absolute inset-x-0 top-4 -z-10 h-44 rounded-3xl bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.18),transparent_76%)]" />
+        <div className="relative flex-1">{children}</div>
+      </main>
+
+      <footer className="border-t border-border/40 bg-background/80 py-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 text-xs text-muted-foreground sm:px-6 lg:px-8 md:flex-row md:items-center md:justify-between">
+          <p>
+            © {new Date().getFullYear()} FeedbackFlow AI · Customer signals at the speed of product.
+          </p>
+          <p className="text-muted-foreground/80">
+            Powered by Next.js 16, Supabase, and automated LLM pipelines.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

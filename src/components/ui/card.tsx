@@ -10,7 +10,15 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground", className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        "text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

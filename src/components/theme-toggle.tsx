@@ -71,7 +71,8 @@ export default function ThemeToggle() {
         className="inline-flex h-2 w-2 rounded-full"
         style={{
           background: theme === "dark" ? "#60a5fa" : "#0ea5e9",
-          boxShadow: theme === "dark" ? "0 0 0 3px rgba(96,165,250,0.25)" : "0 0 0 3px rgba(14,165,233,0.2)",
+          boxShadow:
+            theme === "dark" ? "0 0 0 3px rgba(96,165,250,0.25)" : "0 0 0 3px rgba(14,165,233,0.2)",
         }}
       />
       {theme === "dark" ? "Light" : "Dark"} mode

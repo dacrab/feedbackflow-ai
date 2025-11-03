@@ -1,177 +1,250 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from "react";
+import NotificationItem from "@/components/settings/notification-item";
+import SourceItem from "@/components/settings/source-item";
 import Button from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Input from "@/components/ui/input";
-import { cn } from "@/lib/cn";
-
-type Provider = "google" | "openai" | "anthropic";
+import { useApiMutation } from "@/hooks/use-api-mutation";
+import { useApiQuery } from "@/hooks/use-api-query";
+import type { LLMProvider, TransformedNotificationRow, TransformedSourceRow } from "@/lib/types";
 
 export default function SettingsPage() {
-  const [loading, setLoading] = useState(true);
-  const [provider, setProvider] = useState<Provider>("google");
+  const [provider, setProvider] = useState<LLMProvider>("google");
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [hasKey, setHasKey] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  // Sources
-  type SourceRow = {
-    id: string;
-    type: string;
-    config?: { repo?: string };
-    enabled: boolean;
-    hasSecret: boolean;
-  };
-  const [sources, setSources] = useState<SourceRow[]>([]);
+
   const [repo, setRepo] = useState("");
   const [ghToken, setGhToken] = useState("");
-  // Notifications
-  type HookRow = {
-    id: string;
-    type: string;
-    enabled: boolean;
-    hasSecret: boolean;
-  };
-  const [hooks, setHooks] = useState<HookRow[]>([]);
   const [slackUrl, setSlackUrl] = useState("");
 
+  const { data: settingsData, isLoading: settingsLoading } = useApiQuery<{
+    provider: LLMProvider | null;
+    model: string | null;
+    hasKey: boolean;
+  }>("/api/settings");
+
+  const {
+    data: sources,
+    isLoading: sourcesLoading,
+    refetch: refetchSources,
+  } = useApiQuery<TransformedSourceRow[]>("/api/sources");
+
+  const {
+    data: hooks,
+    isLoading: hooksLoading,
+    refetch: refetchHooks,
+  } = useApiQuery<TransformedNotificationRow[]>("/api/notifications");
+
+  const { mutate: createSource, isLoading: creatingSource } = useApiMutation({
+    successMessage: "Source added",
+    errorMessage: "Failed to add source",
+    onSuccess: () => {
+      setRepo("");
+      setGhToken("");
+      refetchSources();
+    },
+  });
+
+  const { mutate: createNotification, isLoading: creatingNotification } = useApiMutation({
+    successMessage: "Webhook added",
+    errorMessage: "Failed to add webhook",
+    onSuccess: () => {
+      setSlackUrl("");
+      refetchHooks();
+    },
+  });
+
+  const { mutate: saveSettings, isLoading: savingSettings } = useApiMutation({
+    successMessage: "Settings saved",
+    onSuccess: () => {
+      setMsg("Saved. Key stored securely.");
+      setHasKey(true);
+      setApiKey("");
+    },
+  });
+
+  // Initialize state from fetched data
   useEffect(() => {
-    async function loadSettings() {
-      setLoading(true);
-      const [s1, s2, s3] = await Promise.all([
-        fetch("/api/settings", { cache: "no-store" }),
-        fetch("/api/sources", { cache: "no-store" }),
-        fetch("/api/notifications", { cache: "no-store" }),
-      ]);
-      if (s1.ok) {
-        const data = await s1.json();
-        if (data.provider) setProvider(data.provider);
-        if (data.model) setModel(data.model);
-        setHasKey(Boolean(data.hasKey));
-      }
-      if (s2.ok) setSources(await s2.json());
-      if (s3.ok) setHooks(await s3.json());
-      setLoading(false);
+    if (settingsData && !hasKey && settingsData.provider) {
+      setProvider(settingsData.provider);
+      setModel(settingsData.model || "");
+      setHasKey(Boolean(settingsData.hasKey));
     }
-    loadSettings();
-  }, []);
+  }, [settingsData, hasKey]);
+
+  const enabledSources = useMemo(() => (sources ?? []).filter((s) => s.enabled).length, [sources]);
+  const enabledHooks = useMemo(() => (hooks ?? []).filter((h) => h.enabled).length, [hooks]);
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
-    const res = await fetch("/api/settings", {
+    await saveSettings("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ provider, model, apiKey }),
     });
-    if (!res.ok) {
-      const t = await res.text();
-      toast.error("Save failed");
-      setMsg(`Save failed: ${t}`);
-    } else {
-      toast.success("Settings saved");
-      setMsg("Saved. Key stored securely.");
-      setHasKey(true);
-      setApiKey("");
-    }
   }
 
-  if (loading) return <div>Loading…</div>;
+  if (settingsLoading || sourcesLoading || hooksLoading) {
+    return (
+      <div className="flex h-72 items-center justify-center">
+        <div className="rounded-2xl border border-border/60 bg-background/85 px-6 py-3 text-sm text-muted-foreground">
+          Loading workspace settings…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Workspace settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage LLM providers, data sources, and outbound notifications for this FeedbackFlow workspace.
+      <header className="space-y-2">
+        <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
+          Control centre
+        </span>
+        <h1 className="text-3xl font-semibold leading-tight text-foreground">Workspace settings</h1>
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Configure analysis providers, ingest sources, and outbound notifications. Keep connections
+          healthy to ensure every customer signal is classified and routed instantly.
         </p>
-      </div>
-      <Card className="mx-auto w-full max-w-4xl border-border/60 bg-[color-mix(in_oklab,var(--background)_95%,transparent)]">
-        <CardHeader>
-          <CardTitle className="text-xs">LLM provider & model</CardTitle>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Configure the model used for sentiment, topic classification, severity scoring, and summaries.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSave} className="space-y-6" aria-live="polite">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 text-sm">
-                <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground" htmlFor="provider">
-                  Provider
-                </label>
-                <select
-                  id="provider"
-                  className="w-full rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] px-3.5 py-2.5 text-sm text-foreground"
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value as Provider)}
-                >
-                  <option value="google">Google (Gemini)</option>
-                  <option value="openai">OpenAI</option>
-                  <option value="anthropic">Anthropic</option>
-                </select>
+      </header>
+
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Card className="border border-border/60 bg-background/85">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-sm font-semibold text-foreground">
+              LLM provider & API key
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Choose the model powering sentiment, topic classification, severity scoring, and
+              summaries.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSave} className="space-y-6" aria-live="polite">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 text-sm">
+                  <label
+                    className="text-xs font-semibold uppercase text-muted-foreground"
+                    htmlFor="provider"
+                  >
+                    Provider
+                  </label>
+                  <select
+                    id="provider"
+                    className="w-full rounded-xl border border-border/70 bg-background/80 px-3.5 py-2.5 text-sm text-foreground"
+                    value={provider}
+                    onChange={(e) => setProvider(e.target.value as LLMProvider)}
+                  >
+                    <option value="google">Google (Gemini)</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                  </select>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <label
+                    className="text-xs font-semibold uppercase text-muted-foreground"
+                    htmlFor="model"
+                  >
+                    Model
+                  </label>
+                  <Input
+                    id="model"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder="e.g. gpt-4o, gemini-2.5-pro"
+                  />
+                </div>
               </div>
               <div className="space-y-2 text-sm">
-                <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground" htmlFor="model">
-                  Model
+                <label
+                  className="text-xs font-semibold uppercase text-muted-foreground"
+                  htmlFor="apiKey"
+                >
+                  API key{" "}
+                  {hasKey && <em className="lowercase text-muted-foreground">(already saved)</em>}
                 </label>
                 <Input
-                  id="model"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="Model (e.g., gpt-4o, gemini-2.5-pro)"
+                  id="apiKey"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Stored securely; only the final 4 characters display elsewhere.
+                </p>
               </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground" htmlFor="apiKey">
-                API key {hasKey && <em className="lowercase text-muted-foreground">(already saved)</em>}
-              </label>
-              <Input
-                id="apiKey"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-..."
-              />
+              <div className="flex items-center justify-end gap-2">
+                <Button type="submit" variant="primary" className="px-6" disabled={savingSettings}>
+                  {savingSettings ? "Saving…" : "Save provider"}
+                </Button>
+              </div>
+              {msg && <div className="text-sm text-emerald-600">{msg}</div>}
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-background/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-foreground">
+              Connection health
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Active sources
+              </p>
+              <p className="mt-2 text-lg font-semibold text-foreground">{enabledSources}</p>
               <p className="text-xs text-muted-foreground">
-                Stored securely; only last 4 characters may be displayed elsewhere.
+                {(sources ?? []).length} configured total.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button type="submit" variant="primary" className="px-6">
-                Save
-              </Button>
+            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Notification webhooks
+              </p>
+              <p className="mt-2 text-lg font-semibold text-foreground">{enabledHooks}</p>
+              <p className="text-xs text-muted-foreground">
+                Alerts fire for severity ≥ 4 when enabled.
+              </p>
             </div>
-            {msg && <div className="text-sm text-emerald-600">{msg}</div>}
-          </form>
-        </CardContent>
-      </Card>
-      {/* Data Sources */}
-      <Card className="mx-auto w-full max-w-4xl border-border/60">
+            <p>
+              Keep at least one data source and one webhook enabled to ensure high-severity feedback
+              is routed in real time.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card className="border border-border/60 bg-background/85">
         <CardHeader>
-          <CardTitle className="text-xs">Data sources</CardTitle>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Connect a public repository or review feed. Daily ingest will process new items since the last run.
+          <CardTitle className="text-sm font-semibold text-foreground">Data sources</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Connect GitHub repositories or other public feeds. Daily ingest processes new items
+            since the last run.
           </p>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-6">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const r = await fetch("/api/sources", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ type: "github", repo, token: ghToken }),
-              });
-              if (r.ok) {
-                toast.success("Source added");
-                setRepo("");
-                setGhToken("");
-                const s = await fetch("/api/sources", { cache: "no-store" });
-                if (s.ok) setSources(await s.json());
-              } else toast.error("Failed to add source");
+              await createSource(
+                "/api/sources",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "github", repo, token: ghToken }),
+                },
+                () => {
+                  setRepo("");
+                  setGhToken("");
+                  return null;
+                },
+              );
             }}
             className="grid gap-3 md:grid-cols-[2fr,2fr,auto]"
           >
@@ -186,103 +259,48 @@ export default function SettingsPage() {
               onChange={(e) => setGhToken(e.target.value)}
             />
             <div className="flex items-center justify-end">
-              <Button type="submit" variant="primary">
-                Add source
+              <Button type="submit" variant="primary" disabled={creatingSource}>
+                {creatingSource ? "Adding…" : "Add source"}
               </Button>
             </div>
           </form>
           <div className="grid gap-3 text-sm">
-            {sources.length === 0 && (
-              <div className="rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_92%,transparent)] px-5 py-4 text-muted-foreground">
-                No data sources yet. Connect a GitHub repo (issues) or add another public feed via custom integration.
+            {(sources || []).length === 0 && (
+              <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-4 text-muted-foreground">
+                No data sources yet. Connect a GitHub repo (issues) or add a custom feed via
+                automation.
               </div>
             )}
-            {sources.map((s) => (
-              <div
-                key={s.id}
-                className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] px-5 py-4 md:flex-row md:items-center md:justify-between"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{s.type === "github" ? "GitHub Issues" : s.type}</p>
-                  <p className="text-xs text-muted-foreground">{s?.config?.repo || "Custom configuration"}</p>
-                  <span
-                    className={cn(
-                      "badge mt-2",
-                      s.enabled
-                        ? "bg-[rgba(34,197,94,0.16)] text-emerald-600 border-transparent"
-                        : "bg-[rgba(148,163,184,0.14)] text-slate-600 border-transparent",
-                    )}
-                  >
-                    {s.enabled ? "Enabled" : "Disabled"}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      await fetch(`/api/sources/${s.id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ enabled: !s.enabled }),
-                      });
-                      const res = await fetch("/api/sources", {
-                        cache: "no-store",
-                      });
-                      if (res.ok) setSources(await res.json());
-                    }}
-                  >
-                    <Button size="sm" variant="outline" type="submit">
-                      {s.enabled ? "Disable" : "Enable"}
-                    </Button>
-                  </form>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      await fetch(`/api/sources/${s.id}`, {
-                        method: "DELETE",
-                      });
-                      const res = await fetch("/api/sources", {
-                        cache: "no-store",
-                      });
-                      if (res.ok) setSources(await res.json());
-                    }}
-                  >
-                    <Button size="sm" variant="ghost" type="submit">
-                      Delete
-                    </Button>
-                  </form>
-                </div>
-              </div>
+            {(sources || []).map((s) => (
+              <SourceItem key={s.id} source={s} onUpdate={refetchSources} />
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Notifications */}
-      <Card className="mx-auto w-full max-w-4xl border-border/60 bg-[color-mix(in_oklab,var(--background)_95%,transparent)]">
+      <Card className="border border-border/60 bg-background/85">
         <CardHeader>
-          <CardTitle className="text-xs">Notifications</CardTitle>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Trigger Slack or webhook alerts when severity scores breach your threshold.
+          <CardTitle className="text-sm font-semibold text-foreground">Notifications</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Trigger Slack or webhook alerts when severity breaches your threshold.
           </p>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-6">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const r = await fetch("/api/notifications", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ type: "slack", webhook: slackUrl }),
-              });
-              if (r.ok) {
-                toast.success("Webhook added");
-                setSlackUrl("");
-                const s = await fetch("/api/notifications", {
-                  cache: "no-store",
-                });
-                if (s.ok) setHooks(await s.json());
-              } else toast.error("Failed to add webhook");
+              await createNotification(
+                "/api/notifications",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "slack", webhook: slackUrl }),
+                },
+                () => {
+                  setSlackUrl("");
+                  return null;
+                },
+              );
             }}
             className="grid gap-3 md:grid-cols-[2fr,auto]"
           >
@@ -292,79 +310,32 @@ export default function SettingsPage() {
               onChange={(e) => setSlackUrl(e.target.value)}
             />
             <div className="flex items-center justify-end">
-              <Button type="submit" variant="primary">
-                Add webhook
+              <Button type="submit" variant="primary" disabled={creatingNotification}>
+                {creatingNotification ? "Adding…" : "Add webhook"}
               </Button>
             </div>
           </form>
           <div className="grid gap-3 text-sm">
-            {hooks.length === 0 && (
-              <div className="rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_92%,transparent)] px-5 py-4 text-muted-foreground">
-                No notifications configured yet. Add a Slack webhook to alert the team on high severity feedback.
+            {(hooks || []).length === 0 && (
+              <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-4 text-muted-foreground">
+                No notifications configured yet. Add a Slack webhook to alert the team when severity
+                spikes.
               </div>
             )}
-            {hooks.map((h) => (
-              <div
-                key={h.id}
-                className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] px-5 py-4 md:flex-row md:items-center md:justify-between"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{h.type === "slack" ? "Slack webhook" : h.type}</p>
-                  <span
-                    className={cn(
-                      "badge mt-2",
-                      h.enabled
-                        ? "bg-[rgba(34,197,94,0.16)] text-emerald-600 border-transparent"
-                        : "bg-[rgba(148,163,184,0.14)] text-slate-600 border-transparent",
-                    )}
-                  >
-                    {h.enabled ? "Enabled" : "Disabled"}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      await fetch(`/api/notifications/${h.id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ enabled: !h.enabled }),
-                      });
-                      const res = await fetch("/api/notifications", {
-                        cache: "no-store",
-                      });
-                      if (res.ok) setHooks(await res.json());
-                    }}
-                  >
-                    <Button size="sm" variant="outline" type="submit">
-                      {h.enabled ? "Disable" : "Enable"}
-                    </Button>
-                  </form>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      await fetch(`/api/notifications/${h.id}`, {
-                        method: "DELETE",
-                      });
-                      const res = await fetch("/api/notifications", {
-                        cache: "no-store",
-                      });
-                      if (res.ok) setHooks(await res.json());
-                    }}
-                  >
-                    <Button size="sm" variant="ghost" type="submit">
-                      Delete
-                    </Button>
-                  </form>
-                </div>
-              </div>
+            {(hooks || []).map((h) => (
+              <NotificationItem key={h.id} notification={h} onUpdate={refetchHooks} />
             ))}
           </div>
         </CardContent>
       </Card>
-      <div className="rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_93%,transparent)] px-5 py-4 text-xs text-muted-foreground">
+
+      <div className="rounded-2xl border border-border/60 bg-background/80 px-5 py-4 text-xs text-muted-foreground">
         <p>
-          For Supabase local dev, magic link emails appear in Inbucket at <span className="font-medium">http://localhost:54324/</span>. For Supabase Cloud, configure SMTP in Authentication → Email and add <span className="font-medium">http://localhost:3000/auth/callback</span> to Allowed Redirect URLs.
+          For Supabase local dev, magic link emails appear in Inbucket at{" "}
+          <span className="font-medium">http://localhost:54324/</span>. For Supabase Cloud,
+          configure SMTP in Authentication → Email and add{" "}
+          <span className="font-medium">http://localhost:3000/auth/callback</span> to Allowed
+          Redirect URLs.
         </p>
       </div>
     </div>

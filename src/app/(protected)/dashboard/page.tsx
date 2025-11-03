@@ -1,4 +1,5 @@
 "use client";
+
 import {
   ArcElement,
   BarElement,
@@ -14,13 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type DashboardData = {
-  countsBySentiment: Record<string, number>;
-  topicCounts: Record<string, number>;
-  severityHist: Record<string, number>;
-  trendByDay: Record<string, number>;
-};
+import type { DashboardData } from "@/lib/types";
 
 Chart.register(
   ArcElement,
@@ -54,7 +49,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600">
+      <div className="rounded-2xl border border-red-200/70 bg-red-50/80 p-6 text-sm text-red-600">
         Error loading dashboard: {error}
       </div>
     );
@@ -88,6 +83,12 @@ export default function DashboardPage() {
   const previousCount = trendValues.at(-2) ?? 0;
   const trendDelta = latestCount - previousCount;
   const trendDeltaLabel = `${trendDelta >= 0 ? "+" : ""}${trendDelta}`;
+  const trendMomentum = trendDelta >= 0 ? "Accelerating" : "Cooling";
+
+  const topTopics = Object.entries(topicCounts)
+    .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
+    .slice(0, 3)
+    .map(([topic, value]) => ({ topic, value }));
 
   const palette = {
     positive: "#22c55e",
@@ -95,7 +96,25 @@ export default function DashboardPage() {
     negative: "#ef4444",
     accent: "#2563eb",
     accentSoft: "rgba(37, 99, 235, 0.18)",
-  };
+  } as const;
+
+  const metricTiles = [
+    {
+      label: "Total feedback",
+      value: totalFeedback,
+      helper: `Last ingest captured ${latestCount} new items.`,
+    },
+    {
+      label: "Positive share",
+      value: `${positiveShare}%`,
+      helper: `${positive} positive vs ${negative} negative.`,
+    },
+    {
+      label: "Severity ≥ 4",
+      value: highSeverity,
+      helper: `Average severity ${avgSeverity}.`,
+    },
+  ];
 
   const sentimentData = {
     labels: ["Positive", "Neutral", "Negative"],
@@ -114,6 +133,15 @@ export default function DashboardPage() {
         position: "bottom" as const,
         labels: { color: "#64748b", usePointStyle: true },
       },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem: { label?: string; raw?: unknown }) => {
+            const label = tooltipItem.label || "";
+            const value = typeof tooltipItem.raw === "number" ? tooltipItem.raw : 0;
+            return `${label}: ${value}`;
+          },
+        },
+      },
     },
   };
 
@@ -125,7 +153,7 @@ export default function DashboardPage() {
       {
         data: topicValues,
         backgroundColor: palette.accentSoft,
-        borderRadius: 8,
+        borderRadius: 10,
         borderSkipped: false,
         borderColor: "rgba(37, 99, 235, 0.35)",
       },
@@ -141,7 +169,7 @@ export default function DashboardPage() {
     scales: {
       x: {
         ticks: { color: "#64748b" },
-        grid: { color: "rgba(148, 163, 184, 0.15)" },
+        grid: { color: "rgba(148, 163, 184, 0.12)" },
         border: { display: false },
       },
       y: {
@@ -158,9 +186,9 @@ export default function DashboardPage() {
       {
         data: [1, 2, 3, 4, 5].map((s) => severityHist[String(s)] ?? 0),
         backgroundColor: "rgba(14, 165, 233, 0.18)",
-        borderRadius: 8,
+        borderRadius: 10,
         borderSkipped: false,
-        borderColor: "rgba(14, 165, 233, 0.4)",
+        borderColor: "rgba(14, 165, 233, 0.42)",
       },
     ],
   };
@@ -172,12 +200,12 @@ export default function DashboardPage() {
     scales: {
       x: {
         ticks: { color: "#64748b" },
-        grid: { color: "rgba(148, 163, 184, 0.12)" },
+        grid: { color: "rgba(148, 163, 184, 0.1)" },
         border: { display: false },
       },
       y: {
         ticks: { color: "#64748b", precision: 0 },
-        grid: { color: "rgba(148, 163, 184, 0.12)" },
+        grid: { color: "rgba(148, 163, 184, 0.1)" },
         border: { display: false },
       },
     },
@@ -207,130 +235,240 @@ export default function DashboardPage() {
     scales: {
       x: {
         ticks: { color: "#64748b" },
-        grid: { color: "rgba(148, 163, 184, 0.12)" },
+        grid: { color: "rgba(148, 163, 184, 0.08)" },
         border: { display: false },
       },
       y: {
         ticks: { color: "#64748b", precision: 0 },
-        grid: { color: "rgba(148, 163, 184, 0.12)" },
+        grid: { color: "rgba(148, 163, 184, 0.08)" },
         border: { display: false },
       },
     },
   };
 
   return (
-    <div className="space-y-10">
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold text-foreground">Insight dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Daily ingest summaries with live sentiment, topics, and severity signals.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="border-border/50 bg-[color-mix(in_oklab,var(--background)_95%,transparent)]">
-          <CardHeader className="mb-1 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            <CardTitle className="text-xs">Total feedback</CardTitle>
-            <span className="badge text-[10px]">Last 30 days</span>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-3xl font-semibold">{totalFeedback}</div>
-            <div className="text-xs text-muted-foreground">
-              Latest ingest: {latestCount} items · Change {trendDeltaLabel} vs previous run
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-[color-mix(in_oklab,var(--accent)_6%,var(--background))]">
-          <CardHeader className="mb-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            <CardTitle className="text-xs">Positive share</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-3xl font-semibold">{positiveShare}%</div>
-            <div className="text-xs text-muted-foreground">
-              {positive} positive · {neutral} neutral · {negative} negative
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardHeader className="mb-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            <CardTitle className="text-xs">High severity (≥4)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-3xl font-semibold">{highSeverity}</div>
-            <div className="text-xs text-muted-foreground">Avg severity score {avgSeverity}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-[color-mix(in_oklab,var(--background)_95%,transparent)]">
-          <CardHeader className="mb-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            <CardTitle className="text-xs">Latest run</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Daily cron executed with <span className="font-medium text-foreground">{latestCount}</span> new records.</p>
-            <p>Enable Slack notifications to broadcast severity ≥ 4 instantly.</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <Card className="border-border/50">
-          <CardHeader className="mb-3 flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xs">Trend of ingested items</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Rolling count of analyzed feedback per day.
+    <div className="space-y-12">
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Card className="relative overflow-hidden border border-border/50 bg-[linear-gradient(135deg,rgba(37,99,235,0.16),rgba(15,23,42,0.18))]">
+          <div className="absolute inset-0 opacity-80">
+            <div className="h-full w-full bg-[radial-gradient(circle_at_top_right,rgba(12,74,110,0.25),transparent_72%)]" />
+          </div>
+          <div className="relative space-y-6 p-6 sm:p-8">
+            <div className="space-y-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase text-white/80">
+                Live pulse
+              </span>
+              <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
+                Insight dashboard
+              </h1>
+              <p className="max-w-3xl text-sm text-white/70">
+                Monitor sentiment, severity, and trending topics across every feedback source in
+                real time. Use these signals to prioritise fixes, celebrate wins, and broadcast
+                alerts before issues escalate.
               </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {metricTiles.map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur transition hover:border-white/20"
+                >
+                  <p className="text-xs uppercase text-white/70">{metric.label}</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{metric.value}</p>
+                  <p className="mt-2 text-xs text-white/70">{metric.helper}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        <Card className="h-full border border-border/60 bg-background/85">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Signal digest
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">Today&apos;s automation summary</p>
+              </div>
+              <span className="rounded-full bg-[color-mix(in_oklab,var(--accent)_22%,transparent)] px-3 py-1 text-[11px] font-semibold uppercase text-foreground">
+                {trendMomentum}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-border/50 bg-background/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Latest ingest</p>
+              <p className="mt-2 text-foreground">
+                Processed <span className="font-semibold">{latestCount}</span> items with a change
+                of {trendDeltaLabel} vs the previous run.
+              </p>
+            </div>
+            <ul className="space-y-3 text-sm leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full bg-emerald-400" />
+                <span>
+                  {positiveShare}% of customer feedback is positive. Keep the team informed of wins
+                  by highlighting them in the inbox.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full bg-rose-400" />
+                <span>
+                  {highSeverity} items flagged severity ≥ 4. Route the most recent ones into your
+                  response workflow within the next sprint.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full bg-sky-400" />
+                <span>
+                  Enable Slack notifications in settings to broadcast new high severity feedback in
+                  real time.
+                </span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="border border-border/60 bg-background/70">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
+              Queue momentum
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <p className="text-2xl font-semibold text-foreground">{trendDeltaLabel}</p>
+            <p className="text-xs text-muted-foreground">
+              Change in analysed items compared with the previous run
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border border-border/60 bg-background/70">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">Top topics</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTopics.length ? (
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {topTopics.map(({ topic, value }) => (
+                  <li
+                    key={topic}
+                    className="flex items-center justify-between rounded-xl bg-background/60 px-3 py-2"
+                  >
+                    <span className="font-medium text-foreground">{topic}</span>
+                    <span className="text-xs text-muted-foreground">{value}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No topic clusters yet.</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border border-border/60 bg-background/70">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
+              Neutral volume
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <p className="text-2xl font-semibold text-foreground">{neutral}</p>
+            <p className="text-xs text-muted-foreground">
+              Neutral classifier hits across the active window
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border border-border/60 bg-background/70">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
+              Average severity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <p className="text-2xl font-semibold text-foreground">{avgSeverity}</p>
+            <p className="text-xs text-muted-foreground">
+              Weighted mean severity across the dataset
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
+        <Card className="border border-border/60 bg-background/80">
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Daily intake trend
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Rolling count of analysed feedback per day
+                </p>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Line data={trendData} options={trendOptions} height={220} />
+            <Line data={trendData} options={trendOptions} height={260} />
           </CardContent>
         </Card>
-        <Card className="border-border/50">
-          <CardHeader className="mb-3">
-            <CardTitle className="text-xs">Sentiment distribution</CardTitle>
+        <Card className="border border-border/60 bg-background/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-foreground">
+              Sentiment distribution
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-6">
             <Pie data={sentimentData} options={sentimentOptions} />
             <div className="w-full space-y-2 text-xs text-muted-foreground">
-              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_93%,transparent)] px-3 py-2">
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/70 px-3 py-2">
                 <span>Positive</span>
                 <span className="font-medium text-foreground">{positive}</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_93%,transparent)] px-3 py-2">
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/70 px-3 py-2">
                 <span>Neutral</span>
                 <span className="font-medium text-foreground">{neutral}</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_93%,transparent)] px-3 py-2">
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/70 px-3 py-2">
                 <span>Negative</span>
                 <span className="font-medium text-foreground">{negative}</span>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-border/50">
-          <CardHeader className="mb-3">
-            <CardTitle className="text-xs">Top topics</CardTitle>
+      <section className="grid gap-6 xl:grid-cols-2">
+        <Card className="border border-border/60 bg-background/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-foreground">Topic clusters</CardTitle>
           </CardHeader>
           <CardContent>
             {topicLabels.length ? (
-              <Bar data={topicData} options={topicOptions} height={topicLabels.length * 32} />
+              <Bar
+                data={topicData}
+                options={topicOptions}
+                height={Math.max(topicLabels.length * 32, 220)}
+              />
             ) : (
-              <div className="text-sm text-muted-foreground">No topics yet. Ingest more feedback to classify themes.</div>
+              <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-6 text-sm text-muted-foreground">
+                No topics yet. Ingest more feedback to classify emerging themes.
+              </div>
             )}
           </CardContent>
         </Card>
-        <Card className="border-border/50">
-          <CardHeader className="mb-3">
-            <CardTitle className="text-xs">Severity distribution</CardTitle>
+        <Card className="border border-border/60 bg-background/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-foreground">
+              Severity distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Bar data={severityData} options={severityOptions} height={220} />
+            <Bar data={severityData} options={severityOptions} height={240} />
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   );
 }

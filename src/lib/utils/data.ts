@@ -22,4 +22,3 @@ export function transformRowWithSecret<T extends RowWithSecret>(row: T) {
     hasSecret: Boolean(row.secret_cipher),
   };
 }
-

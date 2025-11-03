@@ -1,20 +1,26 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import EmailField from "@/components/auth/email-field";
+import OAuthProviders from "@/components/auth/oauth-providers";
+import PasswordField from "@/components/auth/password-field";
 import Button from "@/components/ui/button";
-import { GitHubIcon, GoogleIcon, LockIcon, MailIcon, UserPlusIcon } from "@/components/ui/icons";
-import Input from "@/components/ui/input";
+import { UserPlusIcon } from "@/components/ui/icons";
+import { useOAuth } from "@/hooks/use-oauth";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { extractErrorMessage, getAuthRedirectTo, normalizeEmail, validateEmail } from "@/lib/utils/auth";
+import {
+  extractErrorMessage,
+  getAuthRedirectTo,
+  normalizeEmail,
+  validateEmail,
+} from "@/lib/utils/auth";
 import { calculatePasswordScore, isPasswordValid } from "@/lib/utils/password";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -24,8 +30,9 @@ export default function SignupPage() {
   const honeypotRef = useRef<HTMLInputElement | null>(null);
   const [isVerifyStep, setIsVerifyStep] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const { signInWithOAuth, isLoading: oauthLoading } = useOAuth();
 
-  const passwordScore = useMemo(() => calculatePasswordScore(password), [password]);
+  const passwordScore = calculatePasswordScore(password);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -102,22 +109,6 @@ export default function SignupPage() {
     }
   }
 
-  async function continueWith(provider: "github" | "google") {
-    try {
-      setIsLoading(true);
-      const supa = createBrowserClient();
-      const redirectTo = getAuthRedirectTo();
-      await supa.auth.signInWithOAuth({
-        provider,
-        ...(redirectTo ? { options: { redirectTo } } : {}),
-      });
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   async function onResendVerification() {
     try {
       setResending(true);
@@ -144,7 +135,9 @@ export default function SignupPage() {
         <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
           <UserPlusIcon className="h-4 w-4" /> Start in minutes
         </span>
-        <h2 className="text-3xl font-semibold leading-tight text-foreground">Create your FeedbackFlow workspace</h2>
+        <h2 className="text-3xl font-semibold leading-tight text-foreground">
+          Create your FeedbackFlow workspace
+        </h2>
         <p className="text-sm text-muted-foreground">
           Verify your email to activate automated ingest, LLM analysis, and real-time triage.
         </p>
@@ -153,8 +146,9 @@ export default function SignupPage() {
       {isVerifyStep ? (
         <div className="space-y-6 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] p-6">
           <div className="text-sm leading-relaxed text-muted-foreground">
-            We sent a verification link to {" "}
-            <span className="font-medium text-foreground">{verificationEmail || email}</span>. Check your inbox and confirm to finish creating your account.
+            We sent a verification link to{" "}
+            <span className="font-medium text-foreground">{verificationEmail || email}</span>. Check
+            your inbox and confirm to finish creating your account.
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={onResendVerification} disabled={resending}>
@@ -187,98 +181,33 @@ export default function SignupPage() {
             aria-hidden="true"
           />
 
-          <div className="space-y-2 text-sm">
-            <label htmlFor="email" className="inline-flex items-center gap-2 font-medium text-muted-foreground">
-              <MailIcon className="h-4 w-4" /> Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              aria-invalid={!!err && !validateEmail(email)}
-              autoComplete="email"
-            />
-          </div>
+          <EmailField
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            ariaInvalid={!!err && !validateEmail(email)}
+          />
 
-          <div className="space-y-2 text-sm">
-            <label htmlFor="password" className="inline-flex items-center gap-2 font-medium text-muted-foreground">
-              <LockIcon className="h-4 w-4" /> Password
-            </label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Choose a strong password"
-                aria-invalid={!!err}
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-wide text-muted-foreground underline"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-            {password.length > 0 && (
-              <div className="space-y-2 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_92%,transparent)] p-3">
-                <div className="h-1.5 w-full rounded-full bg-[color-mix(in_oklab,var(--accent)_8%,var(--background))]">
-                  <div
-                    className={
-                      "h-1.5 rounded-full transition-all " +
-                      (passwordScore <= 1
-                        ? "bg-red-400 w-1/5"
-                        : passwordScore === 2
-                          ? "bg-orange-400 w-2/5"
-                          : passwordScore === 3
-                            ? "bg-yellow-400 w-3/5"
-                            : passwordScore === 4
-                              ? "bg-lime-500 w-4/5"
-                              : "bg-emerald-500 w-full")
-                    }
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Use at least 8 chars with uppercase, lowercase, a number, and a symbol.
-                </p>
-              </div>
-            )}
-          </div>
+          <PasswordField
+            id="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            showStrengthIndicator
+            showIcon
+            ariaInvalid={!!err}
+          />
 
-          <div className="space-y-2 text-sm">
-            <label htmlFor="confirm" className="font-medium text-muted-foreground">
-              Confirm password
-            </label>
-            <div className="relative">
-              <Input
-                id="confirm"
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter your password"
-                aria-invalid={password !== confirmPassword && confirmPassword.length > 0}
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-wide text-muted-foreground underline"
-              >
-                {showConfirmPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-            {confirmPassword.length > 0 && password !== confirmPassword && (
-              <p className="text-xs text-red-500">Passwords do not match.</p>
-            )}
-          </div>
+          <PasswordField
+            id="confirm"
+            label="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Re-enter your password"
+            ariaInvalid={password !== confirmPassword && confirmPassword.length > 0}
+          />
+          {confirmPassword.length > 0 && password !== confirmPassword && (
+            <p className="text-xs text-red-500">Passwords do not match.</p>
+          )}
 
           <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] p-4">
             <input
@@ -290,11 +219,11 @@ export default function SignupPage() {
               aria-invalid={!acceptTerms && !!err}
             />
             <label htmlFor="terms" className="text-xs leading-relaxed text-muted-foreground">
-              I agree to the {" "}
+              I agree to the{" "}
               <a className="underline" href="/terms" target="_blank" rel="noreferrer">
                 Terms
               </a>{" "}
-              and {" "}
+              and{" "}
               <a className="underline" href="/privacy" target="_blank" rel="noreferrer">
                 Privacy Policy
               </a>
@@ -302,43 +231,20 @@ export default function SignupPage() {
             </label>
           </div>
 
-          <Button className="w-full" type="submit" disabled={isLoading}>
+          <Button className="w-full" type="submit" disabled={isLoading || oauthLoading}>
             {isLoading ? "Creating account…" : "Sign up"}
           </Button>
         </form>
       )}
 
       {!isVerifyStep && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />
-            <span>or continue with</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isLoading}
-              onClick={() => continueWith("github")}
-              variant="outline"
-            >
-              <GitHubIcon className="h-4 w-4" /> GitHub
-            </Button>
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isLoading}
-              onClick={() => continueWith("google")}
-              variant="outline"
-            >
-              <GoogleIcon className="h-4 w-4" /> Google
-            </Button>
-          </div>
-        </div>
+        <OAuthProviders onProviderClick={signInWithOAuth} disabled={isLoading || oauthLoading} />
       )}
       <div className="text-sm text-muted-foreground">
-        Already onboard? <a href="/login" className="font-medium text-foreground underline">Sign in</a>
+        Already onboard?{" "}
+        <a href="/login" className="font-medium text-foreground underline">
+          Sign in
+        </a>
       </div>
       {err && <p className="text-sm text-red-500">{err}</p>}
       {msg && <p className="text-sm text-emerald-500">{msg}</p>}

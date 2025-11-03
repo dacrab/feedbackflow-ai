@@ -19,7 +19,7 @@ export async function getAuthUser() {
  * Require authentication - returns user or throws Response
  * The thrown Response can be caught and returned directly
  */
-export async function requireAuth(): Promise<Awaited<ReturnType<typeof getAuthUser>>> {
+export async function requireAuth(): Promise<NonNullable<Awaited<ReturnType<typeof getAuthUser>>>> {
   const user = await getAuthUser();
   if (!user) {
     const response = NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -41,4 +41,3 @@ export function errorResponse(message: string, status: number = 500) {
 export function successResponse(data: unknown, status: number = 200) {
   return NextResponse.json(data, { status });
 }
-

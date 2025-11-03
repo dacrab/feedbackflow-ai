@@ -46,7 +46,9 @@ export default function StatusChanger({
         <option value="Acknowledged">Acknowledged</option>
         <option value="Actioned">Actioned</option>
       </select>
-      {saving && <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Saving…</span>}
+      {saving && (
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Saving…</span>
+      )}
     </label>
   );
 }

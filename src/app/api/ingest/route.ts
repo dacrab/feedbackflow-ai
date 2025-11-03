@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
-import { notifySlack, notifySlackTo } from "@/lib/notify";
+import { notifySlack } from "@/lib/notify";
+import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getDateNHoursAgo } from "@/lib/utils/date";
 
 type GithubIssue = {
   id: number;
@@ -117,8 +119,7 @@ export async function POST(req: Request) {
           .order("original_timestamp", { ascending: false })
           .limit(1)
           .maybeSingle();
-        const sinceISO =
-          latestRow?.original_timestamp ?? new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const sinceISO = latestRow?.original_timestamp ?? getDateNHoursAgo(24);
 
         const issues = await fetchIssues(repo, sinceISO, ghToken);
         totalFetched += issues.length;
@@ -186,25 +187,10 @@ export async function POST(req: Request) {
               );
               if (!aErr) analyzed++;
               if (analysis.severity_score >= 4) {
-                // Per-user notifications (Slack) if configured
-                const { data: hooks } = await admin
-                  .from("user_notifications")
-                  .select("type, secret_cipher, enabled")
-                  .eq("user_id", src.user_id)
-                  .eq("enabled", true);
-                for (const h of hooks || []) {
-                  if (h.type === "slack" && h.secret_cipher) {
-                    const url = decrypt(h.secret_cipher as string);
-                    await notifySlackTo(
-                      url,
-                      `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`,
-                    );
-                  }
-                }
-                // Fallback to global webhook if any
-                await notifySlack(
-                  `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`,
-                );
+                await notifyHighSeverityFeedback(src.user_id, {
+                  ...analysis,
+                  status: "New",
+                });
               }
             } catch (_e) {
               // skip on error
@@ -242,8 +228,7 @@ export async function POST(req: Request) {
         .order("original_timestamp", { ascending: false })
         .limit(1)
         .maybeSingle();
-      const sinceISO =
-        latestRow?.original_timestamp ?? new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const sinceISO = latestRow?.original_timestamp ?? getDateNHoursAgo(24);
       const issues = await fetchIssues(repo, sinceISO, ghToken ?? undefined);
       totalFetched += issues.length;
       const rows = issues.map((i) => ({
@@ -284,6 +269,7 @@ export async function POST(req: Request) {
           );
           if (!aErr) analyzed++;
           if (analysis.severity_score >= 4) {
+            // Legacy mode: no user_id, use global webhook only
             await notifySlack(
               `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`,
             );

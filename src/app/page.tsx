@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRightIcon, ChartBarIcon, DownloadIcon, FilterIcon } from "@/components/ui/icons";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -8,17 +8,20 @@ const features = [
   {
     icon: DownloadIcon,
     title: "Daily ingest",
-    description: "Pull fresh public feedback or GitHub issues automatically with retries and idempotency.",
+    description:
+      "Pull fresh public feedback or GitHub issues automatically with retries and idempotency.",
   },
   {
     icon: ChartBarIcon,
     title: "Structured analysis",
-    description: "LLM sentiment, topic clustering, severity scoring, and an executive-ready summary per item.",
+    description:
+      "LLM sentiment, topic clustering, severity scoring, and an executive-ready summary per item.",
   },
   {
     icon: FilterIcon,
     title: "Actionable triage",
-    description: "Inbox filters, severity pivots, and status workflows keep teams aligned on what matters most.",
+    description:
+      "Inbox filters, severity pivots, and status workflows keep teams aligned on what matters most.",
   },
 ];
 
@@ -43,7 +46,8 @@ export default async function Home() {
           The modern command center for customer feedback intelligence
         </h1>
         <p className="mt-6 max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
-          Consolidate every public review or issue, let LLMs surface sentiment and severity, and route action to the right teams without spreadsheets or manual tagging.
+          Consolidate every public review or issue, let LLMs surface sentiment and severity, and
+          route action to the right teams without spreadsheets or manual tagging.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -81,9 +85,13 @@ export default async function Home() {
 
         <div className="mt-16 grid w-full gap-6 rounded-3xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_92%,transparent)] p-8 text-left shadow-[0_45px_90px_rgba(15,23,42,0.12)] sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Built for product & customer teams</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Built for product & customer teams
+            </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              FeedbackFlow AI ingests what customers are saying, enriches each signal with structured intelligence, and gives teams an inbox built for prioritization. Deploy on Supabase + Vercel with scheduled edge functions in minutes.
+              FeedbackFlow AI ingests what customers are saying, enriches each signal with
+              structured intelligence, and gives teams an inbox built for prioritization. Deploy on
+              Supabase + Vercel with scheduled edge functions in minutes.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-3">
