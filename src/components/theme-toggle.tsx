@@ -63,10 +63,18 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="px-2 py-1 rounded border text-sm"
+      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-[color-mix(in_oklab,var(--background)_88%,transparent)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:border-border hover:text-foreground"
       aria-label="Toggle color theme"
+      aria-pressed={theme === "dark"}
     >
-      {theme === "dark" ? "Light mode" : "Dark mode"}
+      <span
+        className="inline-flex h-2 w-2 rounded-full"
+        style={{
+          background: theme === "dark" ? "#60a5fa" : "#0ea5e9",
+          boxShadow: theme === "dark" ? "0 0 0 3px rgba(96,165,250,0.25)" : "0 0 0 3px rgba(14,165,233,0.2)",
+        }}
+      />
+      {theme === "dark" ? "Light" : "Dark"} mode
     </button>
   );
 }

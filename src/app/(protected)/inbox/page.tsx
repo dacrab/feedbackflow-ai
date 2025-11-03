@@ -3,6 +3,7 @@ import Link from "next/link";
 import Button from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Input from "@/components/ui/input";
+import { cn } from "@/lib/cn";
 
 type AnalysisRow = {
   sentiment: "positive" | "neutral" | "negative";
@@ -85,103 +86,179 @@ export default async function InboxPage({
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
+  function sentimentBadge(sentiment?: string | null) {
+    if (!sentiment) return null;
+    const styles: Record<string, string> = {
+      positive: "bg-[rgba(34,197,94,0.16)] text-emerald-600 border-transparent",
+      neutral: "bg-[rgba(148,163,184,0.14)] text-slate-600 border-transparent",
+      negative: "bg-[rgba(239,68,68,0.16)] text-rose-600 border-transparent",
+    };
+    return <span className={cn("badge capitalize", styles[sentiment] ?? "")}>{sentiment}</span>;
+  }
+
+  function statusBadge(status?: string | null) {
+    if (!status) return null;
+    const styles: Record<string, string> = {
+      New: "bg-[rgba(37,99,235,0.12)] text-blue-600 border-transparent",
+      Acknowledged: "bg-[rgba(234,179,8,0.16)] text-amber-600 border-transparent",
+      Actioned: "bg-[rgba(16,185,129,0.16)] text-emerald-600 border-transparent",
+    };
+    return <span className={cn("badge", styles[status] ?? "")}>{status}</span>;
+  }
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Inbox</h1>
-      <Card className="max-w-5xl mx-auto">
-        <form className="grid md:grid-cols-7 gap-2">
-          <Input name="q" placeholder="Search" defaultValue={(spObj["q"] as string) || ""} />
-          <select
-            name="sentiment"
-            defaultValue={(spObj["sentiment"] as string) || ""}
-            className="w-full rounded-md border border-border bg-input text-foreground px-3 py-2"
-          >
-            <option value="">Any sentiment</option>
-            <option value="positive">Positive</option>
-            <option value="neutral">Neutral</option>
-            <option value="negative">Negative</option>
-          </select>
-          <Input name="topic" placeholder="Topic" defaultValue={(spObj["topic"] as string) || ""} />
-          <select
-            name="status"
-            defaultValue={(spObj["status"] as string) || ""}
-            className="w-full rounded-md border border-border bg-input text-foreground px-3 py-2"
-          >
-            <option value="">Any status</option>
-            <option value="New">New</option>
-            <option value="Acknowledged">Acknowledged</option>
-            <option value="Actioned">Actioned</option>
-          </select>
-          <Input
-            name="severity_min"
-            type="number"
-            min={1}
-            max={5}
-            placeholder="Min sev"
-            defaultValue={(spObj["severity_min"] as string) || ""}
-          />
-          <Input
-            name="severity_max"
-            type="number"
-            min={1}
-            max={5}
-            placeholder="Max sev"
-            defaultValue={(spObj["severity_max"] as string) || ""}
-          />
-          <select
-            name="sort"
-            defaultValue={(spObj["sort"] as string) || "created_desc"}
-            className="w-full rounded-md border border-border bg-input text-foreground px-3 py-2"
-          >
-            <option value="created_desc">Newest</option>
-            <option value="severity_desc">Severity high→low</option>
-            <option value="severity_asc">Severity low→high</option>
-          </select>
-          <Button type="submit" variant="secondary">
-            Apply
-          </Button>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground">Feedback inbox</h1>
+        <p className="text-sm text-muted-foreground">
+          Filter, prioritize, and assign triage status across every ingested feedback item.
+        </p>
+      </div>
+
+      <Card className="mx-auto w-full max-w-6xl border-border/60 bg-[color-mix(in_oklab,var(--background)_95%,transparent)]">
+        <form className="grid gap-3 md:grid-cols-12 md:items-end">
+          <div className="md:col-span-4">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
+              Keyword search
+            </label>
+            <Input name="q" placeholder="Search summary or raw content" defaultValue={(spObj["q"] as string) || ""} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">Sentiment</label>
+            <select
+              name="sentiment"
+              defaultValue={(spObj["sentiment"] as string) || ""}
+              className="w-full rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] px-3.5 py-2.5 text-sm text-foreground"
+            >
+              <option value="">Any sentiment</option>
+              <option value="positive">Positive</option>
+              <option value="neutral">Neutral</option>
+              <option value="negative">Negative</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">Topic</label>
+            <Input name="topic" placeholder="e.g. Performance" defaultValue={(spObj["topic"] as string) || ""} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">Status</label>
+            <select
+              name="status"
+              defaultValue={(spObj["status"] as string) || ""}
+              className="w-full rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] px-3.5 py-2.5 text-sm text-foreground"
+            >
+              <option value="">Any status</option>
+              <option value="New">New</option>
+              <option value="Acknowledged">Acknowledged</option>
+              <option value="Actioned">Actioned</option>
+            </select>
+          </div>
+          <div className="md:col-span-1">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">Min sev</label>
+            <Input
+              name="severity_min"
+              type="number"
+              min={1}
+              max={5}
+              placeholder="1"
+              defaultValue={(spObj["severity_min"] as string) || ""}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">Max sev</label>
+            <Input
+              name="severity_max"
+              type="number"
+              min={1}
+              max={5}
+              placeholder="5"
+              defaultValue={(spObj["severity_max"] as string) || ""}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">Sort</label>
+            <select
+              name="sort"
+              defaultValue={(spObj["sort"] as string) || "created_desc"}
+              className="w-full rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] px-3.5 py-2.5 text-sm text-foreground"
+            >
+              <option value="created_desc">Newest first</option>
+              <option value="severity_desc">Severity high → low</option>
+              <option value="severity_asc">Severity low → high</option>
+            </select>
+          </div>
+          <div className="md:col-span-1">
+            <Button type="submit" className="w-full" variant="primary">
+              Apply
+            </Button>
+          </div>
         </form>
       </Card>
 
-      <Card className="overflow-x-auto max-w-5xl mx-auto">
-        <table className="table text-sm no-header-bg">
-          <thead className="bg-transparent">
-            <tr>
-              <th>Created</th>
-              <th>Summary</th>
-              <th>Sentiment</th>
-              <th>Severity</th>
-              <th>Topics</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((row) => {
-              const a = Array.isArray(row.feedback_analyses)
-                ? row.feedback_analyses[0]
-                : row.feedback_analyses;
-              return (
-                <tr key={row.id}>
-                  <td className="whitespace-nowrap">
-                    <span suppressHydrationWarning>{formatDateUTC(row.created_at)}</span>
-                  </td>
-                  <td>
-                    <Link
-                      className="underline decoration-dotted hover:decoration-solid"
-                      href={`/feedback/${row.id}`}
-                    >
-                      {a?.summary || row.raw_content?.slice(0, 80)}
-                    </Link>
-                  </td>
-                  <td>{a?.sentiment}</td>
-                  <td>{a?.severity_score}</td>
-                  <td>{Array.isArray(a?.topics) ? a.topics.join(", ") : ""}</td>
-                  <td>{a?.status}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <Card className="mx-auto w-full max-w-6xl overflow-hidden border-border/60">
+        <div className="overflow-x-auto">
+          <table className="table text-sm">
+            <thead>
+              <tr>
+                <th className="min-w-[140px]">Created (UTC)</th>
+                <th className="min-w-[260px]">Summary</th>
+                <th className="min-w-[120px]">Sentiment</th>
+                <th className="min-w-[100px]">Severity</th>
+                <th className="min-w-[200px]">Topics</th>
+                <th className="min-w-[140px]">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row) => {
+                const a = Array.isArray(row.feedback_analyses)
+                  ? row.feedback_analyses[0]
+                  : row.feedback_analyses;
+                const topics = Array.isArray(a?.topics) ? a.topics : [];
+                return (
+                  <tr key={row.id} className="align-top">
+                    <td className="whitespace-nowrap text-xs text-muted-foreground">
+                      <span suppressHydrationWarning>{formatDateUTC(row.created_at)}</span>
+                    </td>
+                    <td>
+                      <Link
+                        className="font-medium text-foreground underline decoration-dotted underline-offset-4 transition hover:decoration-solid"
+                        href={`/feedback/${row.id}`}
+                      >
+                        {a?.summary || row.raw_content?.slice(0, 120)}
+                      </Link>
+                      <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                        {row.raw_content}
+                      </p>
+                    </td>
+                    <td>{sentimentBadge(a?.sentiment)}</td>
+                    <td>
+                      <span className="badge bg-[rgba(37,99,235,0.08)] text-foreground">
+                        {a?.severity_score ?? "—"}
+                      </span>
+                    </td>
+                    <td>
+                      {topics.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {topics.map((topic) => (
+                            <span
+                              key={topic}
+                              className="badge bg-[rgba(148,163,184,0.12)] text-slate-600 border-transparent"
+                            >
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td>{statusBadge(a?.status)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

@@ -11,7 +11,7 @@ const Input = forwardRef<HTMLInputElement, Props>(({ className, ...props }, ref)
     <input
       ref={ref}
       className={cn(
-        "w-full rounded-md border border-border bg-input text-foreground placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring px-3 py-2",
+        "w-full rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_88%,transparent)] px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus-visible:border-ring/70 focus-visible:ring-2 focus-visible:ring-ring/50",
         className,
       )}
       {...props}

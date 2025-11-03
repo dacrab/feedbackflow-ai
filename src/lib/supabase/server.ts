@@ -1,16 +1,6 @@
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-type CookieOptions = {
-  domain?: string;
-  path?: string;
-  expires?: Date;
-  httpOnly?: boolean;
-  sameSite?: "lax" | "strict" | "none";
-  secure?: boolean;
-  maxAge?: number;
-};
-
 export async function createRSCClient() {
   const cookieStore = await cookies();
   const url = process.env["NEXT_PUBLIC_SUPABASE_URL"];
@@ -44,12 +34,11 @@ export async function createRouteHandlerClient() {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options as CookieOptions);
+          cookieStore.set(name, value, options);
         });
       },
     },
   });
 }
 
-// Backwards compatible alias for components already importing createServerClient
 export const createServerClient = createRSCClient;

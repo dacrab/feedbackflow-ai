@@ -1,20 +1,18 @@
-import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { errorResponse, requireAuth, successResponse } from "@/lib/utils/api";
 
 export async function GET() {
-  const supa = await createRouteHandlerClient();
-  const { data: auth } = await supa.auth.getUser();
-  if (!auth.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  try {
+    const user = await requireAuth();
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("feedback_analyses")
-    .select("sentiment, topics, severity_score, created_at")
-    .eq("user_id", auth.user.id)
-    .order("created_at", { ascending: false })
-    .limit(1000);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("feedback_analyses")
+      .select("sentiment, topics, severity_score, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    if (error) return errorResponse(error.message, 500);
 
   const countsBySentiment: Record<string, number> = {
     positive: 0,
@@ -36,10 +34,14 @@ export async function GET() {
     trendByDay[day] = (trendByDay[day] || 0) + 1;
   }
 
-  return NextResponse.json({
-    countsBySentiment,
-    topicCounts,
-    severityHist,
-    trendByDay,
-  });
+    return successResponse({
+      countsBySentiment,
+      topicCounts,
+      severityHist,
+      trendByDay,
+    });
+  } catch (error) {
+    if (error instanceof Response) return error;
+    return errorResponse(String(error), 500);
+  }
 }

@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-export default function StatusChanger({ id, initial }: { id: string; initial: string }) {
+export default function StatusChanger({
+  id,
+  initial,
+  compact = false,
+}: {
+  id: string;
+  initial: string;
+  compact?: boolean;
+}) {
   const [status, setStatus] = useState(initial);
   const [saving, setSaving] = useState(false);
 
@@ -27,9 +35,9 @@ export default function StatusChanger({ id, initial }: { id: string; initial: st
   }
 
   return (
-    <label className="inline-flex items-center gap-2">
+    <label className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
       <select
-        className="border rounded px-2 py-1"
+        className={`rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] text-foreground shadow-sm focus-visible:border-ring/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${compact ? "px-3 py-1 text-xs" : "px-3.5 py-2 text-sm"}`}
         value={status}
         onChange={onChange}
         disabled={saving}
@@ -38,7 +46,7 @@ export default function StatusChanger({ id, initial }: { id: string; initial: st
         <option value="Acknowledged">Acknowledged</option>
         <option value="Actioned">Actioned</option>
       </select>
-      {saving && <span className="text-xs text-zinc-500">Saving…</span>}
+      {saving && <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Saving…</span>}
     </label>
   );
 }

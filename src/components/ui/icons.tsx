@@ -201,3 +201,57 @@ export function FilterIcon({ size = 16, ...props }: IconProps) {
     </svg>
   );
 }
+
+export function LayoutIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <path
+        fill="currentColor"
+        d="M4 4h7v7H4V4zm9 0h7v4h-7V4zm0 6h7v10h-7V10zM4 13h7v7H4v-7z"
+      />
+    </svg>
+  );
+}
+
+export function InboxIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <path
+        fill="currentColor"
+        d="M4 4h16a2 2 0 011.94 1.5l2 8a2 2 0 01-1.94 2.5H17l-2 3h-6l-2-3H2.94A2 2 0 011 13.5l2-8A2 2 0 014 4zm0 2l-1.5 6h4.76l2 3h4.48l2-3h4.76L20 6H4z"
+      />
+    </svg>
+  );
+}
+
+export function SettingsIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <path
+        fill="currentColor"
+        d="M19.14 12.94a7.07 7.07 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.61-.22l-2.39.96a6.91 6.91 0 00-1.63-.95L14.4 2.5a.5.5 0 00-.5-.5h-3.8a.5.5 0 00-.5.5l-.34 2.81a6.91 6.91 0 00-1.63.95l-2.39-.96a.5.5 0 00-.61.22L2.91 8.86a.5.5 0 00.12.64l2.03 1.58a7.07 7.07 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32a.5.5 0 00.61.22l2.39-.96c.5.39 1.05.71 1.63.95l.34 2.81a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5l.34-2.81c.58-.24 1.13-.56 1.63-.95l2.39.96a.5.5 0 00.61-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5z"
+      />
+    </svg>
+  );
+}

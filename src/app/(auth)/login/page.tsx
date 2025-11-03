@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import Button from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeftIcon, GitHubIcon, GoogleIcon, LockIcon, MailIcon } from "@/components/ui/icons";
+import { GitHubIcon, GoogleIcon, LockIcon, MailIcon } from "@/components/ui/icons";
 import Input from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
+import { extractErrorMessage, getAuthRedirectTo, normalizeEmail } from "@/lib/utils/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,13 +22,20 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       const supa = createBrowserClient();
-      const { error } = await supa.auth.signInWithPassword({ email, password });
+      const { data, error } = await supa.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data.user && !data.user.email_confirmed_at) {
+        toast.error("Please verify your email before signing in. Check your inbox.");
+        await supa.auth.signOut();
+        return;
+      }
       toast.success("Signed in");
       router.push("/dashboard");
+      router.refresh();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = extractErrorMessage(e);
       setErr(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -39,17 +45,13 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       const supa = createBrowserClient();
-      const redirectTo =
-        typeof window !== "undefined"
-          ? new URL("/auth/callback", window.location.origin).toString()
-          : undefined;
+      const redirectTo = getAuthRedirectTo();
       await supa.auth.signInWithOAuth({
         provider,
         ...(redirectTo ? { options: { redirectTo } } : {}),
       });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(msg);
+      toast.error(extractErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -63,105 +65,95 @@ export default function LoginPage() {
       }
       setIsLoading(true);
       const supa = createBrowserClient();
-      const redirectTo =
-        typeof window !== "undefined"
-          ? new URL("/auth/callback?next=/reset-password", window.location.origin).toString()
-          : undefined;
-      const options = redirectTo ? { redirectTo } : undefined;
-      const { error } = await supa.auth.resetPasswordForEmail(email.trim().toLowerCase(), options);
+      const redirectTo = getAuthRedirectTo("/reset-password");
+      const { error } = await supa.auth.resetPasswordForEmail(normalizeEmail(email), redirectTo ? { redirectTo } : undefined);
       if (error) throw error;
       toast.success("Password reset email sent");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(msg);
+      toast.error(extractErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <div className="text-left">
-            <Link href="/" className="text-sm inline-flex items-center gap-2">
-              <ArrowLeftIcon className="h-4 w-4" /> Back
-            </Link>
-          </div>
-          <CardTitle className="text-2xl font-semibold">Sign in</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            <div className="space-y-1">
-              <label htmlFor="email" className="text-sm inline-flex items-center gap-2">
-                <MailIcon className="h-4 w-4" /> Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                autoComplete="email"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="password" className="text-sm inline-flex items-center gap-2">
-                <LockIcon className="h-4 w-4" /> Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your password"
-                autoComplete="current-password"
-              />
-            </div>
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? "Signing in…" : "Sign in"}
-            </Button>
-          </form>
-          <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />
-            <span>or</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isLoading}
-              onClick={() => continueWith("github")}
-              variant="outline"
-            >
-              <GitHubIcon className="h-4 w-4" /> Continue with GitHub
-            </Button>
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isLoading}
-              onClick={() => continueWith("google")}
-              variant="outline"
-            >
-              <GoogleIcon className="h-4 w-4" /> Continue with Google
-            </Button>
-          </div>
-          <div className="mt-3">
-            <a href="/signup" className="text-sm underline">
-              Create an account
-            </a>
-          </div>
-          <div className="mt-2">
-            <button type="button" onClick={onResetPassword} className="text-xs underline">
-              Forgot password?
-            </button>
-          </div>
-          {err && <p className="text-red-600 text-sm mt-2">{err}</p>}
-        </CardContent>
-      </Card>
+    <div className="space-y-8">
+      <div className="space-y-2 text-left">
+        <span className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Welcome back</span>
+        <h2 className="text-3xl font-semibold leading-tight text-foreground">Sign in to your workspace</h2>
+        <p className="text-sm text-muted-foreground">
+          Use your email credentials or continue with a connected provider.
+        </p>
+      </div>
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <div className="space-y-2 text-sm">
+          <label htmlFor="email" className="inline-flex items-center gap-2 font-medium text-muted-foreground">
+            <MailIcon className="h-4 w-4" /> Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            autoComplete="email"
+          />
+        </div>
+        <div className="space-y-2 text-sm">
+          <label htmlFor="password" className="inline-flex items-center gap-2 font-medium text-muted-foreground">
+            <LockIcon className="h-4 w-4" /> Password
+          </label>
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Your password"
+            autoComplete="current-password"
+          />
+        </div>
+        <Button className="w-full" type="submit" disabled={isLoading}>
+          {isLoading ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="h-px flex-1 bg-border" />
+          <span>or continue with</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+            onClick={() => continueWith("github")}
+            variant="outline"
+          >
+            <GitHubIcon className="h-4 w-4" /> GitHub
+          </Button>
+          <Button
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+            onClick={() => continueWith("google")}
+            variant="outline"
+          >
+            <GoogleIcon className="h-4 w-4" /> Google
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+        <button type="button" onClick={onResetPassword} className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground underline">
+          Forgot password?
+        </button>
+        <a href="/signup" className="text-left text-sm font-medium text-foreground underline">
+          Need an account? Create one
+        </a>
+      </div>
+      {err && <p className="text-sm text-red-500">{err}</p>}
     </div>
   );
 }

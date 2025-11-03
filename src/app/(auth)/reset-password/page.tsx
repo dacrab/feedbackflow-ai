@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import Button from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Input from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
+import { extractErrorMessage } from "@/lib/utils/auth";
+import { calculatePasswordScore, isPasswordValid } from "@/lib/utils/password";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -15,16 +15,24 @@ export default function ResetPasswordPage() {
   const [show, setShow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
   const router = useRouter();
 
-  const score = useMemo(() => {
-    const lengthOk = password.length >= 8;
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSymbol = /[^A-Za-z0-9]/.test(password);
-    return [lengthOk, hasUpper, hasLower, hasNumber, hasSymbol].filter(Boolean).length;
-  }, [password]);
+  useEffect(() => {
+    const checkSession = async () => {
+      const supa = createBrowserClient();
+      const { data } = await supa.auth.getSession();
+      if (!data.session) {
+        toast.error("Invalid or expired reset link. Please request a new one.");
+        router.push("/login");
+      } else {
+        setHasRecoverySession(true);
+      }
+    };
+    checkSession();
+  }, [router]);
+
+  const score = useMemo(() => calculatePasswordScore(password), [password]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +41,7 @@ export default function ResetPasswordPage() {
       setErr("Passwords do not match.");
       return;
     }
-    if (score < 4) {
+    if (!isPasswordValid(score)) {
       setErr("Password does not meet security requirements.");
       return;
     }
@@ -42,97 +50,108 @@ export default function ResetPasswordPage() {
       const supa = createBrowserClient();
       const { error } = await supa.auth.updateUser({ password });
       if (error) throw error;
-      toast.success("Password updated");
+      toast.success("Password updated successfully");
       router.push("/dashboard");
+      router.refresh();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = extractErrorMessage(e);
       setErr(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <div className="text-left">
-            <Link href="/" className="text-sm inline-flex items-center gap-2">
-              <span aria-hidden>←</span> Back
-            </Link>
-          </div>
-          <CardTitle className="text-2xl font-semibold">Set a new password</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            <div className="space-y-1">
-              <label htmlFor="password" className="text-sm">
-                New password
-              </label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={show ? "text" : "password"}
-                  minLength={8}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Choose a strong password"
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShow((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs underline"
-                >
-                  {show ? "Hide" : "Show"}
-                </button>
-              </div>
-              <div className="mt-2">
-                <div className="h-1.5 w-full bg-muted rounded">
-                  <div
-                    className={
-                      "h-1.5 rounded transition-all " +
-                      (score <= 1
-                        ? "bg-red-500 w-1/5"
-                        : score === 2
-                          ? "bg-orange-500 w-2/5"
-                          : score === 3
-                            ? "bg-yellow-500 w-3/5"
-                            : score === 4
-                              ? "bg-lime-500 w-4/5"
-                              : "bg-green-600 w-full")
-                    }
-                  />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Use at least 8 characters with a mix of upper, lower, number, and symbol.
-                </p>
-              </div>
-            </div>
+  if (!hasRecoverySession) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-2 text-left">
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Checking link</span>
+          <h2 className="text-3xl font-semibold leading-tight text-foreground">Validating reset session</h2>
+          <p className="text-sm text-muted-foreground">Please wait...</p>
+        </div>
+      </div>
+    );
+  }
 
-            <div className="space-y-1">
-              <label htmlFor="confirm" className="text-sm">
-                Confirm password
-              </label>
-              <Input
-                id="confirm"
-                type={show ? "text" : "password"}
-                required
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Re-enter your password"
-                autoComplete="new-password"
+  return (
+    <div className="space-y-8">
+      <div className="space-y-2 text-left">
+        <span className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Finalize access</span>
+        <h2 className="text-3xl font-semibold leading-tight text-foreground">Set a new password</h2>
+        <p className="text-sm text-muted-foreground">
+          Update your credentials to get back into FeedbackFlow with full access.
+        </p>
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <div className="space-y-2 text-sm">
+          <label htmlFor="password" className="font-medium text-muted-foreground">
+            New password
+          </label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={show ? "text" : "password"}
+              minLength={8}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Choose a strong password"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShow((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-wide text-muted-foreground underline"
+            >
+              {show ? "Hide" : "Show"}
+            </button>
+          </div>
+          <div className="space-y-2 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_92%,transparent)] p-3">
+            <div className="h-1.5 w-full rounded-full bg-[color-mix(in_oklab,var(--accent)_8%,var(--background))]">
+              <div
+                className={
+                  "h-1.5 rounded-full transition-all " +
+                  (score <= 1
+                    ? "bg-red-400 w-1/5"
+                    : score === 2
+                      ? "bg-orange-400 w-2/5"
+                      : score === 3
+                        ? "bg-yellow-400 w-3/5"
+                        : score === 4
+                          ? "bg-lime-500 w-4/5"
+                          : "bg-emerald-500 w-full")
+                }
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Use at least 8 characters with upper, lower, number, and symbol for best security.
+            </p>
+          </div>
+        </div>
 
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? "Updating…" : "Update password"}
-            </Button>
-          </form>
-          {err && <p className="text-red-600 text-sm mt-2">{err}</p>}
-        </CardContent>
-      </Card>
+        <div className="space-y-2 text-sm">
+          <label htmlFor="confirm" className="font-medium text-muted-foreground">
+            Confirm password
+          </label>
+          <Input
+            id="confirm"
+            type={show ? "text" : "password"}
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Re-enter your password"
+            autoComplete="new-password"
+          />
+        </div>
+
+        <Button className="w-full" type="submit" disabled={isLoading}>
+          {isLoading ? "Updating…" : "Update password"}
+        </Button>
+      </form>
+
+      {err && <p className="text-sm text-red-500">{err}</p>}
     </div>
   );
 }
