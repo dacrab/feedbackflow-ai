@@ -1,7 +1,8 @@
 import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
-// Load environment variables from .env.local in dev
+// Load environment variables from .env and .env.local for tooling/CLI
+config({ path: ".env" });
 config({ path: ".env.local" });
 
 const dbUrl = process.env["DATABASE_URL"];

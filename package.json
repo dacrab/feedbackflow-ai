@@ -8,10 +8,14 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
+    "lint:fix": "biome check --apply",
+    "typecheck": "tsc --noEmit",
+    "check": "biome check && tsc --noEmit && knip",
     "knip": "knip",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "bun src/db/seed.ts"
+    "db:seed": "bun src/db/seed.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.40",
