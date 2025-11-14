@@ -2,8 +2,10 @@
  * Generic CRUD service for user sources and notifications
  */
 
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { userNotifications, userSources } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
 import type {
   TransformedNotificationRow,
   TransformedSourceRow,
@@ -50,57 +52,82 @@ export class CRUDService {
   }
 
   async list(): Promise<TransformedType[]> {
-    const supa = await createRouteHandlerClient();
-    const { data, error } = await supa
-      .from(this.table)
-      .select("id, type, config, enabled, secret_cipher")
-      .eq("user_id", this.userId)
-      .order("created_at", { ascending: false });
+    if (this.table === "user_sources") {
+      const rows = await db
+        .select({
+          id: userSources.id,
+          type: userSources.type,
+          config: userSources.config,
+          enabled: userSources.enabled,
+          secret_cipher: userSources.secretCipher,
+        })
+        .from(userSources)
+        .where(eq(userSources.userId, this.userId))
+        .orderBy(desc(userSources.createdAt));
 
-    if (error) throw new Error(error.message);
-    return ((data || []) as RowType[]).map(transformRowWithSecret) as TransformedType[];
+      return (rows as RowType[]).map(transformRowWithSecret) as TransformedType[];
+    }
+
+    const rows = await db
+      .select({
+        id: userNotifications.id,
+        type: userNotifications.type,
+        config: userNotifications.config,
+        enabled: userNotifications.enabled,
+        secret_cipher: userNotifications.secretCipher,
+      })
+      .from(userNotifications)
+      .where(eq(userNotifications.userId, this.userId))
+      .orderBy(desc(userNotifications.createdAt));
+
+    return (rows as RowType[]).map(transformRowWithSecret) as TransformedType[];
   }
 
   async create(input: CreateSourceInput | CreateNotificationInput): Promise<TransformedType> {
-    const supa = await createRouteHandlerClient();
-
     if (this.table === "user_sources") {
       const { type, repo, token, enabled = true } = input as CreateSourceInput;
-      const { data, error } = await supa
-        .from(this.table)
-        .insert({
-          user_id: this.userId,
+      const [row] = await db
+        .insert(userSources)
+        .values({
+          userId: this.userId,
           type,
           config: { repo },
-          secret_cipher: token ? encrypt(token) : null,
+          secretCipher: token ? encrypt(token) : null,
           enabled,
         })
-        .select("id, type, config, enabled, secret_cipher")
-        .single();
+        .returning({
+          id: userSources.id,
+          type: userSources.type,
+          config: userSources.config,
+          enabled: userSources.enabled,
+          secret_cipher: userSources.secretCipher,
+        });
 
-      if (error) throw new Error(error.message);
-      return transformRowWithSecret(data as RowType);
+      return transformRowWithSecret(row as RowType) as TransformedType;
     } else {
       const { type, webhook, enabled = true } = input as CreateNotificationInput;
-      const { data, error } = await supa
-        .from(this.table)
-        .insert({
-          user_id: this.userId,
+      const [row] = await db
+        .insert(userNotifications)
+        .values({
+          userId: this.userId,
           type,
           config: { kind: "slack" },
-          secret_cipher: encrypt(webhook),
+          secretCipher: encrypt(webhook),
           enabled,
         })
-        .select("id, type, config, enabled, secret_cipher")
-        .single();
+        .returning({
+          id: userNotifications.id,
+          type: userNotifications.type,
+          config: userNotifications.config,
+          enabled: userNotifications.enabled,
+          secret_cipher: userNotifications.secretCipher,
+        });
 
-      if (error) throw new Error(error.message);
-      return transformRowWithSecret(data as RowType);
+      return transformRowWithSecret(row as RowType) as TransformedType;
     }
   }
 
   async update(id: string, input: UpdateSourceInput | UpdateNotificationInput): Promise<void> {
-    const supa = await createRouteHandlerClient();
     const updates: Record<string, unknown> = {};
 
     if (this.table === "user_sources") {
@@ -108,29 +135,34 @@ export class CRUDService {
       if (typeof enabled === "boolean") updates["enabled"] = enabled;
       if (typeof repo === "string") updates["config"] = { repo };
       if (typeof token === "string") {
-        updates["secret_cipher"] = token ? encrypt(token) : null;
+        updates["secretCipher"] = token ? encrypt(token) : null;
       }
+      await db
+        .update(userSources)
+        .set(updates)
+        .where(and(eq(userSources.id, id), eq(userSources.userId, this.userId)));
     } else {
       const { enabled, webhook } = input as UpdateNotificationInput;
       if (typeof enabled === "boolean") updates["enabled"] = enabled;
       if (typeof webhook === "string") {
-        updates["secret_cipher"] = webhook ? encrypt(webhook) : null;
+        updates["secretCipher"] = webhook ? encrypt(webhook) : null;
       }
+      await db
+        .update(userNotifications)
+        .set(updates)
+        .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, this.userId)));
     }
-
-    const { error } = await supa
-      .from(this.table)
-      .update(updates)
-      .eq("id", id)
-      .eq("user_id", this.userId);
-
-    if (error) throw new Error(error.message);
   }
 
   async delete(id: string): Promise<void> {
-    const supa = await createRouteHandlerClient();
-    const { error } = await supa.from(this.table).delete().eq("id", id).eq("user_id", this.userId);
-
-    if (error) throw new Error(error.message);
+    if (this.table === "user_sources") {
+      await db
+        .delete(userSources)
+        .where(and(eq(userSources.id, id), eq(userSources.userId, this.userId)));
+    } else {
+      await db
+        .delete(userNotifications)
+        .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, this.userId)));
+    }
   }
 }

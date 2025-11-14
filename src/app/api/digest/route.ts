@@ -1,31 +1,28 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { db } from "@/db/client";
+import { userNotifications } from "@/db/schema";
 import { notifySlack } from "@/lib/notify";
 import { sendDailyDigest } from "@/lib/services/notification-service";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createServerClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/utils/api";
 import { getDateNHoursAgo } from "@/lib/utils/date";
 
 export async function GET(req: Request) {
   const cron = req.headers.get("x-cron-token");
   if (cron !== process.env["CRON_TOKEN"]) {
-    const supa = await createServerClient();
-    const { data: auth } = await supa.auth.getUser();
-    if (!auth.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    await requireAuth();
   }
 
-  const admin = createAdminClient();
   const since = getDateNHoursAgo(24);
 
   // Get all users with enabled notifications
-  const { data: users, error: usersErr } = await admin
-    .from("user_notifications")
-    .select("user_id")
-    .eq("enabled", true);
-
-  if (usersErr) return NextResponse.json({ error: usersErr.message }, { status: 500 });
+  const rows = await db
+    .select({ userId: userNotifications.userId })
+    .from(userNotifications)
+    .where(eq(userNotifications.enabled, true));
 
   // Get unique user IDs
-  const userIds = [...new Set((users || []).map((u) => u.user_id as string))];
+  const userIds = [...new Set(rows.map((u) => u.userId as string))];
 
   let total = 0;
   let totalHigh = 0;

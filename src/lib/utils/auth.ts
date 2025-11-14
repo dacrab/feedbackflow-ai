@@ -3,16 +3,6 @@
  */
 
 /**
- * Get the redirect URL for auth callbacks
- * @param next - Optional next path after callback
- */
-export function getAuthRedirectTo(next?: string): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  const base = `${window.location.origin}/auth/callback`;
-  return next ? `${base}?next=${next}` : base;
-}
-
-/**
  * Extract error message from unknown error type
  */
 export function extractErrorMessage(error: unknown): string {

@@ -1,33 +1,66 @@
+import { and, eq } from "drizzle-orm";
 import Link from "next/link";
+import { auth } from "@/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createRSCClient } from "@/lib/supabase/server";
-import type { FeedbackItem } from "@/lib/types";
+import { db } from "@/db/client";
+import { feedbackAnalyses, feedbackItems } from "@/db/schema";
+import type { FeedbackAnalysis, FeedbackItem, FeedbackStatus } from "@/lib/types";
 import { formatDateUTC } from "@/lib/utils/date";
 import { SentimentBadge } from "@/lib/utils/sentiment";
 import StatusChanger from "./status-changer";
 
 async function getItem(userId: string, id: string): Promise<FeedbackItem> {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("feedback_items")
-    .select(
-      `id, source, raw_content, original_timestamp, created_at, feedback_analyses ( sentiment, topics, severity_score, summary, status )`,
-    )
-    .eq("user_id", userId)
-    .eq("id", id)
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data as FeedbackItem;
+  const [row] = await db
+    .select({
+      id: feedbackItems.id,
+      source: feedbackItems.source,
+      raw_content: feedbackItems.rawContent,
+      original_timestamp: feedbackItems.originalTimestamp,
+      created_at: feedbackItems.createdAt,
+      sentiment: feedbackAnalyses.sentiment,
+      topics: feedbackAnalyses.topics,
+      severity_score: feedbackAnalyses.severityScore,
+      summary: feedbackAnalyses.summary,
+      status: feedbackAnalyses.status,
+    })
+    .from(feedbackItems)
+    .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+    .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, id)))
+    .limit(1);
+
+  if (!row) throw new Error("not found");
+
+  const createdAt = row.created_at;
+  const originalTs = row.original_timestamp;
+
+  const analysis: FeedbackAnalysis | null =
+    row.sentiment == null
+      ? null
+      : {
+          sentiment: row.sentiment,
+          topics: (row.topics ?? []) as string[],
+          severity_score: row.severity_score ?? 0,
+          summary: row.summary ?? "",
+          status: (row.status ?? "New") as FeedbackStatus,
+        };
+
+  return {
+    id: row.id,
+    source: row.source,
+    raw_content: row.raw_content,
+    original_timestamp:
+      typeof originalTs === "string" ? originalTs : (originalTs?.toISOString() ?? ""),
+    created_at: typeof createdAt === "string" ? createdAt : (createdAt?.toISOString() ?? ""),
+    feedback_analyses: analysis,
+  };
 }
 
 export default async function FeedbackDetail({ params }: { params: { id: string } }) {
-  const supa = await createRSCClient();
-  const { data } = await supa.auth.getUser();
-  if (!data.user) throw new Error("unauthorized");
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | null)?.id;
+  if (!userId) throw new Error("unauthorized");
 
-  const row = await getItem(data.user.id, params.id);
+  const row = await getItem(userId, params.id);
   const analysis = Array.isArray(row.feedback_analyses)
     ? row.feedback_analyses[0]
     : row.feedback_analyses;

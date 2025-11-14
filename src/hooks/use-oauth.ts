@@ -2,10 +2,10 @@
  * Reusable hook for OAuth authentication
  */
 
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createBrowserClient } from "@/lib/supabase/client";
-import { extractErrorMessage, getAuthRedirectTo } from "@/lib/utils/auth";
+import { extractErrorMessage } from "@/lib/utils/auth";
 
 type OAuthProvider = "github" | "google";
 
@@ -15,12 +15,10 @@ export function useOAuth() {
   const signInWithOAuth = async (provider: OAuthProvider) => {
     try {
       setIsLoading(true);
-      const supa = createBrowserClient();
-      const redirectTo = getAuthRedirectTo();
-      await supa.auth.signInWithOAuth({
-        provider,
-        ...(redirectTo ? { options: { redirectTo } } : {}),
-      });
+      const result = await signIn(provider, { callbackUrl: "/dashboard", redirect: false });
+      if (result?.error) {
+        toast.error(result.error);
+      }
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     } finally {

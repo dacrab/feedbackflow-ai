@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-const ENC_SECRET = process.env["SUPABASE_ENC_KEY"] || "dev-insecure-key";
+const ENC_SECRET = process.env["ENCRYPTION_KEY"] || "dev-insecure-key";
 
 function getKey() {
   return crypto.createHash("sha256").update(ENC_SECRET).digest();

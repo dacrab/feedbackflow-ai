@@ -33,7 +33,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             </ul>
           </div>
           <p className="text-xs text-muted-foreground/80">
-            Powered by Supabase Auth, Postgres, and Edge Functions. Deploy anywhere Next.js runs.
+            Powered by Auth.js, Neon Postgres, and Vercel Cron. Deploy anywhere Next.js runs.
           </p>
         </div>
         <div className="pointer-events-none absolute inset-0 -z-10">

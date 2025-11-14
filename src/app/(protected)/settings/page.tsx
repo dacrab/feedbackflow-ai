@@ -331,11 +331,8 @@ export default function SettingsPage() {
 
       <div className="rounded-2xl border border-border/60 bg-background/80 px-5 py-4 text-xs text-muted-foreground">
         <p>
-          For Supabase local dev, magic link emails appear in Inbucket at{" "}
-          <span className="font-medium">http://localhost:54324/</span>. For Supabase Cloud,
-          configure SMTP in Authentication → Email and add{" "}
-          <span className="font-medium">http://localhost:3000/auth/callback</span> to Allowed
-          Redirect URLs.
+          This workspace uses Auth.js with credentials and OAuth providers. Configure provider
+          credentials via environment variables and keep your API keys secure.
         </p>
       </div>
     </div>

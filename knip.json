@@ -14,8 +14,7 @@
     "src/app/globals.css",
     "next-env.d.ts",
     ".next/**",
-    "node_modules/**",
-    "supabase/**"
+    "node_modules/**"
   ],
   "ignoreDependencies": [
     "@biomejs/biome",

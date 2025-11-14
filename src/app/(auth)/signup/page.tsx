@@ -1,5 +1,6 @@
 "use client";
 
+import { signIn } from "next-auth/react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import EmailField from "@/components/auth/email-field";
@@ -8,13 +9,7 @@ import PasswordField from "@/components/auth/password-field";
 import Button from "@/components/ui/button";
 import { UserPlusIcon } from "@/components/ui/icons";
 import { useOAuth } from "@/hooks/use-oauth";
-import { createBrowserClient } from "@/lib/supabase/client";
-import {
-  extractErrorMessage,
-  getAuthRedirectTo,
-  normalizeEmail,
-  validateEmail,
-} from "@/lib/utils/auth";
+import { extractErrorMessage, normalizeEmail, validateEmail } from "@/lib/utils/auth";
 import { calculatePasswordScore, isPasswordValid } from "@/lib/utils/password";
 
 export default function SignupPage() {
@@ -23,13 +18,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const honeypotRef = useRef<HTMLInputElement | null>(null);
-  const [isVerifyStep, setIsVerifyStep] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [isVerifyStep] = useState(false);
+  const [verificationEmail] = useState<string | null>(null);
   const { signInWithOAuth, isLoading: oauthLoading } = useOAuth();
 
   const passwordScore = calculatePasswordScore(password);
@@ -60,72 +54,47 @@ export default function SignupPage() {
     }
     try {
       setIsLoading(true);
-      const supa = createBrowserClient();
-      const redirectTo = getAuthRedirectTo();
-      const { error, data } = await supa.auth.signUp({
-        email: normalizedEmail,
-        password,
-        ...(redirectTo ? { options: { emailRedirectTo: redirectTo } } : {}),
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
-      if (error) {
-        const m = String(error.message || "Signup failed");
-        if (m.toLowerCase().includes("already") || m.toLowerCase().includes("exists")) {
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        const message = body.error || "Signup failed";
+        if (res.status === 409) {
           toast.message("Account already exists. Please sign in.");
         } else {
-          toast.error(m);
+          toast.error(message);
         }
-        setErr(m);
+        setErr(message);
         return;
       }
-      if (data?.user) {
-        // Sign out if session was created (email verification required)
-        if (data.session) {
-          await supa.auth.signOut();
-        }
-        toast.success("Account created. Check your email to confirm.");
-        setMsg("Account created. Please check your email to confirm and then log in.");
-        setIsVerifyStep(true);
-        setVerificationEmail(normalizedEmail);
-        // Fire an immediate resend to ensure the email is sent
-        try {
-          await supa.auth.resend({
-            type: "signup",
-            email: normalizedEmail,
-            ...(redirectTo ? { options: { emailRedirectTo: redirectTo } } : {}),
-          });
-          toast.success("Verification email sent");
-        } catch (resendErr) {
-          // Don't break UX; surface as a non-blocking toast
-          toast.error(`Failed to send email: ${extractErrorMessage(resendErr)}`);
-        }
+
+      toast.success("Account created. Signing you in…");
+      const signInResult = await signIn("credentials", {
+        email: normalizedEmail,
+        password,
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+
+      if (signInResult?.error) {
+        setMsg("Account created. Please sign in with your credentials.");
+        toast.error(signInResult.error);
         return;
       }
+
+      setMsg("Account created. Redirecting to your dashboard…");
+      window.location.assign(signInResult?.url ?? "/dashboard");
+      return;
     } catch (e: unknown) {
       const message = extractErrorMessage(e);
       setErr(message);
       toast.error(message);
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function onResendVerification() {
-    try {
-      setResending(true);
-      const supa = createBrowserClient();
-      const redirectTo = getAuthRedirectTo();
-      const targetEmail = normalizeEmail(verificationEmail || email);
-      const { error } = await supa.auth.resend({
-        type: "signup",
-        email: targetEmail,
-        ...(redirectTo ? { options: { emailRedirectTo: redirectTo } } : {}),
-      });
-      if (error) throw error;
-      toast.success("Verification email resent");
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    } finally {
-      setResending(false);
     }
   }
 
@@ -146,29 +115,10 @@ export default function SignupPage() {
       {isVerifyStep ? (
         <div className="space-y-6 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] p-6">
           <div className="text-sm leading-relaxed text-muted-foreground">
-            We sent a verification link to{" "}
-            <span className="font-medium text-foreground">{verificationEmail || email}</span>. Check
-            your inbox and confirm to finish creating your account.
+            Account created for{" "}
+            <span className="font-medium text-foreground">{verificationEmail || email}</span>. You
+            can now sign in with your credentials.
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={onResendVerification} disabled={resending}>
-              {resending ? "Resending…" : "Resend email"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsVerifyStep(false);
-                setMsg(null);
-                setErr(null);
-              }}
-            >
-              Use a different email
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground/80">
-            Didn't receive it? Check spam, then resend. You can also switch emails anytime.
-          </p>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-5" noValidate>

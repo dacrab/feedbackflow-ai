@@ -1,9 +1,16 @@
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { db } from "@/db/client";
+import {
+  feedbackAnalyses,
+  feedbackItems,
+  ingestRuns,
+  userSettings,
+  userSources,
+} from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
-import { notifySlack } from "@/lib/notify";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getDateNHoursAgo } from "@/lib/utils/date";
 
 type GithubIssue = {
@@ -58,22 +65,26 @@ async function fetchIssues(repo: string, sinceISO: string, token?: string) {
 
 type UserSource = {
   id: string;
-  user_id: string;
+  userId: string;
   type: "github";
   config: { repo?: string } | null;
-  secret_cipher: string | null;
+  secretCipher: string | null;
   enabled: boolean;
 };
 
-async function getUserLLMOpts(admin: ReturnType<typeof createAdminClient>, userId: string) {
-  const { data: settings } = await admin
-    .from("user_settings")
-    .select("provider, model, api_key_cipher")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
+async function getUserLLMOpts(userId: string) {
+  const [settings] = await db
+    .select({
+      provider: userSettings.provider,
+      model: userSettings.model,
+      apiKeyCipher: userSettings.apiKeyCipher,
+    })
+    .from(userSettings)
+    .where(eq(userSettings.userId, userId))
+    .limit(1);
+
   if (!settings) return undefined;
-  const apiKey = settings.api_key_cipher ? decrypt(settings.api_key_cipher as string) : undefined;
+  const apiKey = settings.apiKeyCipher ? decrypt(settings.apiKeyCipher) : undefined;
   const base = {
     provider: settings.provider as "google" | "openai" | "anthropic",
     model: settings.model as string,
@@ -88,14 +99,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const admin = createAdminClient();
-
-    // Fetch enabled user sources; if none, fallback to legacy env-based single source
-    const { data: sources, error: srcErr } = await admin
-      .from("user_sources")
-      .select("id, user_id, type, config, secret_cipher, enabled")
-      .eq("enabled", true);
-    if (srcErr) throw srcErr;
+    // Fetch enabled user sources
+    const sources = await db
+      .select({
+        id: userSources.id,
+        userId: userSources.userId,
+        type: userSources.type,
+        config: userSources.config,
+        secretCipher: userSources.secretCipher,
+        enabled: userSources.enabled,
+      })
+      .from(userSources)
+      .where(eq(userSources.enabled, true));
 
     const perUserSettings = new Map<string, ReturnType<typeof getUserLLMOpts>>();
 
@@ -104,68 +119,73 @@ export async function POST(req: Request) {
     let totalAnalyzed = 0;
 
     if (sources && sources.length > 0) {
-      for (const src of sources as unknown as UserSource[]) {
+      for (const src of sources as UserSource[]) {
         if (src.type !== "github") continue;
         const repo = src.config?.repo;
         if (!repo) continue;
-        const ghToken = src.secret_cipher ? decrypt(src.secret_cipher) : undefined;
+        const ghToken = src.secretCipher ? decrypt(src.secretCipher) : undefined;
 
         // compute since from latest per user/source
-        const { data: latestRow } = await admin
-          .from("feedback_items")
-          .select("original_timestamp")
-          .eq("user_id", src.user_id)
-          .eq("source", "github")
-          .order("original_timestamp", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const sinceISO = latestRow?.original_timestamp ?? getDateNHoursAgo(24);
+        const [latestRow] = await db
+          .select({ originalTimestamp: feedbackItems.originalTimestamp })
+          .from(feedbackItems)
+          .where(and(eq(feedbackItems.userId, src.userId), eq(feedbackItems.source, "github")))
+          .orderBy(desc(feedbackItems.originalTimestamp))
+          .limit(1);
+
+        const sinceISO =
+          (latestRow?.originalTimestamp instanceof Date
+            ? latestRow.originalTimestamp.toISOString()
+            : latestRow?.originalTimestamp) ?? getDateNHoursAgo(24);
 
         const issues = await fetchIssues(repo, sinceISO, ghToken);
         totalFetched += issues.length;
         const rows = issues.map((i) => ({
-          user_id: src.user_id,
+          userId: src.userId,
           source: "github" as const,
-          external_id: String(i.id),
-          raw_content: `${i.title}\n\n${i.body ?? ""}`.slice(0, 15000),
-          original_timestamp: i.created_at,
+          externalId: String(i.id),
+          rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, 15000),
+          originalTimestamp: new Date(i.created_at),
         }));
 
-        const externalIds = rows.map((r) => r.external_id);
-        const { data: existing } = await admin
-          .from("feedback_items")
-          .select("external_id")
-          .eq("user_id", src.user_id)
-          .eq("source", "github")
-          .in("external_id", externalIds);
-        const existingSet = new Set(
-          ((existing || []) as { external_id: string }[]).map((e) => e.external_id),
-        );
-        const toInsert = rows.filter((r) => !existingSet.has(r.external_id));
+        const externalIds = rows.map((r) => r.externalId);
+        const existing = externalIds.length
+          ? await db
+              .select({ externalId: feedbackItems.externalId })
+              .from(feedbackItems)
+              .where(
+                and(
+                  eq(feedbackItems.userId, src.userId),
+                  eq(feedbackItems.source, "github"),
+                  inArray(feedbackItems.externalId, externalIds),
+                ),
+              )
+          : [];
 
-        let inserted: { id: string; raw_content: string }[] = [];
+        const existingSet = new Set(existing.map((e) => e.externalId));
+        const toInsert = rows.filter((r) => !existingSet.has(r.externalId));
+
+        let inserted: { id: string; rawContent: string }[] = [];
         if (toInsert.length > 0) {
-          const { data: ins } = await admin
-            .from("feedback_items")
-            .insert(toInsert)
-            .select("id, raw_content");
-          inserted = (ins || []) as { id: string; raw_content: string }[];
+          inserted = await db
+            .insert(feedbackItems)
+            .values(toInsert)
+            .returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent });
         }
         totalInserted += inserted.length;
 
         // start per-user ingest run
-        const { data: runStart } = await admin
-          .from("ingest_runs")
-          .insert({ user_id: src.user_id, fetched: issues.length })
-          .select("id")
-          .single();
+        const [runStart] = await db
+          .insert(ingestRuns)
+          .values({ userId: src.userId, fetched: issues.length })
+          .returning({ id: ingestRuns.id });
         const runId = runStart?.id as string | undefined;
 
         // Resolve user-specific LLM options
-        let optsPromise = perUserSettings.get(src.user_id);
+        let optsPromise = perUserSettings.get(src.userId);
         if (!optsPromise) {
-          optsPromise = getUserLLMOpts(admin, src.user_id);
-          perUserSettings.set(src.user_id, optsPromise);
+          optsPromise = getUserLLMOpts(src.userId);
+          perUserSettings.set(src.userId, optsPromise);
         }
         const opts = await optsPromise;
 
@@ -173,21 +193,31 @@ export async function POST(req: Request) {
         if (inserted && inserted.length > 0) {
           for (const item of inserted) {
             try {
-              const analysis = await analyzeFeedback(item.raw_content, 2, opts);
-              const { error: aErr } = await admin.from("feedback_analyses").upsert(
-                {
-                  user_id: src.user_id,
-                  feedback_item_id: item.id,
+              const analysis = await analyzeFeedback(item.rawContent, 2, opts);
+
+              await db
+                .insert(feedbackAnalyses)
+                .values({
+                  userId: src.userId,
+                  feedbackItemId: item.id,
                   sentiment: analysis.sentiment,
                   topics: analysis.topics,
-                  severity_score: analysis.severity_score,
+                  severityScore: analysis.severity_score,
                   summary: analysis.summary,
-                },
-                { onConflict: "feedback_item_id" },
-              );
-              if (!aErr) analyzed++;
+                })
+                .onConflictDoUpdate({
+                  target: feedbackAnalyses.feedbackItemId,
+                  set: {
+                    sentiment: analysis.sentiment,
+                    topics: analysis.topics,
+                    severityScore: analysis.severity_score,
+                    summary: analysis.summary,
+                  },
+                });
+
+              analyzed++;
               if (analysis.severity_score >= 4) {
-                await notifyHighSeverityFeedback(src.user_id, {
+                await notifyHighSeverityFeedback(src.userId, {
                   ...analysis,
                   status: "New",
                 });
@@ -200,89 +230,17 @@ export async function POST(req: Request) {
         totalAnalyzed += analyzed;
 
         if (runId) {
-          await admin
-            .from("ingest_runs")
-            .update({
+          await db
+            .update(ingestRuns)
+            .set({
               ok: true,
-              finished_at: new Date().toISOString(),
+              finishedAt: new Date(),
               inserted: inserted?.length ?? 0,
               analyzed,
             })
-            .eq("id", runId);
+            .where(eq(ingestRuns.id, runId));
         }
       }
-    } else {
-      // Legacy fallback: use single env-configured repository
-      const repo = process.env["INGEST_REPO"];
-      if (!repo) {
-        return NextResponse.json(
-          { error: "No user sources configured and INGEST_REPO missing" },
-          { status: 400 },
-        );
-      }
-      const ghToken = process.env["GITHUB_TOKEN"];
-      const { data: latestRow } = await admin
-        .from("feedback_items")
-        .select("original_timestamp")
-        .eq("source", "github")
-        .order("original_timestamp", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const sinceISO = latestRow?.original_timestamp ?? getDateNHoursAgo(24);
-      const issues = await fetchIssues(repo, sinceISO, ghToken ?? undefined);
-      totalFetched += issues.length;
-      const rows = issues.map((i) => ({
-        source: "github" as const,
-        external_id: String(i.id),
-        raw_content: `${i.title}\n\n${i.body ?? ""}`.slice(0, 15000),
-        original_timestamp: i.created_at,
-      }));
-      const externalIds = rows.map((r) => r.external_id);
-      const { data: existing } = await admin
-        .from("feedback_items")
-        .select("external_id")
-        .eq("source", "github")
-        .in("external_id", externalIds);
-      const existingSet = new Set(
-        ((existing || []) as { external_id: string }[]).map((e) => e.external_id),
-      );
-      const toInsert = rows.filter((r) => !existingSet.has(r.external_id));
-      const { data: ins } = await admin
-        .from("feedback_items")
-        .insert(toInsert)
-        .select("id, raw_content");
-      const inserted = (ins || []) as { id: string; raw_content: string }[];
-      totalInserted += inserted.length;
-      let analyzed = 0;
-      for (const item of inserted) {
-        try {
-          const analysis = await analyzeFeedback(item.raw_content, 2, undefined);
-          const { error: aErr } = await admin.from("feedback_analyses").upsert(
-            {
-              feedback_item_id: item.id,
-              sentiment: analysis.sentiment,
-              topics: analysis.topics,
-              severity_score: analysis.severity_score,
-              summary: analysis.summary,
-            },
-            { onConflict: "feedback_item_id" },
-          );
-          if (!aErr) analyzed++;
-          if (analysis.severity_score >= 4) {
-            // Legacy mode: no user_id, use global webhook only
-            await notifySlack(
-              `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`,
-            );
-          }
-        } catch {}
-      }
-      totalAnalyzed += analyzed;
-      await admin.from("ingest_runs").insert({
-        fetched: issues.length,
-        inserted: inserted.length,
-        analyzed,
-        ok: true,
-      });
     }
 
     return NextResponse.json({
@@ -292,10 +250,6 @@ export async function POST(req: Request) {
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    try {
-      const admin = createAdminClient();
-      await admin.from("ingest_runs").insert({ ok: false, error: msg });
-    } catch {}
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import EmailField from "@/components/auth/email-field";
@@ -8,8 +9,7 @@ import OAuthProviders from "@/components/auth/oauth-providers";
 import PasswordField from "@/components/auth/password-field";
 import Button from "@/components/ui/button";
 import { useOAuth } from "@/hooks/use-oauth";
-import { createBrowserClient } from "@/lib/supabase/client";
-import { extractErrorMessage, getAuthRedirectTo, normalizeEmail } from "@/lib/utils/auth";
+import { extractErrorMessage, normalizeEmail } from "@/lib/utils/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -24,43 +24,24 @@ export default function LoginPage() {
     setErr(null);
     try {
       setIsLoading(true);
-      const supa = createBrowserClient();
-      const { data, error } = await supa.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      if (data.user && !data.user.email_confirmed_at) {
-        toast.error("Please verify your email before signing in. Check your inbox.");
-        await supa.auth.signOut();
+      const result = await signIn("credentials", {
+        email: normalizeEmail(email),
+        password,
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+      if (result?.error) {
+        setErr(result.error);
+        toast.error(result.error);
         return;
       }
       toast.success("Signed in");
-      router.push("/dashboard");
+      router.push(result?.url ?? "/dashboard");
       router.refresh();
     } catch (e: unknown) {
       const msg = extractErrorMessage(e);
       setErr(msg);
       toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function onResetPassword() {
-    try {
-      if (!email) {
-        toast.message("Enter your email to reset password.");
-        return;
-      }
-      setIsLoading(true);
-      const supa = createBrowserClient();
-      const redirectTo = getAuthRedirectTo("/reset-password");
-      const { error } = await supa.auth.resetPasswordForEmail(
-        normalizeEmail(email),
-        redirectTo ? { redirectTo } : undefined,
-      );
-      if (error) throw error;
-      toast.success("Password reset email sent");
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
@@ -96,13 +77,6 @@ export default function LoginPage() {
       </form>
       <OAuthProviders onProviderClick={signInWithOAuth} disabled={isLoading || oauthLoading} />
       <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-        <button
-          type="button"
-          onClick={onResetPassword}
-          className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground underline"
-        >
-          Forgot password?
-        </button>
         <a href="/signup" className="text-left text-sm font-medium text-foreground underline">
           Need an account? Create one
         </a>

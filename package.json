@@ -8,17 +8,22 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "knip": "knip"
+    "knip": "knip",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "bun src/db/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.40",
     "@ai-sdk/google": "^2.0.26",
     "@ai-sdk/openai": "^2.0.60",
-    "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.78.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "bcryptjs": "^2.4.3",
     "ai": "^5.0.86",
     "chart.js": "^4.5.1",
+    "drizzle-orm": "^0.44.7",
     "next": "16.0.0",
+    "next-auth": "^4",
     "react": "19.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.0",
@@ -31,7 +36,11 @@
     "@types/node": "^20.19.24",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@types/bcryptjs": "^2.4.6",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.7",
     "knip": "^5.67.1",
+    "shadcn": "^3.5.0",
     "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3"
   }

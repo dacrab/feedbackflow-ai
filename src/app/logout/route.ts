@@ -1,8 +1,5 @@
-import { redirect } from "next/navigation";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
 
 export async function POST() {
-  const supa = await createRouteHandlerClient();
-  await supa.auth.signOut();
-  redirect("/login");
+  return NextResponse.redirect("/api/auth/signout?callbackUrl=/login");
 }

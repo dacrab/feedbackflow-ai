@@ -1,5 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/db/client";
+import { feedbackAnalyses } from "@/db/schema";
 import type { FeedbackStatus } from "@/lib/types";
 import { errorResponse, successResponse } from "@/lib/utils/api";
 import { withAuthParams } from "@/lib/utils/route-handler";
@@ -12,14 +14,11 @@ export const PATCH = withAuthParams(async (req, params, user) => {
   const json = await req.json();
   const parsed = StatusBody.safeParse(json);
   if (!parsed.success) return errorResponse("invalid status", 400);
-
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("feedback_analyses")
-    .update({ status: parsed.data.status as FeedbackStatus })
-    .eq("feedback_item_id", params.id)
-    .eq("user_id", user.id);
-
-  if (error) throw new Error(error.message);
+  await db
+    .update(feedbackAnalyses)
+    .set({ status: parsed.data.status as FeedbackStatus })
+    .where(
+      and(eq(feedbackAnalyses.feedbackItemId, params.id), eq(feedbackAnalyses.userId, user.id)),
+    );
   return successResponse({ ok: true });
 });

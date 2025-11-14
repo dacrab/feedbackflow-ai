@@ -69,19 +69,19 @@ duplicate records and handle potential scraping failures or API rate limits grac
 ```
 ### 5) Deployment Requirements
 
-The entire application ( **frontend** , **backend automation** , **database** ) should be deployed with **Supabase** as the core platform:
-● **Frontend:** Deployed on **Vercel** (recommended) or **Netlify** with a **custom domain** (e.g.,
+The entire application ( **frontend** , **backend automation** , **database** ) should be deployed with **Neon Postgres + Vercel** as the core platform:
+● **Frontend:** Deployed on **Vercel** with a **custom domain** (e.g.,
 feedbackflow.dev or a similar professional domain). Preview URLs alone are **not sufficient** — a proper domain is required.
-● **Backend & Automation:** Implement daily ingest via **Supabase Edge Functions** with **Scheduled Triggers** (daily). Alternative: Postgres **pg_cron**.
+● **Backend & Automation:** Implement daily ingest via **Vercel Cron Jobs** calling Next.js API routes (e.g. `/api/ingest`, `/api/digest`). Alternative: Postgres **pg_cron** if you prefer DB‑side scheduling.
 
 
 ```
-● Database: **Supabase Postgres** (managed Postgres with extensions like pgcrypto, pg_trgm, pg_cron as needed).
+● Database: **Neon Postgres** (managed Postgres with Drizzle migrations; RLS optional but recommended).
 ● Evidence Required: In the deliverables, include a demo video showing:
-○ The Supabase dashboard: project, **Auth** enabled, and **RLS** policies.
-○ Deployed **Edge Function** and its **Schedule** (daily) with logs of a successful run.
+○ The Neon project dashboard and a brief look at the schema.
+○ Vercel Cron configuration for the daily ingest/digest jobs and logs of a successful run.
 ○ New data visible in the UI after ingestion.
-○ Any other service used (e.g., Vercel), explaining its role.
+○ Any other service used (e.g., Vercel, Slack), explaining its role.
 ```
 ## 6) Example of the Data Model
 
@@ -97,27 +97,27 @@ severity_score (1..5), summary, status (enum: New/Acknowledged/Actioned), create
 ## 6) Architecture (Concise)
 
 **[Frontend (Next.js + Tailwind)]**
-↓ Auth (**Supabase Auth**)
-**[API Layer (Next.js API Routes + Supabase client, or Supabase Edge Functions)]**
+↓ Auth (**Auth.js / NextAuth**)
+**[API Layer (Next.js API Routes + Drizzle ORM over Neon)]**
 ├── Auth Controller → Users
 ├── Feedback Controller → FeedbackItem + FeedbackAnalysis
 ├── Dashboard Controller → Aggregated metrics
 └── Webhook Controller (optional)
 ↓
-**[Database: Supabase Postgres]**
+**[Database: Neon Postgres]**
 ↑
-**[Cron Job: Supabase Edge Functions Scheduler (daily) or pg_cron]**
+**[Cron Job: Vercel Cron (daily) or pg_cron]**
 1 ⃣ Fetch new feedback
 2 ⃣ Deduplicate
-3 ⃣ Call LLM (OpenAI / Claude)
+3 ⃣ Call LLM (OpenAI / Anthropic / Google)
 4 ⃣ Store analysis + logs
 ↘
 
-### Supabase schema notes
+### Database & schema notes
 - Enums for `sentiment` and `status` improve data integrity and simplify filters.
-- `citext` for user emails ensures case-insensitive uniqueness.
-- `analysis_topics` is a normalized, queryable view of topics; it is auto-synced from `feedback_analyses.topics` via trigger and protected by RLS.
-- All tables are user-scoped (`user_id`), with owner-only RLS using `auth.uid()`.
+- `app_users` contains login identities used by Auth.js; emails are stored case‑normalized and unique.
+- `analysis_topics` is a normalized, queryable view of topics; it is kept in sync with `feedback_analyses.topics`.
+- All tables are user‑scoped (`user_id`), with owner‑only access enforced by application queries and optional Neon RLS.
 
 
 **[External APIs]**

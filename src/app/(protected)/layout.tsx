@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { auth } from "@/auth";
 import Nav from "@/components/nav";
 import ThemeToggle from "@/components/theme-toggle";
 import Button from "@/components/ui/button";
-import { createRSCClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({ children }: { children: ReactNode }) {
-  const supa = await createRSCClient();
-  const { data } = await supa.auth.getUser();
-  if (!data.user) redirect("/login");
+  const session = await auth();
+  if (!session?.user) redirect("/login");
 
   return (
     <div className="relative min-h-screen bg-background text-foreground antialiased">
@@ -58,7 +57,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
             © {new Date().getFullYear()} FeedbackFlow AI · Customer signals at the speed of product.
           </p>
           <p className="text-muted-foreground/80">
-            Powered by Next.js 16, Supabase, and automated LLM pipelines.
+            Powered by Next.js 16, Auth.js, Neon Postgres, and automated LLM pipelines.
           </p>
         </div>
       </footer>

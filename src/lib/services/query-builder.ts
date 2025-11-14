@@ -1,5 +1,5 @@
 /**
- * Reusable query builder utilities for Supabase queries
+ * Reusable query and filtering utilities for feedback lists
  */
 
 import type { FeedbackFilterParams, FeedbackItem } from "@/lib/types";

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRightIcon, ChartBarIcon, DownloadIcon, FilterIcon } from "@/components/ui/icons";
-import { createServerClient } from "@/lib/supabase/server";
 
 const features = [
   {
@@ -26,9 +26,8 @@ const features = [
 ];
 
 export default async function Home() {
-  const supa = await createServerClient();
-  const { data } = await supa.auth.getUser();
-  if (data.user) redirect("/dashboard");
+  const session = await auth();
+  if (session?.user) redirect("/dashboard");
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -91,7 +90,7 @@ export default async function Home() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               FeedbackFlow AI ingests what customers are saying, enriches each signal with
               structured intelligence, and gives teams an inbox built for prioritization. Deploy on
-              Supabase + Vercel with scheduled edge functions in minutes.
+              Neon + Vercel with scheduled cron jobs in minutes.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-3">
@@ -133,8 +132,8 @@ export default async function Home() {
                 Deployment ready
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>Supabase Auth with RLS policies enforced out of the box.</p>
-                <p>Edge function ingest pipeline with retries, logging, and dedupe.</p>
+                <p>Auth.js sessions backed by Neon Postgres.</p>
+                <p>Serverless ingest pipeline with retries, logging, and dedupe.</p>
                 <p>UI built with Next.js App Router, streaming data, and charts.</p>
               </CardContent>
             </Card>
