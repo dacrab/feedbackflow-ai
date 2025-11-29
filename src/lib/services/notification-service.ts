@@ -10,6 +10,44 @@ import { notifySlack, notifySlackTo } from "@/lib/notify";
 import type { FeedbackAnalysis } from "@/lib/types";
 
 /**
+ * Get enabled Slack webhook URLs for a user
+ */
+async function getUserSlackWebhooks(userId: string): Promise<string[]> {
+  const hooks = await db
+    .select({
+      type: userNotifications.type,
+      secretCipher: userNotifications.secretCipher,
+    })
+    .from(userNotifications)
+    .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
+
+  const urls: string[] = [];
+  for (const hook of hooks || []) {
+    if (hook.type === "slack" && hook.secretCipher) {
+      try {
+        const url = decrypt(hook.secretCipher as string);
+        if (url) urls.push(url);
+      } catch {
+        // Ignore decryption errors
+      }
+    }
+  }
+  return urls;
+}
+
+/**
+ * Send message to all user webhooks and global webhook
+ */
+async function notifyAllWebhooks(userId: string, message: string): Promise<void> {
+  const webhooks = await getUserSlackWebhooks(userId);
+  for (const url of webhooks) {
+    await notifySlackTo(url, message);
+  }
+  // Fallback to global webhook if configured
+  await notifySlack(message);
+}
+
+/**
  * Send high-severity notification for a user
  */
 export async function notifyHighSeverityFeedback(
@@ -20,33 +58,7 @@ export async function notifyHighSeverityFeedback(
   if (analysis.severity_score < severityThreshold) return;
 
   const message = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
-
-  // Get user-specific Slack webhooks
-  const hooks = await db
-    .select({
-      type: userNotifications.type,
-      secretCipher: userNotifications.secretCipher,
-      enabled: userNotifications.enabled,
-    })
-    .from(userNotifications)
-    .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
-
-  // Send to user-specific webhooks
-  for (const hook of hooks || []) {
-    if (hook.type === "slack" && hook.secretCipher) {
-      try {
-        const url = decrypt(hook.secretCipher as string);
-        if (url) {
-          await notifySlackTo(url, message);
-        }
-      } catch {
-        // Ignore webhook errors
-      }
-    }
-  }
-
-  // Fallback to global webhook if configured
-  await notifySlack(message);
+  await notifyAllWebhooks(userId, message);
 }
 
 /**
@@ -74,34 +86,15 @@ export async function sendDailyDigest(
     .orderBy(desc(feedbackAnalyses.createdAt));
 
   const highSeverity = analyses.filter((a) => a.severityScore >= 4);
+  const summaryMsg = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${highSeverity.length}.`;
 
-  // Get user's notification webhooks
-  const hooks = await db
-    .select({
-      type: userNotifications.type,
-      secretCipher: userNotifications.secretCipher,
-      enabled: userNotifications.enabled,
-    })
-    .from(userNotifications)
-    .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
-
-  const summary = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${highSeverity.length}.`;
-
-  // Send to user-specific webhooks
-  for (const hook of hooks || []) {
-    if (hook.type === "slack" && hook.secretCipher) {
-      try {
-        const url = decrypt(hook.secretCipher as string);
-        if (url) {
-          await notifySlackTo(url, summary);
-          // Send top high-severity items
-          for (const item of highSeverity.slice(0, 10)) {
-            await notifySlackTo(url, `• [sev ${item.severityScore}] ${item.summary}`);
-          }
-        }
-      } catch {
-        // Ignore webhook errors
-      }
+  // Get user webhooks and send digest
+  const webhooks = await getUserSlackWebhooks(userId);
+  for (const url of webhooks) {
+    await notifySlackTo(url, summaryMsg);
+    // Send top high-severity items
+    for (const item of highSeverity.slice(0, 10)) {
+      await notifySlackTo(url, `• [sev ${item.severityScore}] ${item.summary}`);
     }
   }
 

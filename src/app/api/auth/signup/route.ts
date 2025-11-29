@@ -3,8 +3,13 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { appUsers } from "@/db/schema";
-import { extractErrorMessage, normalizeEmail, validateEmail } from "@/lib/utils/auth";
-import { calculatePasswordScore, isPasswordValid } from "@/lib/utils/password";
+import {
+  calculatePasswordScore,
+  extractErrorMessage,
+  isPasswordValid,
+  normalizeEmail,
+  validateEmail,
+} from "@/lib/utils/auth";
 
 export async function POST(req: Request) {
   try {

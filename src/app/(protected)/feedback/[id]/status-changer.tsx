@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/cn";
 
 export default function StatusChanger({
   id,
@@ -27,7 +28,7 @@ export default function StatusChanger({
       if (!res.ok) throw new Error(await res.text());
       setStatus(val);
       toast.success("Status updated");
-    } catch (_) {
+    } catch {
       toast.error("Failed to update status");
     } finally {
       setSaving(false);
@@ -37,7 +38,7 @@ export default function StatusChanger({
   return (
     <label className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
       <select
-        className={`rounded-xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] text-foreground shadow-sm focus-visible:border-ring/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${compact ? "px-3 py-1 text-xs" : "px-3.5 py-2 text-sm"}`}
+        className={cn("select-base", compact ? "px-3 py-1 text-xs" : "px-3.5 py-2 text-sm")}
         value={status}
         onChange={onChange}
         disabled={saving}
@@ -47,7 +48,7 @@ export default function StatusChanger({
         <option value="Actioned">Actioned</option>
       </select>
       {saving && (
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Saving…</span>
+        <span className="text-2xs uppercase tracking-wide text-muted-foreground">Saving…</span>
       )}
     </label>
   );

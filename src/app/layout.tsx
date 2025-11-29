@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "FeedbackFlow AI",
-  description: "Automated micro‑SaaS to ingest, analyze, and triage public feedback using LLMs.",
+  description: "Automated micro-SaaS to ingest, analyze, and triage public feedback using LLMs.",
 };
 
 export const viewport: Viewport = {
@@ -52,9 +52,9 @@ export default async function RootLayout({
           Skip to content
         </a>
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-20 overflow-hidden">
-          <div className="absolute -top-40 right-0 h-96 w-96 rounded-full bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.18),_transparent_65%)] blur-2xl" />
-          <div className="absolute top-1/3 -left-32 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.16),_transparent_65%)] blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(14,116,144,0.1),transparent_75%)]" />
+          <div className="absolute -top-40 right-0 h-96 w-96 rounded-full glow-blue-strong blur-2xl" />
+          <div className="absolute top-1/3 -left-32 h-[28rem] w-[28rem] rounded-full glow-indigo blur-3xl" />
+          <div className="absolute inset-0 glow-teal-overlay" />
         </div>
         <div id="content" tabIndex={-1}>
           {children}

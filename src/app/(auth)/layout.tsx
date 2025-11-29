@@ -4,14 +4,14 @@ import type { ReactNode } from "react";
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex min-h-screen bg-background/90">
-      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden border-r border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] px-12 py-16 text-left shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)] lg:flex">
+      <div className="auth-sidebar relative hidden flex-1 flex-col justify-between overflow-hidden border-r border-border/60 px-12 py-16 text-left lg:flex">
         <div>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.32em] text-muted-foreground"
+            className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-super-wide text-muted-foreground"
           >
             FeedbackFlow
-            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[color-mix(in_oklab,var(--accent)_80%,var(--accent-foreground))]" />
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-accent-dot" />
           </Link>
           <h1 className="mt-10 text-4xl font-semibold leading-tight text-foreground">
             Clarity for product & customer teams.
@@ -22,8 +22,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </p>
         </div>
         <div className="space-y-4 text-sm text-muted-foreground">
-          <div className="rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          <div className="info-box">
+            <p className="text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
               Why teams switch
             </p>
             <ul className="mt-4 space-y-2">
@@ -37,8 +37,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </p>
         </div>
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -left-24 bottom-12 h-64 w-64 rounded-full bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.18),_transparent_65%)] blur-3xl" />
-          <div className="absolute -right-28 top-16 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,_rgba(129,140,248,0.16),_transparent_65%)] blur-3xl" />
+          <div className="absolute -left-24 bottom-12 h-64 w-64 rounded-full glow-cyan blur-3xl" />
+          <div className="absolute -right-28 top-16 h-72 w-72 rounded-full glow-violet blur-3xl" />
         </div>
       </div>
       <div className="relative flex min-h-screen w-full flex-col justify-center px-6 py-12 sm:px-10 lg:max-w-md">

@@ -9,8 +9,13 @@ import PasswordField from "@/components/auth/password-field";
 import Button from "@/components/ui/button";
 import { UserPlusIcon } from "@/components/ui/icons";
 import { useOAuth } from "@/hooks/use-oauth";
-import { extractErrorMessage, normalizeEmail, validateEmail } from "@/lib/utils/auth";
-import { calculatePasswordScore, isPasswordValid } from "@/lib/utils/password";
+import {
+  calculatePasswordScore,
+  extractErrorMessage,
+  isPasswordValid,
+  normalizeEmail,
+  validateEmail,
+} from "@/lib/utils/auth";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -22,8 +27,6 @@ export default function SignupPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   const honeypotRef = useRef<HTMLInputElement | null>(null);
-  const [isVerifyStep] = useState(false);
-  const [verificationEmail] = useState<string | null>(null);
   const { signInWithOAuth, isLoading: oauthLoading } = useOAuth();
 
   const passwordScore = calculatePasswordScore(password);
@@ -32,9 +35,8 @@ export default function SignupPage() {
     e.preventDefault();
     setErr(null);
     setMsg(null);
-    if (honeypotRef.current?.value) {
-      return; // bot submission ignored
-    }
+    if (honeypotRef.current?.value) return;
+
     const normalizedEmail = normalizeEmail(email);
     if (!validateEmail(normalizedEmail)) {
       setErr("Enter a valid email address.");
@@ -52,6 +54,7 @@ export default function SignupPage() {
       setErr("You must accept the Terms and Privacy Policy.");
       return;
     }
+
     try {
       setIsLoading(true);
       const res = await fetch("/api/auth/signup", {
@@ -88,7 +91,6 @@ export default function SignupPage() {
 
       setMsg("Account created. Redirecting to your dashboard…");
       window.location.assign(signInResult?.url ?? "/dashboard");
-      return;
     } catch (e: unknown) {
       const message = extractErrorMessage(e);
       setErr(message);
@@ -101,7 +103,7 @@ export default function SignupPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2 text-left">
-        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
           <UserPlusIcon className="h-4 w-4" /> Start in minutes
         </span>
         <h2 className="text-3xl font-semibold leading-tight text-foreground">
@@ -112,84 +114,72 @@ export default function SignupPage() {
         </p>
       </div>
 
-      {isVerifyStep ? (
-        <div className="space-y-6 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] p-6">
-          <div className="text-sm leading-relaxed text-muted-foreground">
-            Account created for{" "}
-            <span className="font-medium text-foreground">{verificationEmail || email}</span>. You
-            can now sign in with your credentials.
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={onSubmit} className="space-y-5" noValidate>
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <input
+          ref={honeypotRef}
+          type="text"
+          className="hidden"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+        />
+
+        <EmailField
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          ariaInvalid={!!err && !validateEmail(email)}
+        />
+
+        <PasswordField
+          id="password"
+          label="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          showStrength
+          showIcon
+          ariaInvalid={!!err}
+        />
+
+        <PasswordField
+          id="confirm"
+          label="Confirm password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="Re-enter your password"
+          ariaInvalid={password !== confirmPassword && confirmPassword.length > 0}
+        />
+        {confirmPassword.length > 0 && password !== confirmPassword && (
+          <p className="text-xs text-red-500">Passwords do not match.</p>
+        )}
+
+        <div className="info-box flex items-start gap-3">
           <input
-            ref={honeypotRef}
-            type="text"
-            className="hidden"
-            tabIndex={-1}
-            autoComplete="off"
-            aria-hidden="true"
+            id="terms"
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-border/70"
+            aria-invalid={!acceptTerms && !!err}
           />
+          <label htmlFor="terms" className="text-xs leading-relaxed text-muted-foreground">
+            I agree to the{" "}
+            <a className="underline" href="/terms" target="_blank" rel="noreferrer">
+              Terms
+            </a>{" "}
+            and{" "}
+            <a className="underline" href="/privacy" target="_blank" rel="noreferrer">
+              Privacy Policy
+            </a>
+            .
+          </label>
+        </div>
 
-          <EmailField
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            ariaInvalid={!!err && !validateEmail(email)}
-          />
+        <Button className="w-full" type="submit" disabled={isLoading || oauthLoading}>
+          {isLoading ? "Creating account…" : "Sign up"}
+        </Button>
+      </form>
 
-          <PasswordField
-            id="password"
-            label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            showStrengthIndicator
-            showIcon
-            ariaInvalid={!!err}
-          />
-
-          <PasswordField
-            id="confirm"
-            label="Confirm password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Re-enter your password"
-            ariaInvalid={password !== confirmPassword && confirmPassword.length > 0}
-          />
-          {confirmPassword.length > 0 && password !== confirmPassword && (
-            <p className="text-xs text-red-500">Passwords do not match.</p>
-          )}
-
-          <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_94%,transparent)] p-4">
-            <input
-              id="terms"
-              type="checkbox"
-              checked={acceptTerms}
-              onChange={(e) => setAcceptTerms(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-border/70"
-              aria-invalid={!acceptTerms && !!err}
-            />
-            <label htmlFor="terms" className="text-xs leading-relaxed text-muted-foreground">
-              I agree to the{" "}
-              <a className="underline" href="/terms" target="_blank" rel="noreferrer">
-                Terms
-              </a>{" "}
-              and{" "}
-              <a className="underline" href="/privacy" target="_blank" rel="noreferrer">
-                Privacy Policy
-              </a>
-              .
-            </label>
-          </div>
-
-          <Button className="w-full" type="submit" disabled={isLoading || oauthLoading}>
-            {isLoading ? "Creating account…" : "Sign up"}
-          </Button>
-        </form>
-      )}
-
-      {!isVerifyStep && (
-        <OAuthProviders onProviderClick={signInWithOAuth} disabled={isLoading || oauthLoading} />
-      )}
+      <OAuthProviders onProviderClick={signInWithOAuth} disabled={isLoading || oauthLoading} />
       <div className="text-sm text-muted-foreground">
         Already onboard?{" "}
         <a href="/login" className="font-medium text-foreground underline">

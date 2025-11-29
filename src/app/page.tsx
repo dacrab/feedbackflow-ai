@@ -32,13 +32,13 @@ export default async function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-[12%] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.16),_transparent_65%)] blur-3xl" />
-        <div className="absolute -left-32 bottom-0 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.12),_transparent_65%)] blur-3xl" />
-        <div className="absolute -right-40 top-[35%] h-[30rem] w-[30rem] rounded-full bg-[radial-gradient(circle_at_center,_rgba(147,51,234,0.12),_transparent_65%)] blur-3xl" />
+        <div className="absolute left-1/2 top-[12%] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full glow-blue blur-3xl" />
+        <div className="absolute -left-32 bottom-0 h-[26rem] w-[26rem] rounded-full glow-sky blur-3xl" />
+        <div className="absolute -right-40 top-[35%] h-[30rem] w-[30rem] rounded-full glow-purple blur-3xl" />
       </div>
 
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center px-6 pb-24 pt-24 text-center sm:px-10">
-        <span className="rounded-full border border-border/60 bg-[color-mix(in_oklab,var(--background)_88%,transparent)] px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        <span className="rounded-full border border-border/60 bg-glass-88 px-4 py-1 text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
           FeedbackFlow AI
         </span>
         <h1 className="mt-8 max-w-3xl text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
@@ -49,16 +49,10 @@ export default async function Home() {
           route action to the right teams without spreadsheets or manual tagging.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/signup"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-transparent bg-[var(--accent)] px-6 text-sm font-medium text-[var(--accent-foreground)] shadow-lg shadow-[rgba(37,99,235,0.25)] transition hover:shadow-xl"
-          >
+          <Link href="/signup" className="link-cta">
             Create your workspace <ArrowRightIcon className="h-4 w-4" />
           </Link>
-          <Link
-            href="/login"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-border/70 bg-[color-mix(in_oklab,var(--background)_88%,transparent)] px-6 text-sm font-medium text-foreground transition hover:border-border"
-          >
+          <Link href="/login" className="link-secondary">
             Already onboard? Sign in
           </Link>
         </div>
@@ -69,7 +63,7 @@ export default async function Home() {
             return (
               <Card key={feature.title} className="h-full border-border/60">
                 <CardHeader className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/60 bg-[color-mix(in_oklab,var(--accent)_12%,var(--background))] text-foreground">
+                  <span className="feature-icon-box">
                     <Icon className="h-5 w-5" />
                   </span>
                   <div className="text-sm font-semibold text-foreground">{feature.title}</div>
@@ -82,7 +76,7 @@ export default async function Home() {
           })}
         </div>
 
-        <div className="mt-16 grid w-full gap-6 rounded-3xl border border-border/60 bg-[color-mix(in_oklab,var(--background)_92%,transparent)] p-8 text-left shadow-[0_45px_90px_rgba(15,23,42,0.12)] sm:grid-cols-2 sm:p-10">
+        <div className="mt-16 grid w-full gap-6 rounded-3xl border border-border/60 bg-glass-92 p-8 text-left shadow-card-large sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">
               Built for product & customer teams
@@ -109,7 +103,7 @@ export default async function Home() {
           </div>
           <div className="grid gap-4 text-sm">
             <Card className="border-border/50">
-              <CardHeader className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+              <CardHeader className="mb-2 text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
                 Momentum snapshot
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
@@ -128,7 +122,7 @@ export default async function Home() {
               </CardContent>
             </Card>
             <Card className="border-border/50">
-              <CardHeader className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+              <CardHeader className="mb-2 text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
                 Deployment ready
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">

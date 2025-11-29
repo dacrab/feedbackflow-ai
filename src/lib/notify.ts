@@ -1,5 +1,7 @@
-export async function notifySlack(text: string) {
-  const url = process.env["SLACK_WEBHOOK_URL"];
+/**
+ * Send a Slack notification to a specific webhook URL
+ */
+export async function notifySlackTo(url: string, text: string): Promise<void> {
   if (!url) return;
   try {
     await fetch(url, {
@@ -12,15 +14,11 @@ export async function notifySlack(text: string) {
   }
 }
 
-export async function notifySlackTo(url: string, text: string) {
+/**
+ * Send a Slack notification to the global webhook (from env)
+ */
+export async function notifySlack(text: string): Promise<void> {
+  const url = process.env["SLACK_WEBHOOK_URL"];
   if (!url) return;
-  try {
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-  } catch {
-    // ignore per-user webhook errors
-  }
+  await notifySlackTo(url, text);
 }

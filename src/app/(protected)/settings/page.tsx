@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import NotificationItem from "@/components/settings/notification-item";
-import SourceItem from "@/components/settings/source-item";
+import SettingsItem, {
+  getNotificationLabel,
+  getSourceDescription,
+  getSourceLabel,
+} from "@/components/settings/settings-item";
 import Button from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Input from "@/components/ui/input";
@@ -16,7 +19,6 @@ export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
   const [hasKey, setHasKey] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-
   const [repo, setRepo] = useState("");
   const [ghToken, setGhToken] = useState("");
   const [slackUrl, setSlackUrl] = useState("");
@@ -67,7 +69,6 @@ export default function SettingsPage() {
     },
   });
 
-  // Initialize state from fetched data
   useEffect(() => {
     if (settingsData && !hasKey && settingsData.provider) {
       setProvider(settingsData.provider);
@@ -92,9 +93,7 @@ export default function SettingsPage() {
   if (settingsLoading || sourcesLoading || hooksLoading) {
     return (
       <div className="flex h-72 items-center justify-center">
-        <div className="rounded-2xl border border-border/60 bg-background/85 px-6 py-3 text-sm text-muted-foreground">
-          Loading workspace settings…
-        </div>
+        <div className="info-box text-sm text-muted-foreground">Loading workspace settings…</div>
       </div>
     );
   }
@@ -102,7 +101,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-10">
       <header className="space-y-2">
-        <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
+        <span className="text-xxs font-semibold uppercase text-muted-foreground">
           Control centre
         </span>
         <h1 className="text-3xl font-semibold leading-tight text-foreground">Workspace settings</h1>
@@ -135,7 +134,7 @@ export default function SettingsPage() {
                   </label>
                   <select
                     id="provider"
-                    className="w-full rounded-xl border border-border/70 bg-background/80 px-3.5 py-2.5 text-sm text-foreground"
+                    className="select-base w-full px-3.5 py-2.5 text-sm"
                     value={provider}
                     onChange={(e) => setProvider(e.target.value as LLMProvider)}
                   >
@@ -194,7 +193,7 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+            <div className="digest-box">
               <p className="text-xs font-semibold uppercase text-muted-foreground">
                 Active sources
               </p>
@@ -203,7 +202,7 @@ export default function SettingsPage() {
                 {(sources ?? []).length} configured total.
               </p>
             </div>
-            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+            <div className="digest-box">
               <p className="text-xs font-semibold uppercase text-muted-foreground">
                 Notification webhooks
               </p>
@@ -266,13 +265,20 @@ export default function SettingsPage() {
           </form>
           <div className="grid gap-3 text-sm">
             {(sources || []).length === 0 && (
-              <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-4 text-muted-foreground">
+              <div className="info-box text-muted-foreground">
                 No data sources yet. Connect a GitHub repo (issues) or add a custom feed via
                 automation.
               </div>
             )}
             {(sources || []).map((s) => (
-              <SourceItem key={s.id} source={s} onUpdate={refetchSources} />
+              <SettingsItem
+                key={s.id}
+                item={s}
+                apiPath="sources"
+                onUpdate={refetchSources}
+                label={getSourceLabel(s.type)}
+                description={getSourceDescription(s.config)}
+              />
             ))}
           </div>
         </CardContent>
@@ -317,19 +323,25 @@ export default function SettingsPage() {
           </form>
           <div className="grid gap-3 text-sm">
             {(hooks || []).length === 0 && (
-              <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-4 text-muted-foreground">
+              <div className="info-box text-muted-foreground">
                 No notifications configured yet. Add a Slack webhook to alert the team when severity
                 spikes.
               </div>
             )}
             {(hooks || []).map((h) => (
-              <NotificationItem key={h.id} notification={h} onUpdate={refetchHooks} />
+              <SettingsItem
+                key={h.id}
+                item={h}
+                apiPath="notifications"
+                onUpdate={refetchHooks}
+                label={getNotificationLabel(h.type)}
+              />
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <div className="rounded-2xl border border-border/60 bg-background/80 px-5 py-4 text-xs text-muted-foreground">
+      <div className="info-box text-xs text-muted-foreground">
         <p>
           This workspace uses Auth.js with credentials and OAuth providers. Configure provider
           credentials via environment variables and keep your API keys secure.

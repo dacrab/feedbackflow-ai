@@ -12,15 +12,12 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
 
   return (
     <div className="relative min-h-screen bg-background text-foreground antialiased">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.18),transparent_68%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] glow-top-blue" />
 
       <header className="border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-5 sm:px-6 lg:px-8">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 rounded-2xl border border-border/40 bg-[color-mix(in_oklab,var(--background)_90%,transparent)] px-4 py-2 shadow-sm transition hover:border-border"
-          >
-            <span className="text-[11px] font-semibold uppercase text-muted-foreground">
+          <Link href="/dashboard" className="logo-container">
+            <span className="text-xxs font-semibold uppercase text-muted-foreground">
               FeedbackFlow
             </span>
             <span className="hidden text-sm text-muted-foreground md:inline">Command Center</span>
@@ -47,7 +44,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
       </header>
 
       <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-        <div className="absolute inset-x-0 top-4 -z-10 h-44 rounded-3xl bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.18),transparent_76%)]" />
+        <div className="absolute inset-x-0 top-4 -z-10 h-44 rounded-3xl glow-top-dark" />
         <div className="relative flex-1">{children}</div>
       </main>
 

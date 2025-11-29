@@ -50,7 +50,7 @@ export default function LoginPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2 text-left">
-        <span className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
           Welcome back
         </span>
         <h2 className="text-3xl font-semibold leading-tight text-foreground">

@@ -1,51 +1,35 @@
-import { cookies, headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import Button from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Input from "@/components/ui/input";
+import { SentimentBadge } from "@/components/ui/sentiment-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/cn";
-import type { FeedbackItem } from "@/lib/types";
+import { getFeedbackItems } from "@/lib/services/feedback-service";
+import { filterFeedbackItems, parseFeedbackFilters } from "@/lib/services/query-builder";
 import { formatDateUTC } from "@/lib/utils/date";
-import { SentimentBadge } from "@/lib/utils/sentiment";
-import { StatusBadge } from "@/lib/utils/status";
-
-async function getData(searchParams: Record<string, string | string[] | undefined>) {
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(searchParams)) {
-    if (typeof v === "string" && v) sp.set(k, v);
-  }
-  const qs = sp.toString();
-  const hdrs = await headers();
-  const proto = hdrs.get("x-forwarded-proto") ?? "http";
-  const host = hdrs.get("host");
-  const base = host ? `${proto}://${host}` : "http://localhost:3000";
-  const url = `${base}/api/feedback${qs ? `?${qs}` : ""}`;
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: {
-      ...(cookieHeader ? { cookie: cookieHeader } : {}),
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`failed to load feedback (${res.status}): ${text}`);
-  }
-  return res.json();
-}
 
 export default async function InboxPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | null)?.id;
+  if (!userId) redirect("/login");
+
   const spObj = await searchParams;
-  const data = await getData(spObj);
-  const items = (data.items as FeedbackItem[]).slice();
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(spObj)) {
+    if (typeof v === "string" && v) sp.set(k, v);
+  }
+
+  const filters = parseFeedbackFilters(sp);
+  const allItems = await getFeedbackItems(userId, { limit: 100 });
+  const filteredItems = filterFeedbackItems(allItems, filters);
+  const items = filteredItems.slice();
 
   const sort = (spObj["sort"] as string) || "created_desc";
   items.sort((a, b) => {
@@ -59,9 +43,7 @@ export default async function InboxPage({
   return (
     <div className="space-y-10">
       <header className="space-y-2">
-        <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
-          Team triage
-        </span>
+        <span className="text-xxs font-semibold uppercase text-muted-foreground">Team triage</span>
         <h1 className="text-3xl font-semibold leading-tight text-foreground">Feedback inbox</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Prioritise and action every customer signal. Filter by sentiment, severity, status, and
@@ -100,7 +82,7 @@ export default async function InboxPage({
                 id="sentiment"
                 name="sentiment"
                 defaultValue={(spObj["sentiment"] as string) || ""}
-                className="w-full rounded-xl border border-border/70 bg-background/80 px-3.5 py-2.5 text-sm text-foreground"
+                className="select-base w-full px-3.5 py-2.5 text-sm"
               >
                 <option value="">Any sentiment</option>
                 <option value="positive">Positive</option>
@@ -133,7 +115,7 @@ export default async function InboxPage({
                 id="status"
                 name="status"
                 defaultValue={(spObj["status"] as string) || ""}
-                className="w-full rounded-xl border border-border/70 bg-background/80 px-3.5 py-2.5 text-sm text-foreground"
+                className="select-base w-full px-3.5 py-2.5 text-sm"
               >
                 <option value="">Any status</option>
                 <option value="New">New</option>
@@ -183,7 +165,7 @@ export default async function InboxPage({
                 id="sort"
                 name="sort"
                 defaultValue={(spObj["sort"] as string) || "created_desc"}
-                className="w-full rounded-xl border border-border/70 bg-background/80 px-3.5 py-2.5 text-sm text-foreground"
+                className="select-base w-full px-3.5 py-2.5 text-sm"
               >
                 <option value="created_desc">Newest first</option>
                 <option value="severity_desc">Severity high → low</option>
@@ -230,7 +212,7 @@ export default async function InboxPage({
                       <SentimentBadge sentiment={analysis?.sentiment} />
                       <span
                         className={cn(
-                          "badge border-transparent bg-[color-mix(in_oklab,var(--accent)_20%,transparent)] text-foreground",
+                          "badge badge-accent",
                           highSeverity && "bg-rose-100 text-rose-600",
                         )}
                       >
@@ -252,10 +234,7 @@ export default async function InboxPage({
                     {topics.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {topics.map((topic) => (
-                          <span
-                            key={topic}
-                            className="badge bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] text-foreground/90 border-transparent"
-                          >
+                          <span key={topic} className="badge badge-accent-light">
                             {topic}
                           </span>
                         ))}
@@ -265,7 +244,7 @@ export default async function InboxPage({
 
                   <div className="flex flex-col items-start gap-3 text-xs text-muted-foreground lg:items-end">
                     <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-2">
-                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+                      <p className="text-2xs font-semibold uppercase text-muted-foreground">
                         Captured (UTC)
                       </p>
                       <p className="mt-1 text-sm text-foreground" suppressHydrationWarning>
