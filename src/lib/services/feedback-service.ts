@@ -3,7 +3,7 @@
  * Eliminates unnecessary API round-trips in server components
  */
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import type { FeedbackAnalysis, FeedbackItem, FeedbackStatus } from "@/lib/types";
@@ -86,8 +86,6 @@ export async function getFeedbackItems(
  * Get a single feedback item by ID for a user
  */
 export async function getFeedbackItem(userId: string, itemId: string): Promise<FeedbackItem> {
-  const { and } = await import("drizzle-orm");
-
   const [row] = await db
     .select({
       id: feedbackItems.id,

@@ -1,18 +1,18 @@
 "use client";
 
 import {
-  Bar,
-  BarChart,
   Area,
   AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Cell,
-  CartesianGrid,
 } from "recharts";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,19 +24,23 @@ interface OverviewChartsProps {
   severityData: { name: string; value: number }[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: TooltipProps) {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-border/50 bg-background/80 backdrop-blur-md p-3 shadow-xl">
         <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-        <p className="text-sm font-bold text-foreground">
-          {payload[0].value}
-        </p>
+        <p className="text-sm font-bold text-foreground">{payload[0]?.value}</p>
       </div>
     );
   }
   return null;
-};
+}
 
 export function OverviewCharts({
   trendData,
@@ -58,11 +62,16 @@ export function OverviewCharts({
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                  opacity={0.4}
+                />
                 <XAxis
                   dataKey="name"
                   stroke="var(--muted-foreground)"
@@ -79,7 +88,10 @@ export function OverviewCharts({
                   tickFormatter={(value) => `${value}`}
                   tickMargin={10}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                />
                 <Area
                   type="monotone"
                   dataKey="value"
@@ -114,13 +126,15 @@ export function OverviewCharts({
                   dataKey="value"
                   stroke="none"
                 >
-                  {sentimentData.map((entry, index) => (
+                  {sentimentData.map((entry) => (
                     <Cell
-                      key={`cell-${index}`}
+                      key={entry.name}
                       fill={
-                        entry.name === "Positive" ? "var(--chart-4)" : 
-                        entry.name === "Negative" ? "var(--destructive)" : 
-                        "var(--muted-foreground)"
+                        entry.name === "Positive"
+                          ? "var(--chart-4)"
+                          : entry.name === "Negative"
+                            ? "var(--destructive)"
+                            : "var(--muted-foreground)"
                       }
                       className="stroke-background stroke-2"
                     />
@@ -131,8 +145,12 @@ export function OverviewCharts({
             </ResponsiveContainer>
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="text-3xl font-bold">{sentimentData.reduce((acc, curr) => acc + curr.value, 0)}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Total</div>
+              <div className="text-3xl font-bold">
+                {sentimentData.reduce((acc, curr) => acc + curr.value, 0)}
+              </div>
+              <div className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
+                Total
+              </div>
             </div>
           </div>
           <div className="flex justify-center gap-6 text-xs font-medium text-muted-foreground">
@@ -206,7 +224,12 @@ export function OverviewCharts({
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={severityData} barCategoryGap={30}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                  opacity={0.4}
+                />
                 <XAxis
                   dataKey="name"
                   stroke="var(--muted-foreground)"
@@ -216,11 +239,11 @@ export function OverviewCharts({
                   tickMargin={10}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--muted)/0.2" }} />
-                <Bar 
-                    dataKey="value" 
-                    fill="var(--chart-3)" 
-                    radius={[6, 6, 0, 0]}
-                    background={{ fill: "var(--muted)/0.2" }}
+                <Bar
+                  dataKey="value"
+                  fill="var(--chart-3)"
+                  radius={[6, 6, 0, 0]}
+                  background={{ fill: "var(--muted)/0.2" }}
                 />
               </BarChart>
             </ResponsiveContainer>

@@ -1,8 +1,8 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses } from "@/db/schema";
-import { getDateString } from "@/lib/utils/date";
 import type { DashboardData } from "@/lib/types";
+import { getDateString } from "@/lib/utils/date";
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   const data = await db

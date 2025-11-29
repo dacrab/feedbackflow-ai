@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { Command } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { auth } from "@/auth";
+import { Button } from "@/components/ui/button";
 
 export async function LandingNav() {
   const session = await auth();
@@ -38,15 +38,25 @@ export async function LandingNav() {
         <div className="flex items-center gap-4">
           {session ? (
             <Link href="/dashboard">
-              <Button variant="default" size="sm" className="rounded-full">Dashboard</Button>
+              <Button variant="default" size="sm" className="rounded-full">
+                Dashboard
+              </Button>
             </Link>
           ) : (
             <>
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Log in</Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Log in
+                </Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="rounded-full px-6">Get Started</Button>
+                <Button size="sm" className="rounded-full px-6">
+                  Get Started
+                </Button>
               </Link>
             </>
           )}

@@ -1,26 +1,26 @@
-import Link from "next/link"
-import { 
-  ArrowRight, 
-  BarChart3, 
-  Check, 
-  Globe, 
-  Shield, 
-  Zap, 
-  Command, 
-  Sparkles, 
-  MessageSquare, 
-  GitPullRequest, 
+import {
+  ArrowRight,
+  BarChart3,
+  Check,
+  Command,
+  GitPullRequest,
+  Globe,
+  MessageSquare,
+  Shield,
   Slack,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LandingNav } from "@/components/landing-nav"
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { LandingNav } from "@/components/landing-nav";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground overflow-x-hidden selection:bg-primary/20">
       <LandingNav />
-      
+
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
@@ -28,7 +28,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
             <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]" />
           </div>
-          
+
           <div className="container mx-auto max-w-6xl px-4 relative z-10">
             <div className="flex flex-col items-center text-center space-y-8">
               {/* Badge */}
@@ -38,10 +38,12 @@ export default function LandingPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
-                  <span className="font-medium text-xs tracking-wide uppercase">New: AI Analysis 2.0</span>
+                  <span className="font-medium text-xs tracking-wide uppercase">
+                    New: AI Analysis 2.0
+                  </span>
                 </div>
               </div>
-              
+
               {/* Headline */}
               <h1 className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 max-w-4xl text-5xl font-bold tracking-tight sm:text-7xl md:text-8xl leading-[1.1]">
                 Turn messy feedback into <br />
@@ -49,22 +51,29 @@ export default function LandingPage() {
                   shipping decisions
                 </span>
               </h1>
-              
+
               {/* Subheadline */}
               <p className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 max-w-2xl text-xl text-muted-foreground leading-relaxed">
-                The command center for modern product teams. Centralize feedback from every channel, 
+                The command center for modern product teams. Centralize feedback from every channel,
                 detect patterns with AI, and prioritize your roadmap with confidence.
               </p>
-              
+
               {/* CTAs */}
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 flex flex-col sm:flex-row items-center gap-4 pt-4">
                 <Link href="/signup">
-                  <Button size="lg" className="h-12 px-8 rounded-full text-base font-medium shadow-lg shadow-primary/20 transition-transform hover:scale-105">
+                  <Button
+                    size="lg"
+                    className="h-12 px-8 rounded-full text-base font-medium shadow-lg shadow-primary/20 transition-transform hover:scale-105"
+                  >
                     Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="#demo">
-                  <Button variant="outline" size="lg" className="h-12 px-8 rounded-full text-base font-medium border-border/50 bg-background/50 backdrop-blur-sm hover:bg-accent/50">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-8 rounded-full text-base font-medium border-border/50 bg-background/50 backdrop-blur-sm hover:bg-accent/50"
+                  >
                     <Sparkles className="mr-2 h-4 w-4" /> View Demo
                   </Button>
                 </Link>
@@ -83,7 +92,7 @@ export default function LandingPage() {
                     </div>
                     <div className="ml-4 h-4 w-32 rounded-full bg-muted/50" />
                   </div>
-                  
+
                   {/* Mock Content */}
                   <div className="p-6 grid grid-cols-12 gap-6 h-full">
                     {/* Sidebar Mock */}
@@ -93,7 +102,7 @@ export default function LandingPage() {
                       <div className="h-4 w-5/6 rounded bg-muted/40" />
                       <div className="h-4 w-4/5 rounded bg-muted/40" />
                     </div>
-                    
+
                     {/* Main Content Mock */}
                     <div className="col-span-12 md:col-span-10 space-y-6">
                       <div className="flex items-center justify-between">
@@ -103,10 +112,13 @@ export default function LandingPage() {
                           <div className="h-8 w-8 rounded bg-primary/20" />
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-3 gap-4">
                         {[1, 2, 3].map((i) => (
-                          <div key={i} className="h-24 rounded-lg border border-border/50 bg-muted/10 p-4 space-y-2">
+                          <div
+                            key={i}
+                            className="h-24 rounded-lg border border-border/50 bg-muted/10 p-4 space-y-2"
+                          >
                             <div className="flex justify-between">
                               <div className="h-4 w-4 rounded bg-primary/20" />
                               <div className="h-4 w-12 rounded bg-muted/40" />
@@ -118,7 +130,10 @@ export default function LandingPage() {
 
                       <div className="space-y-3">
                         {[1, 2, 3].map((i) => (
-                          <div key={i} className="h-16 w-full rounded-lg border border-border/50 bg-background flex items-center px-4 gap-4">
+                          <div
+                            key={i}
+                            className="h-16 w-full rounded-lg border border-border/50 bg-background flex items-center px-4 gap-4"
+                          >
                             <div className="h-8 w-8 rounded-full bg-muted/40 shrink-0" />
                             <div className="flex-1 space-y-2">
                               <div className="h-3 w-1/3 rounded bg-muted/40" />
@@ -139,11 +154,15 @@ export default function LandingPage() {
         {/* Social Proof */}
         <section className="py-12 border-y border-border/40 bg-muted/5">
           <div className="container mx-auto px-4 text-center">
-            <p className="text-sm font-medium text-muted-foreground mb-8">TRUSTED BY PRODUCT TEAMS AT</p>
+            <p className="text-sm font-medium text-muted-foreground mb-8">
+              TRUSTED BY PRODUCT TEAMS AT
+            </p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-16 grayscale opacity-50">
               {/* Logos would go here - using text placeholders for now */}
-              {['Acme Corp', 'Global Bank', 'TechStart', 'Innovate', 'Future Labs'].map((logo) => (
-                <div key={logo} className="text-xl font-bold font-mono">{logo}</div>
+              {["Acme Corp", "Global Bank", "TechStart", "Innovate", "Future Labs"].map((logo) => (
+                <div key={logo} className="text-xl font-bold font-mono">
+                  {logo}
+                </div>
               ))}
             </div>
           </div>
@@ -157,7 +176,8 @@ export default function LandingPage() {
                 Everything you need to build better products
               </h2>
               <p className="text-lg text-muted-foreground">
-                Stop managing feedback in spreadsheets. Use our AI-powered suite to automate the boring stuff.
+                Stop managing feedback in spreadsheets. Use our AI-powered suite to automate the
+                boring stuff.
               </p>
             </div>
 
@@ -172,12 +192,19 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent className="relative">
                   <p className="text-muted-foreground max-w-md mb-8">
-                    Connect every channel. We pull feedback from Slack, Intercom, GitHub, and Email into one unified inbox.
+                    Connect every channel. We pull feedback from Slack, Intercom, GitHub, and Email
+                    into one unified inbox.
                   </p>
                   <div className="flex gap-4 absolute right-0 bottom-8 opacity-50 group-hover:opacity-100 group-hover:-translate-x-4 transition-all duration-500">
-                    <div className="bg-background border p-3 rounded-xl shadow-lg rotate-6"><Slack className="h-8 w-8" /></div>
-                    <div className="bg-background border p-3 rounded-xl shadow-lg -rotate-6"><GitPullRequest className="h-8 w-8" /></div>
-                    <div className="bg-background border p-3 rounded-xl shadow-lg rotate-12"><MessageSquare className="h-8 w-8" /></div>
+                    <div className="bg-background border p-3 rounded-xl shadow-lg rotate-6">
+                      <Slack className="h-8 w-8" />
+                    </div>
+                    <div className="bg-background border p-3 rounded-xl shadow-lg -rotate-6">
+                      <GitPullRequest className="h-8 w-8" />
+                    </div>
+                    <div className="bg-background border p-3 rounded-xl shadow-lg rotate-12">
+                      <MessageSquare className="h-8 w-8" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -218,8 +245,12 @@ export default function LandingPage() {
                     Visualize trends over time. Spot churn risks before they happen.
                   </p>
                   <div className="mt-6 h-24 flex items-end gap-1 opacity-50">
-                    {[40, 70, 50, 90, 60, 80].map((h, i) => (
-                      <div key={i} className="flex-1 bg-purple-500/20 rounded-t" style={{ height: `${h}%` }} />
+                    {[40, 70, 50, 90, 60, 80].map((h) => (
+                      <div
+                        key={h}
+                        className="flex-1 bg-purple-500/20 rounded-t"
+                        style={{ height: `${h}%` }}
+                      />
                     ))}
                   </div>
                 </CardContent>
@@ -233,13 +264,20 @@ export default function LandingPage() {
                   </div>
                   <CardTitle className="text-2xl mb-2">Enterprise Ready</CardTitle>
                   <p className="text-muted-foreground">
-                    SOC2 compliant, SSO, and advanced role-based access control. Built for teams that scale.
+                    SOC2 compliant, SSO, and advanced role-based access control. Built for teams
+                    that scale.
                   </p>
                 </div>
                 <div className="bg-muted/30 w-full md:w-1/3 p-6 flex flex-col justify-center border-l border-border/50 gap-3">
-                  <div className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" /> SAML SSO</div>
-                  <div className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" /> Audit Logs</div>
-                  <div className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" /> 99.9% Uptime</div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" /> SAML SSO
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" /> Audit Logs
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" /> 99.9% Uptime
+                  </div>
                 </div>
               </Card>
             </div>
@@ -251,21 +289,33 @@ export default function LandingPage() {
           <div className="container mx-auto max-w-5xl px-4">
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center space-y-4">
-                <div className="w-12 h-12 bg-background border rounded-full flex items-center justify-center text-xl font-bold mx-auto shadow-sm">1</div>
+                <div className="w-12 h-12 bg-background border rounded-full flex items-center justify-center text-xl font-bold mx-auto shadow-sm">
+                  1
+                </div>
                 <h3 className="text-xl font-semibold">Connect Sources</h3>
-                <p className="text-muted-foreground text-sm">Link your Slack channels, support emails, and GitHub repos in one click.</p>
+                <p className="text-muted-foreground text-sm">
+                  Link your Slack channels, support emails, and GitHub repos in one click.
+                </p>
               </div>
               <div className="text-center space-y-4 relative">
                 <div className="hidden md:block absolute top-6 -left-1/2 w-full h-[1px] bg-border -z-10" />
-                <div className="w-12 h-12 bg-background border rounded-full flex items-center justify-center text-xl font-bold mx-auto shadow-sm z-10 relative">2</div>
+                <div className="w-12 h-12 bg-background border rounded-full flex items-center justify-center text-xl font-bold mx-auto shadow-sm z-10 relative">
+                  2
+                </div>
                 <h3 className="text-xl font-semibold">AI Processing</h3>
-                <p className="text-muted-foreground text-sm">Our engine categorizes, prioritizes, and links related feedback automatically.</p>
+                <p className="text-muted-foreground text-sm">
+                  Our engine categorizes, prioritizes, and links related feedback automatically.
+                </p>
               </div>
               <div className="text-center space-y-4 relative">
                 <div className="hidden md:block absolute top-6 -left-1/2 w-full h-[1px] bg-border -z-10" />
-                <div className="w-12 h-12 bg-background border rounded-full flex items-center justify-center text-xl font-bold mx-auto shadow-sm z-10 relative">3</div>
+                <div className="w-12 h-12 bg-background border rounded-full flex items-center justify-center text-xl font-bold mx-auto shadow-sm z-10 relative">
+                  3
+                </div>
                 <h3 className="text-xl font-semibold">Take Action</h3>
-                <p className="text-muted-foreground text-sm">Push vetted features to Linear or Jira and close the loop with customers.</p>
+                <p className="text-muted-foreground text-sm">
+                  Push vetted features to Linear or Jira and close the loop with customers.
+                </p>
               </div>
             </div>
           </div>
@@ -282,7 +332,10 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link href="/signup">
-                <Button size="lg" className="h-14 px-8 rounded-full text-lg font-medium shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all">
+                <Button
+                  size="lg"
+                  className="h-14 px-8 rounded-full text-lg font-medium shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all"
+                >
                   Get Started for Free
                 </Button>
               </Link>
@@ -316,40 +369,90 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4 text-sm">Product</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">Features</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Integrations</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Pricing</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Changelog</Link></li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Integrations
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Changelog
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4 text-sm">Company</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">About</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Blog</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Careers</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Contact</Link></li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Careers
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4 text-sm">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">Privacy</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Terms</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Security</Link></li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Terms
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-foreground">
+                    Security
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
           <div className="pt-8 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
             <p>© 2024 FeedbackFlow AI. All rights reserved.</p>
             <div className="flex gap-6">
-              <Link href="#" className="hover:text-foreground">Twitter</Link>
-              <Link href="#" className="hover:text-foreground">GitHub</Link>
-              <Link href="#" className="hover:text-foreground">LinkedIn</Link>
+              <Link href="#" className="hover:text-foreground">
+                Twitter
+              </Link>
+              <Link href="#" className="hover:text-foreground">
+                GitHub
+              </Link>
+              <Link href="#" className="hover:text-foreground">
+                LinkedIn
+              </Link>
             </div>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }

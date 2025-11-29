@@ -1,50 +1,61 @@
-import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { appUsers } from "@/db/schema";
-import { normalizeEmail } from "@/lib/utils/auth";
+import {
+  calculatePasswordScore,
+  extractErrorMessage,
+  isPasswordValid,
+  normalizeEmail,
+  validateEmail,
+} from "@/lib/utils/auth";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const body = (await req.json()) as { email?: string; password?: string };
+    const rawEmail = body.email ?? "";
+    const password = body.password ?? "";
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const email = normalizeEmail(rawEmail);
+    if (!validateEmail(email)) {
+      return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
     }
 
-    if (password.length < 8) {
+    const score = calculatePasswordScore(password);
+    if (!isPasswordValid(score)) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
+        { error: "Password must be at least 8 characters with uppercase, lowercase, and number." },
         { status: 400 },
       );
     }
 
-    const normalizedEmail = normalizeEmail(email);
-
-    const [existingUser] = await db
-      .select()
+    const [existing] = await db
+      .select({ id: appUsers.id })
       .from(appUsers)
-      .where(eq(appUsers.email, normalizedEmail))
+      .where(eq(appUsers.email, email))
       .limit(1);
 
-    if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 });
+    if (existing) {
+      return NextResponse.json(
+        { error: "Account already exists. Please sign in." },
+        { status: 409 },
+      );
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    const [newUser] = await db
+    const [user] = await db
       .insert(appUsers)
-      .values({
-        email: normalizedEmail,
-        passwordHash,
-      })
+      .values({ email, passwordHash })
       .returning({ id: appUsers.id, email: appUsers.email });
 
-    return NextResponse.json(newUser);
-  } catch (error) {
-    console.error("Registration error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (!user) {
+      return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+    }
+
+    return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: extractErrorMessage(e) }, { status: 500 });
   }
 }
