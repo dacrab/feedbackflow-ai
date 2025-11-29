@@ -1,19 +1,7 @@
-import { ChevronDown, Filter, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Filter, Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { FeedbackFilters } from "@/components/inbox/feedback-filters";
-import { Button } from "@/components/ui/button";
-import { SentimentBadge } from "@/components/ui/sentiment-badge";
-import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
 import { filterFeedbackItems, parseFeedbackFilters } from "@/lib/services/query-builder";
 import { formatDateUTC } from "@/lib/utils/date";
@@ -24,7 +12,7 @@ export default async function InboxPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await auth();
-  const userId = (session?.user as { id?: string } | null)?.id;
+  const userId = (session?.user as { id?: string })?.id;
   if (!userId) redirect("/login");
 
   const spObj = await searchParams;
@@ -35,8 +23,7 @@ export default async function InboxPage({
 
   const filters = parseFeedbackFilters(sp);
   const allItems = await getFeedbackItems(userId, { limit: 100 });
-  const filteredItems = filterFeedbackItems(allItems, filters);
-  const items = filteredItems.slice();
+  const items = filterFeedbackItems(allItems, filters);
 
   const sort = (spObj["sort"] as string) || "created_desc";
   items.sort((a, b) => {
@@ -48,146 +35,148 @@ export default async function InboxPage({
   });
 
   return (
-    <div className="space-y-6 flex flex-col h-full">
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inbox</h2>
-          <p className="text-muted-foreground mt-1">Triage and manage incoming feedback.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 border-border/60 shadow-sm bg-background/50 backdrop-blur-sm"
-          >
-            <Filter className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-            Save View
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 border-border/60 shadow-sm bg-background/50 backdrop-blur-sm"
-          >
-            <SlidersHorizontal className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-            Display
-          </Button>
+          <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
+          <p className="text-muted-foreground mt-1">{items.length} feedback items</p>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="sticky top-0 z-10 bg-muted/5 backdrop-blur-xl border-b border-border/40 -mx-8 px-8 py-3 shadow-sm flex items-center justify-between">
-        <FeedbackFilters />
-        <div className="text-xs text-muted-foreground font-medium">{items.length} results</div>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <form className="flex-1 min-w-[200px] max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              name="q"
+              placeholder="Search feedback..."
+              defaultValue={sp.get("q") || ""}
+              className="w-full h-9 pl-9 pr-3 rounded-lg border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </form>
+
+        <select
+          name="sentiment"
+          defaultValue={sp.get("sentiment") || ""}
+          className="h-9 px-3 rounded-lg border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">All sentiment</option>
+          <option value="positive">Positive</option>
+          <option value="neutral">Neutral</option>
+          <option value="negative">Negative</option>
+        </select>
+
+        <select
+          name="status"
+          defaultValue={sp.get("status") || ""}
+          className="h-9 px-3 rounded-lg border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">All status</option>
+          <option value="New">New</option>
+          <option value="Acknowledged">Acknowledged</option>
+          <option value="Actioned">Actioned</option>
+        </select>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex flex-col">
-        <div className="flex-1 overflow-auto">
-          <Table>
-            <TableHeader className="bg-muted/30 hover:bg-muted/30 sticky top-0 z-10 backdrop-blur-md">
-              <TableRow className="border-border/60 hover:bg-transparent">
-                <TableHead className="w-[120px] pl-6">Status</TableHead>
-                <TableHead className="w-[100px]">Severity</TableHead>
-                <TableHead className="w-[120px]">Sentiment</TableHead>
-                <TableHead>Content</TableHead>
-                <TableHead className="w-[180px]">Date</TableHead>
-                <TableHead className="w-[80px] text-right pr-6"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
-                        <Filter className="h-6 w-6 text-muted-foreground/50" />
-                      </div>
-                      <p>No results found matching your filters.</p>
-                      <Button variant="link" size="sm" className="text-primary">
-                        Clear all filters
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((item) => {
-                  const analysis = Array.isArray(item.feedback_analyses)
-                    ? item.feedback_analyses[0]
-                    : item.feedback_analyses;
-                  const severity = analysis?.severity_score ?? 0;
+      {/* Items */}
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+        {items.length === 0 ? (
+          <div className="p-12 text-center">
+            <Filter className="mx-auto h-8 w-8 text-muted-foreground/50" />
+            <p className="mt-4 text-muted-foreground">No feedback items found</p>
+            <p className="text-sm text-muted-foreground">
+              Try adjusting your filters or add a data source in settings
+            </p>
+          </div>
+        ) : (
+          items.map((item) => {
+            const analysis = Array.isArray(item.feedback_analyses)
+              ? item.feedback_analyses[0]
+              : item.feedback_analyses;
 
-                  return (
-                    <TableRow
-                      key={item.id}
-                      className="group border-border/40 hover:bg-muted/40 transition-all cursor-pointer h-[72px]"
-                    >
-                      <TableCell className="pl-6">
-                        <StatusBadge status={analysis?.status} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-2 w-2 rounded-full ring-2 ring-background ${severity >= 4 ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" : severity >= 3 ? "bg-orange-500" : "bg-muted-foreground/30"}`}
-                          />
-                          <span className="font-medium text-sm tabular-nums">{severity}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <SentimentBadge sentiment={analysis?.sentiment} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1 py-1 max-w-[600px]">
-                          <span className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                            {analysis?.summary || "No summary available"}
-                          </span>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="truncate max-w-[300px] opacity-80">
-                              {item.raw_content}
-                            </span>
-                            {analysis?.topics && analysis.topics.length > 0 && (
-                              <>
-                                <span className="w-1 h-1 rounded-full bg-border" />
-                                <div className="flex gap-1">
-                                  {analysis.topics.slice(0, 2).map((t) => (
-                                    <span
-                                      key={t}
-                                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/5 text-primary/80"
-                                    >
-                                      {t}
-                                    </span>
-                                  ))}
-                                  {analysis.topics.length > 2 && (
-                                    <span className="text-[10px] text-muted-foreground">
-                                      +{analysis.topics.length - 2}
-                                    </span>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground font-medium text-right tabular-nums">
-                        {formatDateUTC(item.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <Link href={`/feedback/${item.id}`}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full hover:bg-background hover:shadow-sm border border-transparent hover:border-border/50 opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <ChevronDown className="h-4 w-4 -rotate-90" />
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            return (
+              <Link
+                key={item.id}
+                href={`/feedback/${item.id}`}
+                className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors group"
+              >
+                {/* Severity indicator */}
+                <div
+                  className={`h-2 w-2 rounded-full shrink-0 ${
+                    (analysis?.severity_score ?? 0) >= 4
+                      ? "bg-red-500"
+                      : (analysis?.severity_score ?? 0) >= 3
+                        ? "bg-orange-500"
+                        : "bg-muted-foreground/30"
+                  }`}
+                />
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{analysis?.summary || "No summary"}</p>
+                    <SentimentBadge sentiment={analysis?.sentiment ?? null} />
+                    <StatusBadge status={analysis?.status ?? null} />
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                    <span className="truncate max-w-xs">{item.raw_content}</span>
+                    {analysis?.topics && analysis.topics.length > 0 && (
+                      <>
+                        <span className="text-border">·</span>
+                        <span className="shrink-0">{analysis.topics[0]}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    {formatDateUTC(item.created_at)}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                </div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
+  );
+}
+
+function SentimentBadge({ sentiment }: { sentiment?: string | null }) {
+  if (!sentiment) return null;
+
+  const colors = {
+    positive: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    neutral: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+    negative: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  };
+
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${colors[sentiment as keyof typeof colors] || colors.neutral}`}
+    >
+      {sentiment}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status?: string | null }) {
+  if (!status || status === "New") return null;
+
+  const colors = {
+    Acknowledged: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    Actioned: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  };
+
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${colors[status as keyof typeof colors] || ""}`}
+    >
+      {status}
+    </span>
   );
 }
