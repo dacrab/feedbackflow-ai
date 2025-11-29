@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 
 export default function StatusChanger({
@@ -16,9 +23,12 @@ export default function StatusChanger({
   const [status, setStatus] = useState(initial);
   const [saving, setSaving] = useState(false);
 
-  async function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const val = e.target.value;
+  async function onValueChange(val: string) {
     setSaving(true);
+    // Optimistic update
+    const oldStatus = status;
+    setStatus(val);
+
     try {
       const res = await fetch(`/api/feedback/${id}/status`, {
         method: "PATCH",
@@ -26,9 +36,9 @@ export default function StatusChanger({
         body: JSON.stringify({ status: val }),
       });
       if (!res.ok) throw new Error(await res.text());
-      setStatus(val);
       toast.success("Status updated");
     } catch {
+      setStatus(oldStatus);
       toast.error("Failed to update status");
     } finally {
       setSaving(false);
@@ -36,20 +46,17 @@ export default function StatusChanger({
   }
 
   return (
-    <label className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
-      <select
-        className={cn("select-base", compact ? "px-3 py-1 text-xs" : "px-3.5 py-2 text-sm")}
-        value={status}
-        onChange={onChange}
-        disabled={saving}
-      >
-        <option value="New">New</option>
-        <option value="Acknowledged">Acknowledged</option>
-        <option value="Actioned">Actioned</option>
-      </select>
-      {saving && (
-        <span className="text-2xs uppercase tracking-wide text-muted-foreground">Saving…</span>
-      )}
-    </label>
+    <div className="flex items-center gap-2">
+      <Select value={status} onValueChange={onValueChange} disabled={saving}>
+        <SelectTrigger className={cn("w-[140px]", compact && "h-8 text-xs")}>
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="New">New</SelectItem>
+          <SelectItem value="Acknowledged">Acknowledged</SelectItem>
+          <SelectItem value="Actioned">Actioned</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

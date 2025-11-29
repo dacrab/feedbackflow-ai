@@ -1,346 +1,138 @@
-"use client";
+import { auth } from "@/auth"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { OverviewCharts } from "@/components/dashboard/overview-charts"
+import { getDashboardData } from "@/lib/dashboard-data"
+import { computeMetrics } from "@/lib/dashboard"
+import { Activity, MessageSquare, AlertTriangle, Zap, TrendingUp, ArrowUpRight } from "lucide-react"
+import { redirect } from "next/navigation"
 
-import {
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Chart,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-} from "chart.js";
-import { useEffect, useState } from "react";
-import { Bar, Line, Pie } from "react-chartjs-2";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  type ComputedMetrics,
-  chartOptions,
-  computeMetrics,
-  getSentimentChartData,
-  getSeverityChartData,
-  getTopicChartData,
-  getTrendChartData,
-} from "@/lib/dashboard";
-import type { DashboardData } from "@/lib/types";
+export default async function DashboardPage() {
+  const session = await auth()
+  if (!session?.user) redirect("/login")
+  
+  const userId = (session.user as { id?: string }).id
+  if (!userId) redirect("/login")
 
-Chart.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Filler,
-);
+  const data = await getDashboardData(userId)
+  const metrics = computeMetrics(data)
 
-function MetricTile({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string | number;
-  helper: string;
-}) {
-  return (
-    <div className="metric-tile">
-      <p className="text-xs uppercase text-white/70">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-xs text-white/70">{helper}</p>
-    </div>
-  );
-}
+  // Transform data for charts
+  const trendData = metrics.trendLabels.map((label, i) => ({
+    name: label,
+    value: metrics.trendValues[i] ?? 0,
+  }))
 
-function StatCard({
-  title,
-  value,
-  description,
-}: {
-  title: string;
-  value: string | number;
-  description: string;
-}) {
-  return (
-    <Card className="border border-border/60 bg-background/70">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs uppercase text-muted-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1">
-        <p className="text-2xl font-semibold text-foreground">{value}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
-}
+  const sentimentData = [
+    { name: "Positive", value: metrics.positive },
+    { name: "Neutral", value: metrics.neutral },
+    { name: "Negative", value: metrics.negative },
+  ]
 
-function HeroSection({ metrics }: { metrics: ComputedMetrics }) {
-  const tiles = [
-    {
-      label: "Total feedback",
-      value: metrics.total,
-      helper: `Last ingest captured ${metrics.latestCount} new items.`,
-    },
-    {
-      label: "Positive share",
-      value: `${metrics.positiveShare}%`,
-      helper: `${metrics.positive} positive vs ${metrics.negative} negative.`,
-    },
-    {
-      label: "Severity ≥ 4",
-      value: metrics.highSeverity,
-      helper: `Average severity ${metrics.avgSeverity}.`,
-    },
-  ];
+  const topicData = metrics.topTopics.map(t => ({
+    name: t.topic,
+    value: t.value
+  }))
+
+  const severityData = [1, 2, 3, 4, 5].map(s => ({
+      name: String(s),
+      value: data.severityHist[s] || 0
+  }))
 
   return (
-    <Card className="hero-card">
-      <div className="absolute inset-0 opacity-80">
-        <div className="h-full w-full glow-hero-dark" />
-      </div>
-      <div className="relative space-y-6 p-6 sm:p-8">
-        <div className="space-y-3">
-          <span className="pulse-badge">Live pulse</span>
-          <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
-            Insight dashboard
-          </h1>
-          <p className="max-w-3xl text-sm text-white/70">
-            Monitor sentiment, severity, and trending topics across every feedback source in real
-            time. Use these signals to prioritise fixes, celebrate wins, and broadcast alerts before
-            issues escalate.
-          </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h2 className="text-3xl font-bold tracking-tight">Overview</h2>
+            <p className="text-muted-foreground mt-1">Welcome back, here's what's happening with your product.</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {tiles.map((t) => (
-            <MetricTile key={t.label} {...t} />
-          ))}
+        <div className="flex items-center gap-2">
+            <div className="px-3 py-1 rounded-full bg-background/50 border border-border/40 text-xs font-medium flex items-center shadow-sm backdrop-blur-sm">
+                <span className="relative flex h-2 w-2 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Live Updates
+            </div>
         </div>
       </div>
-    </Card>
-  );
-}
-
-function DigestCard({ metrics }: { metrics: ComputedMetrics }) {
-  return (
-    <Card className="h-full border border-border/60 bg-background/85">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-sm font-semibold text-foreground">Signal digest</CardTitle>
-            <p className="text-xs text-muted-foreground">Today&apos;s automation summary</p>
+      
+      {/* Metric Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border/40 shadow-sm bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors group cursor-default relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <MessageSquare className="w-16 h-16 -rotate-12" />
           </div>
-          <span className="momentum-badge">{metrics.trendMomentum}</span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5 text-sm text-muted-foreground">
-        <div className="digest-box">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Latest ingest</p>
-          <p className="mt-2 text-foreground">
-            Processed <span className="font-semibold">{metrics.latestCount}</span> items with a
-            change of {metrics.trendDeltaLabel} vs the previous run.
-          </p>
-        </div>
-        <ul className="space-y-3 text-sm leading-relaxed">
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-emerald-400" />
-            <span>
-              {metrics.positiveShare}% of customer feedback is positive. Keep the team informed of
-              wins by highlighting them in the inbox.
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-rose-400" />
-            <span>
-              {metrics.highSeverity} items flagged severity ≥ 4. Route the most recent ones into
-              your response workflow within the next sprint.
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-sky-400" />
-            <span>
-              Enable Slack notifications in settings to broadcast new high severity feedback in real
-              time.
-            </span>
-          </li>
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TopTopicsCard({ topics }: { topics: { topic: string; value: number }[] }) {
-  return (
-    <Card className="border border-border/60 bg-background/70">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs uppercase text-muted-foreground">Top topics</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {topics.length ? (
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            {topics.map(({ topic, value }) => (
-              <li key={topic} className="topic-row">
-                <span className="font-medium text-foreground">{topic}</span>
-                <span className="text-xs text-muted-foreground">{value}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">No topic clusters yet.</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function SentimentLegend({
-  positive,
-  neutral,
-  negative,
-}: {
-  positive: number;
-  neutral: number;
-  negative: number;
-}) {
-  const items = [
-    { label: "Positive", value: positive },
-    { label: "Neutral", value: neutral },
-    { label: "Negative", value: negative },
-  ];
-
-  return (
-    <div className="w-full space-y-2 text-xs text-muted-foreground">
-      {items.map(({ label, value }) => (
-        <div key={label} className="legend-row">
-          <span>{label}</span>
-          <span className="font-medium text-foreground">{value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/dashboard", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : Promise.reject(res.text())))
-      .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
-  }, []);
-
-  if (error) {
-    return (
-      <div className="rounded-2xl border border-red-200/70 bg-red-50/80 p-6 text-sm text-red-600">
-        Error loading dashboard: {error}
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">Loading…</div>
-    );
-  }
-
-  const metrics = computeMetrics(data);
-  const sentimentData = getSentimentChartData(metrics.positive, metrics.neutral, metrics.negative);
-  const topicData = getTopicChartData(data.topicCounts);
-  const severityData = getSeverityChartData(data.severityHist);
-  const trendData = getTrendChartData(metrics.trendLabels, metrics.trendValues);
-
-  return (
-    <div className="space-y-12">
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <HeroSection metrics={metrics} />
-        <DigestCard metrics={metrics} />
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Queue momentum"
-          value={metrics.trendDeltaLabel}
-          description="Change in analysed items compared with the previous run"
-        />
-        <TopTopicsCard topics={metrics.topTopics} />
-        <StatCard
-          title="Neutral volume"
-          value={metrics.neutral}
-          description="Neutral classifier hits across the active window"
-        />
-        <StatCard
-          title="Average severity"
-          value={metrics.avgSeverity}
-          description="Weighted mean severity across the dataset"
-        />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
-        <Card className="border border-border/60 bg-background/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Daily intake trend
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Rolling count of analysed feedback per day
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Feedback</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold tracking-tight">{metrics.total}</div>
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <span className={metrics.trendDelta >= 0 ? "text-emerald-500 flex items-center" : "text-rose-500 flex items-center"}>
+                {metrics.trendDelta >= 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <TrendingUp className="h-3 w-3 mr-0.5 rotate-180" />}
+                {metrics.trendDeltaLabel}
+              </span>
+              <span>vs last month</span>
             </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border/40 shadow-sm bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors group cursor-default relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Zap className="w-16 h-16 -rotate-12" />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Positive Sentiment</CardTitle>
           </CardHeader>
           <CardContent>
-            <Line data={trendData} options={chartOptions.trend} height={260} />
+            <div className="text-3xl font-bold tracking-tight">{metrics.positiveShare}%</div>
+            <div className="w-full bg-muted/50 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-500 to-emerald-300 h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${metrics.positiveShare}%` }} />
+            </div>
           </CardContent>
         </Card>
-        <Card className="border border-border/60 bg-background/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Sentiment distribution
-            </CardTitle>
+        
+        <Card className="border-border/40 shadow-sm bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors group cursor-default relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <AlertTriangle className="w-16 h-16 -rotate-12" />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Critical Issues</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center gap-6">
-            <Pie data={sentimentData} options={chartOptions.sentiment} />
-            <SentimentLegend
-              positive={metrics.positive}
-              neutral={metrics.neutral}
-              negative={metrics.negative}
-            />
+          <CardContent>
+            <div className="text-3xl font-bold tracking-tight">{metrics.highSeverity}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Items with severity ≥ 4
+            </p>
           </CardContent>
         </Card>
-      </section>
+        
+        <Card className="border-border/40 shadow-sm bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors group cursor-default relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Activity className="w-16 h-16 -rotate-12" />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Severity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold tracking-tight">{metrics.avgSeverity}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Weighted score (1-5)
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <Card className="border border-border/60 bg-background/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-foreground">Topic clusters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {metrics.topicLabels.length ? (
-              <Bar
-                data={topicData}
-                options={chartOptions.topic}
-                height={Math.max(metrics.topicLabels.length * 32, 220)}
-              />
-            ) : (
-              <div className="info-box text-sm text-muted-foreground">
-                No topics yet. Ingest more feedback to classify emerging themes.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="border border-border/60 bg-background/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Severity distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Bar data={severityData} options={chartOptions.severity} height={240} />
-          </CardContent>
-        </Card>
-      </section>
+      {/* Charts Section */}
+      <div className="rounded-xl">
+        <OverviewCharts 
+            trendData={trendData} 
+            sentimentData={sentimentData} 
+            topicData={topicData}
+            severityData={severityData}
+        />
+      </div>
     </div>
-  );
+  )
 }

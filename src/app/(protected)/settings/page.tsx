@@ -6,12 +6,13 @@ import SettingsItem, {
   getSourceDescription,
   getSourceLabel,
 } from "@/components/settings/settings-item";
-import Button from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Input from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks/use-api-mutation";
 import { useApiQuery } from "@/hooks/use-api-query";
 import type { LLMProvider, TransformedNotificationRow, TransformedSourceRow } from "@/lib/types";
+import { Key, Bell, Database, Activity, Settings } from "lucide-react";
 
 export default function SettingsPage() {
   const [provider, setProvider] = useState<LLMProvider>("google");
@@ -93,260 +94,297 @@ export default function SettingsPage() {
   if (settingsLoading || sourcesLoading || hooksLoading) {
     return (
       <div className="flex h-72 items-center justify-center">
-        <div className="info-box text-sm text-muted-foreground">Loading workspace settings…</div>
+        <div className="info-box text-sm text-muted-foreground flex items-center gap-2">
+            <Activity className="h-4 w-4 animate-spin" />
+            Loading workspace settings…
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10">
-      <header className="space-y-2">
-        <span className="text-xxs font-semibold uppercase text-muted-foreground">
-          Control centre
-        </span>
-        <h1 className="text-3xl font-semibold leading-tight text-foreground">Workspace settings</h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Configure analysis providers, ingest sources, and outbound notifications. Keep connections
-          healthy to ensure every customer signal is classified and routed instantly.
+    <div className="space-y-8 max-w-5xl">
+      <header className="space-y-2 border-b border-border/40 pb-6">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
+                <Settings className="h-3.5 w-3.5" />
+            </div>
+            Settings
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Workspace Configuration</h1>
+        <p className="text-muted-foreground max-w-2xl text-base">
+          Manage your LLM providers, data sources, and notification channels.
         </p>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <Card className="border border-border/60 bg-background/85">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              LLM provider & API key
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Choose the model powering sentiment, topic classification, severity scoring, and
-              summaries.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={onSave} className="space-y-6" aria-live="polite">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 text-sm">
-                  <label
-                    className="text-xs font-semibold uppercase text-muted-foreground"
-                    htmlFor="provider"
-                  >
-                    Provider
-                  </label>
-                  <select
-                    id="provider"
-                    className="select-base w-full px-3.5 py-2.5 text-sm"
-                    value={provider}
-                    onChange={(e) => setProvider(e.target.value as LLMProvider)}
-                  >
-                    <option value="google">Google (Gemini)</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic</option>
-                  </select>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <label
-                    className="text-xs font-semibold uppercase text-muted-foreground"
-                    htmlFor="model"
-                  >
-                    Model
-                  </label>
-                  <Input
-                    id="model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder="e.g. gpt-4o, gemini-2.5-pro"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <label
-                  className="text-xs font-semibold uppercase text-muted-foreground"
-                  htmlFor="apiKey"
-                >
-                  API key{" "}
-                  {hasKey && <em className="lowercase text-muted-foreground">(already saved)</em>}
-                </label>
-                <Input
-                  id="apiKey"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  Stored securely; only the final 4 characters display elsewhere.
+      <div className="grid gap-8">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <Card className="border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm">
+            <CardHeader className="pb-4">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Key className="h-4 w-4 text-primary" />
+                    LLM Provider & API Key
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                Choose the model powering sentiment, topic classification, severity scoring, and
+                summaries.
                 </p>
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                <Button type="submit" variant="primary" className="px-6" disabled={savingSettings}>
-                  {savingSettings ? "Saving…" : "Save provider"}
-                </Button>
-              </div>
-              {msg && <div className="text-sm text-emerald-600">{msg}</div>}
-            </form>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={onSave} className="space-y-6" aria-live="polite">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2 text-sm">
+                    <label
+                        className="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
+                        htmlFor="provider"
+                    >
+                        Provider
+                    </label>
+                    <div className="relative">
+                        <select
+                            id="provider"
+                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value as LLMProvider)}
+                        >
+                            <option value="google">Google (Gemini)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                        </select>
+                    </div>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                    <label
+                        className="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
+                        htmlFor="model"
+                    >
+                        Model
+                    </label>
+                    <Input
+                        id="model"
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        placeholder="e.g. gpt-4o, gemini-2.5-pro"
+                        className="h-10"
+                    />
+                    </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                    <label
+                    className="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
+                    htmlFor="apiKey"
+                    >
+                    API Key{" "}
+                    {hasKey && <span className="text-emerald-500 text-[10px] ml-2 font-normal bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Connected</span>}
+                    </label>
+                    <Input
+                    id="apiKey"
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={hasKey ? "••••••••••••••••" : "sk-..."}
+                    className="h-10 font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                    Stored securely; only the final 4 characters display elsewhere.
+                    </p>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                    <Button type="submit" variant="default" className="px-6" disabled={savingSettings}>
+                    {savingSettings ? "Saving…" : "Save Changes"}
+                    </Button>
+                </div>
+                {msg && <div className="text-sm text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-md flex items-center gap-2"><CheckIcon /> {msg}</div>}
+                </form>
+            </CardContent>
+            </Card>
 
-        <Card className="border border-border/60 bg-background/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Connection health
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <div className="digest-box">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">
-                Active sources
-              </p>
-              <p className="mt-2 text-lg font-semibold text-foreground">{enabledSources}</p>
-              <p className="text-xs text-muted-foreground">
-                {(sources ?? []).length} configured total.
-              </p>
-            </div>
-            <div className="digest-box">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">
-                Notification webhooks
-              </p>
-              <p className="mt-2 text-lg font-semibold text-foreground">{enabledHooks}</p>
-              <p className="text-xs text-muted-foreground">
-                Alerts fire for severity ≥ 4 when enabled.
-              </p>
-            </div>
-            <p>
-              Keep at least one data source and one webhook enabled to ensure high-severity feedback
-              is routed in real time.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
+            <Card className="border border-border/60 bg-muted/10 backdrop-blur-sm shadow-none h-fit">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    System Health
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+                <div className="bg-background rounded-lg border border-border/50 p-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-1">
+                    Active Sources
+                </p>
+                <div className="flex items-end gap-2">
+                    <p className="text-2xl font-bold text-foreground">{enabledSources}</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                    / {(sources ?? []).length} configured
+                    </p>
+                </div>
+                </div>
+                <div className="bg-background rounded-lg border border-border/50 p-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-1">
+                    Active Webhooks
+                </p>
+                <div className="flex items-end gap-2">
+                    <p className="text-2xl font-bold text-foreground">{enabledHooks}</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                    monitoring alerts
+                    </p>
+                </div>
+                </div>
+                <p className="text-xs bg-primary/5 text-primary p-3 rounded border border-primary/10">
+                <span className="font-semibold">Tip:</span> Keep at least one source enabled to ensure continuous feedback ingestion.
+                </p>
+            </CardContent>
+            </Card>
+        </section>
 
-      <Card className="border border-border/60 bg-background/85">
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold text-foreground">Data sources</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Connect GitHub repositories or other public feeds. Daily ingest processes new items
-            since the last run.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await createSource(
-                "/api/sources",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ type: "github", repo, token: ghToken }),
-                },
-                () => {
-                  setRepo("");
-                  setGhToken("");
-                  return null;
-                },
-              );
-            }}
-            className="grid gap-3 md:grid-cols-[2fr,2fr,auto]"
-          >
-            <Input
-              placeholder="GitHub repo (owner/name)"
-              value={repo}
-              onChange={(e) => setRepo(e.target.value)}
-            />
-            <Input
-              placeholder="GitHub token (optional)"
-              value={ghToken}
-              onChange={(e) => setGhToken(e.target.value)}
-            />
-            <div className="flex items-center justify-end">
-              <Button type="submit" variant="primary" disabled={creatingSource}>
-                {creatingSource ? "Adding…" : "Add source"}
-              </Button>
-            </div>
-          </form>
-          <div className="grid gap-3 text-sm">
-            {(sources || []).length === 0 && (
-              <div className="info-box text-muted-foreground">
-                No data sources yet. Connect a GitHub repo (issues) or add a custom feed via
-                automation.
-              </div>
-            )}
-            {(sources || []).map((s) => (
-              <SettingsItem
-                key={s.id}
-                item={s}
-                apiPath="sources"
-                onUpdate={refetchSources}
-                label={getSourceLabel(s.type)}
-                description={getSourceDescription(s.config)}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        <div className="grid md:grid-cols-2 gap-6">
+            <Card className="border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm flex flex-col h-full">
+                <CardHeader>
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" />
+                    Data Sources
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                    Connect GitHub repositories or feeds.
+                </p>
+                </CardHeader>
+                <CardContent className="space-y-6 flex-1">
+                <form
+                    onSubmit={async (e) => {
+                    e.preventDefault();
+                    await createSource(
+                        "/api/sources",
+                        {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "github", repo, token: ghToken }),
+                        },
+                        () => {
+                        setRepo("");
+                        setGhToken("");
+                        return null;
+                        },
+                    );
+                    }}
+                    className="space-y-3"
+                >
+                    <div className="grid gap-3">
+                        <Input
+                        placeholder="GitHub repo (owner/name)"
+                        value={repo}
+                        onChange={(e) => setRepo(e.target.value)}
+                        className="h-10"
+                        />
+                        <Input
+                        placeholder="GitHub token (optional)"
+                        value={ghToken}
+                        onChange={(e) => setGhToken(e.target.value)}
+                        type="password"
+                        className="h-10"
+                        />
+                    </div>
+                    <Button type="submit" variant="secondary" className="w-full" disabled={creatingSource}>
+                        {creatingSource ? "Adding..." : "Connect Source"}
+                    </Button>
+                </form>
+                <div className="grid gap-3 text-sm border-t border-border/40 pt-4">
+                    {(sources || []).length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border/60">
+                        No data sources connected.
+                    </div>
+                    )}
+                    {(sources || []).map((s) => (
+                    <SettingsItem
+                        key={s.id}
+                        item={s}
+                        apiPath="sources"
+                        onUpdate={refetchSources}
+                        label={getSourceLabel(s.type)}
+                        description={getSourceDescription(s.config)}
+                    />
+                    ))}
+                </div>
+                </CardContent>
+            </Card>
 
-      <Card className="border border-border/60 bg-background/85">
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold text-foreground">Notifications</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Trigger Slack or webhook alerts when severity breaches your threshold.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await createNotification(
-                "/api/notifications",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ type: "slack", webhook: slackUrl }),
-                },
-                () => {
-                  setSlackUrl("");
-                  return null;
-                },
-              );
-            }}
-            className="grid gap-3 md:grid-cols-[2fr,auto]"
-          >
-            <Input
-              placeholder="Slack webhook URL"
-              value={slackUrl}
-              onChange={(e) => setSlackUrl(e.target.value)}
-            />
-            <div className="flex items-center justify-end">
-              <Button type="submit" variant="primary" disabled={creatingNotification}>
-                {creatingNotification ? "Adding…" : "Add webhook"}
-              </Button>
-            </div>
-          </form>
-          <div className="grid gap-3 text-sm">
-            {(hooks || []).length === 0 && (
-              <div className="info-box text-muted-foreground">
-                No notifications configured yet. Add a Slack webhook to alert the team when severity
-                spikes.
-              </div>
-            )}
-            {(hooks || []).map((h) => (
-              <SettingsItem
-                key={h.id}
-                item={h}
-                apiPath="notifications"
-                onUpdate={refetchHooks}
-                label={getNotificationLabel(h.type)}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="info-box text-xs text-muted-foreground">
-        <p>
-          This workspace uses Auth.js with credentials and OAuth providers. Configure provider
-          credentials via environment variables and keep your API keys secure.
-        </p>
+            <Card className="border border-border/60 bg-card/50 backdrop-blur-sm shadow-sm flex flex-col h-full">
+                <CardHeader>
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    Notifications
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                    Alerts for high-severity feedback.
+                </p>
+                </CardHeader>
+                <CardContent className="space-y-6 flex-1">
+                <form
+                    onSubmit={async (e) => {
+                    e.preventDefault();
+                    await createNotification(
+                        "/api/notifications",
+                        {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "slack", webhook: slackUrl }),
+                        },
+                        () => {
+                        setSlackUrl("");
+                        return null;
+                        },
+                    );
+                    }}
+                    className="space-y-3"
+                >
+                    <div className="flex gap-2">
+                        <Input
+                        placeholder="Slack webhook URL"
+                        value={slackUrl}
+                        onChange={(e) => setSlackUrl(e.target.value)}
+                        className="h-10"
+                        />
+                    </div>
+                    <Button type="submit" variant="secondary" className="w-full" disabled={creatingNotification}>
+                        {creatingNotification ? "Adding..." : "Add Webhook"}
+                    </Button>
+                </form>
+                <div className="grid gap-3 text-sm border-t border-border/40 pt-4">
+                    {(hooks || []).length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border/60">
+                        No notifications configured.
+                    </div>
+                    )}
+                    {(hooks || []).map((h) => (
+                    <SettingsItem
+                        key={h.id}
+                        item={h}
+                        apiPath="notifications"
+                        onUpdate={refetchHooks}
+                        label={getNotificationLabel(h.type)}
+                    />
+                    ))}
+                </div>
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
   );
+}
+
+function CheckIcon() {
+    return (
+        <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+    )
 }

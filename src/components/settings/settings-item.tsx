@@ -3,7 +3,7 @@
  */
 
 import { toast } from "sonner";
-import Button from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
 interface BaseItem {

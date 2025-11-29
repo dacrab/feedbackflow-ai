@@ -1,63 +1,34 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
-import Nav from "@/components/nav";
-import ThemeToggle from "@/components/theme-toggle";
-import Button from "@/components/ui/button";
 
-export default async function ProtectedLayout({ children }: { children: ReactNode }) {
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground antialiased">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] glow-top-blue" />
-
-      <header className="border-b border-border/60 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-5 sm:px-6 lg:px-8">
-          <Link href="/dashboard" className="logo-container">
-            <span className="text-xxs font-semibold uppercase text-muted-foreground">
-              FeedbackFlow
-            </span>
-            <span className="hidden text-sm text-muted-foreground md:inline">Command Center</span>
-          </Link>
-
-          <div className="hidden md:block">
-            <Nav orientation="horizontal" />
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-            <form action="/logout" method="post">
-              <Button type="submit" variant="outline" size="sm" className="rounded-xl">
-                Sign out
-              </Button>
-            </form>
-          </div>
+    <SessionProvider session={session}>
+      <div className="flex min-h-screen w-full bg-background">
+        <div className="hidden md:block w-[260px] shrink-0 sticky top-0 h-screen z-30">
+          <AppSidebar />
         </div>
-        <div className="border-t border-border/40 bg-background/60 px-4 py-3 backdrop-blur md:hidden">
-          <div className="mx-auto max-w-6xl">
-            <Nav orientation="horizontal" />
-          </div>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-muted/5">
+          {/* Mobile Header */}
+          <header className="md:hidden flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-6 sticky top-0 z-20">
+            <div className="flex items-center gap-2 font-semibold text-foreground">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 0 1 9-9" /></svg>
+                </div>
+                FeedbackFlow
+            </div>
+            {/* Mobile menu trigger would go here */}
+          </header>
+          
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-y-auto p-6 md:p-8 max-w-[1600px] mx-auto w-full animate-in fade-in duration-500">
+              {children}
+          </main>
         </div>
-      </header>
-
-      <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-        <div className="absolute inset-x-0 top-4 -z-10 h-44 rounded-3xl glow-top-dark" />
-        <div className="relative flex-1">{children}</div>
-      </main>
-
-      <footer className="border-t border-border/40 bg-background/80 py-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 text-xs text-muted-foreground sm:px-6 lg:px-8 md:flex-row md:items-center md:justify-between">
-          <p>
-            © {new Date().getFullYear()} FeedbackFlow AI · Customer signals at the speed of product.
-          </p>
-          <p className="text-muted-foreground/80">
-            Powered by Next.js 16, Auth.js, Neon Postgres, and automated LLM pipelines.
-          </p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </SessionProvider>
   );
 }

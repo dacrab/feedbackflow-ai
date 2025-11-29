@@ -1,65 +1,44 @@
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { cookies } from "next/headers";
-import Script from "next/script";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import AppToaster from "@/components/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/cn";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({ 
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "FeedbackFlow AI",
-  description: "Automated micro-SaaS to ingest, analyze, and triage public feedback using LLMs.",
+  description: "The modern command center for customer feedback intelligence",
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0f1115" },
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-  ],
-};
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const themeCookie = (await cookies()).get("theme")?.value;
-  const htmlClass = themeCookie === "dark" ? "dark" : themeCookie === "light" ? "light" : undefined;
   return (
-    <html lang="en" className={htmlClass} suppressHydrationWarning>
-      <head>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`!function(){try{var d=document.documentElement;var v=localStorage.getItem('theme');if(v==='dark'||v==='light'){d.classList.remove('light','dark');d.classList.add(v)}else{var m=window.matchMedia('(prefers-color-scheme: dark)');d.classList.add(m.matches?'dark':'light')}}catch(e){}}();`}
-        </Script>
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
-        suppressHydrationWarning
-      >
-        <a
-          href="#content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:px-3 focus:py-1.5 focus:rounded-md focus:bg-foreground focus:text-background"
+    <html lang="en" suppressHydrationWarning>
+      <body className={cn(
+        "min-h-screen bg-background font-sans antialiased",
+        inter.variable
+      )}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          Skip to content
-        </a>
-        <div aria-hidden className="pointer-events-none fixed inset-0 -z-20 overflow-hidden">
-          <div className="absolute -top-40 right-0 h-96 w-96 rounded-full glow-blue-strong blur-2xl" />
-          <div className="absolute top-1/3 -left-32 h-[28rem] w-[28rem] rounded-full glow-indigo blur-3xl" />
-          <div className="absolute inset-0 glow-teal-overlay" />
-        </div>
-        <div id="content" tabIndex={-1}>
+          {/* Global noise texture for tactile feel */}
+          <div className="fixed inset-0 pointer-events-none opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] z-50 contrast-150 brightness-150 mix-blend-overlay" />
+          
           {children}
-        </div>
-        <AppToaster />
+          <Toaster position="bottom-right" theme="system" />
+        </ThemeProvider>
       </body>
     </html>
   );

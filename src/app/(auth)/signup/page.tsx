@@ -1,193 +1,122 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useRef, useState } from "react";
 import { toast } from "sonner";
-import EmailField from "@/components/auth/email-field";
-import OAuthProviders from "@/components/auth/oauth-providers";
-import PasswordField from "@/components/auth/password-field";
-import Button from "@/components/ui/button";
-import { UserPlusIcon } from "@/components/ui/icons";
-import { useOAuth } from "@/hooks/use-oauth";
-import {
-  calculatePasswordScore,
-  extractErrorMessage,
-  isPasswordValid,
-  normalizeEmail,
-  validateEmail,
-} from "@/lib/utils/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { normalizeEmail } from "@/lib/utils/auth";
+import { Loader2 } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const honeypotRef = useRef<HTMLInputElement | null>(null);
-  const { signInWithOAuth, isLoading: oauthLoading } = useOAuth();
-
-  const passwordScore = calculatePasswordScore(password);
+  const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null);
-    setMsg(null);
-    if (honeypotRef.current?.value) return;
-
-    const normalizedEmail = normalizeEmail(email);
-    if (!validateEmail(normalizedEmail)) {
-      setErr("Enter a valid email address.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErr("Passwords do not match.");
-      return;
-    }
-    if (!isPasswordValid(passwordScore)) {
-      setErr("Password does not meet security requirements.");
-      return;
-    }
-    if (!acceptTerms) {
-      setErr("You must accept the Terms and Privacy Policy.");
-      return;
-    }
-
     try {
       setIsLoading(true);
-      const res = await fetch("/api/auth/signup", {
+
+      const res = await fetch("/api/auth/register", {
         method: "POST",
+        body: JSON.stringify({ email, password }),
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        const message = body.error || "Signup failed";
-        if (res.status === 409) {
-          toast.message("Account already exists. Please sign in.");
-        } else {
-          toast.error(message);
-        }
-        setErr(message);
-        return;
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create account");
       }
 
-      toast.success("Account created. Signing you in…");
-      const signInResult = await signIn("credentials", {
-        email: normalizedEmail,
+      toast.success("Account created");
+
+      // Auto login
+      const result = await signIn("credentials", {
+        email: normalizeEmail(email),
         password,
         redirect: false,
         callbackUrl: "/dashboard",
       });
 
-      if (signInResult?.error) {
-        setMsg("Account created. Please sign in with your credentials.");
-        toast.error(signInResult.error);
-        return;
+      if (result?.error) {
+        toast.error("Failed to sign in automatically");
+        router.push("/login");
+      } else {
+        router.push("/dashboard");
       }
-
-      setMsg("Account created. Redirecting to your dashboard…");
-      window.location.assign(signInResult?.url ?? "/dashboard");
-    } catch (e: unknown) {
-      const message = extractErrorMessage(e);
-      setErr(message);
-      toast.error(message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2 text-left">
-        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest-plus text-muted-foreground">
-          <UserPlusIcon className="h-4 w-4" /> Start in minutes
-        </span>
-        <h2 className="text-3xl font-semibold leading-tight text-foreground">
-          Create your FeedbackFlow workspace
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Verify your email to activate automated ingest, LLM analysis, and real-time triage.
-        </p>
+    <div className="w-full space-y-6">
+      <div className="space-y-2 text-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Create an account</h1>
+        <p className="text-muted-foreground">Enter your email below to create your account</p>
       </div>
-
-      <form onSubmit={onSubmit} className="space-y-5" noValidate>
-        <input
-          ref={honeypotRef}
-          type="text"
-          className="hidden"
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
-        />
-
-        <EmailField
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          ariaInvalid={!!err && !validateEmail(email)}
-        />
-
-        <PasswordField
-          id="password"
-          label="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          showStrength
-          showIcon
-          ariaInvalid={!!err}
-        />
-
-        <PasswordField
-          id="confirm"
-          label="Confirm password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Re-enter your password"
-          ariaInvalid={password !== confirmPassword && confirmPassword.length > 0}
-        />
-        {confirmPassword.length > 0 && password !== confirmPassword && (
-          <p className="text-xs text-red-500">Passwords do not match.</p>
-        )}
-
-        <div className="info-box flex items-start gap-3">
-          <input
-            id="terms"
-            type="checkbox"
-            checked={acceptTerms}
-            onChange={(e) => setAcceptTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-border/70"
-            aria-invalid={!acceptTerms && !!err}
+      
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="name@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-11"
           />
-          <label htmlFor="terms" className="text-xs leading-relaxed text-muted-foreground">
-            I agree to the{" "}
-            <a className="underline" href="/terms" target="_blank" rel="noreferrer">
-              Terms
-            </a>{" "}
-            and{" "}
-            <a className="underline" href="/privacy" target="_blank" rel="noreferrer">
-              Privacy Policy
-            </a>
-            .
-          </label>
         </div>
-
-        <Button className="w-full" type="submit" disabled={isLoading || oauthLoading}>
-          {isLoading ? "Creating account…" : "Sign up"}
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-11"
+          />
+        </div>
+        <Button className="w-full h-11 text-base" type="submit" disabled={isLoading}>
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create account"}
         </Button>
       </form>
 
-      <OAuthProviders onProviderClick={signInWithOAuth} disabled={isLoading || oauthLoading} />
-      <div className="text-sm text-muted-foreground">
-        Already onboard?{" "}
-        <a href="/login" className="font-medium text-foreground underline">
-          Sign in
-        </a>
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <Separator className="w-full" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground font-medium">Or continue with</span>
+        </div>
       </div>
-      {err && <p className="text-sm text-red-500">{err}</p>}
-      {msg && <p className="text-sm text-emerald-500">{msg}</p>}
+
+      <div className="grid grid-cols-2 gap-4">
+        <Button variant="outline" className="h-11" onClick={() => signIn("github", { callbackUrl: "/dashboard" })}>
+          Github
+        </Button>
+        <Button variant="outline" className="h-11" onClick={() => signIn("google", { callbackUrl: "/dashboard" })}>
+          Google
+        </Button>
+      </div>
+
+      <div className="text-center text-sm text-muted-foreground mt-6">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-primary hover:underline">
+          Sign in
+        </Link>
+      </div>
     </div>
   );
 }
