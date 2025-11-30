@@ -1,19 +1,12 @@
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, TrendingUp } from "lucide-react";
 import { redirect } from "next/navigation";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { auth } from "@/auth";
+import {
+  SentimentChart,
+  SeverityChart,
+  TopicsChart,
+  TrendChart,
+} from "@/components/dashboard/dashboard-charts";
 import { computeMetrics } from "@/lib/dashboard";
 import { getDashboardData } from "@/lib/dashboard-data";
 
@@ -79,33 +72,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Feedback Trend</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={30} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="var(--color-chart-1)"
-                  strokeWidth={2}
-                  fill="url(#gradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <TrendChart data={trendData} />
           </div>
         </div>
 
@@ -113,31 +80,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Sentiment Distribution</h3>
           <div className="h-64 flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={sentimentData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {sentimentData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <SentimentChart data={sentimentData} />
           </div>
           <div className="flex justify-center gap-6 mt-4">
             {sentimentData.map((item) => (
@@ -153,28 +96,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Top Topics</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topicData} layout="vertical" margin={{ left: 0 }}>
-                <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis
-                  type="category"
-                  dataKey="topic"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={100}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="value" fill="var(--color-chart-2)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <TopicsChart data={topicData} />
           </div>
         </div>
 
@@ -182,21 +104,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Severity Distribution</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={severityData}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={30} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="value" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <SeverityChart data={severityData} />
           </div>
         </div>
       </div>
