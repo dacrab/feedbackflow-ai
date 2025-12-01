@@ -35,7 +35,9 @@ export default function StatusChanger({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: val }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
       toast.success("Status updated");
     } catch {
       setStatus(oldStatus);

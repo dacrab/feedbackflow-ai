@@ -12,7 +12,7 @@ import type { FeedbackAnalysis } from "@/lib/types";
 /**
  * Get enabled Slack webhook URLs for a user
  */
-async function getUserSlackWebhooks(userId: string): Promise<string[]> {
+async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
   const hooks = await db
     .select({
       type: userNotifications.type,
@@ -21,12 +21,14 @@ async function getUserSlackWebhooks(userId: string): Promise<string[]> {
     .from(userNotifications)
     .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
 
-  const urls: string[] = [];
+  const urls: Array<string> = [];
   for (const hook of hooks || []) {
     if (hook.type === "slack" && hook.secretCipher) {
       try {
         const url = decrypt(hook.secretCipher as string);
-        if (url) urls.push(url);
+        if (url) {
+          urls.push(url);
+        }
       } catch {
         // Ignore decryption errors
       }
@@ -55,7 +57,9 @@ export async function notifyHighSeverityFeedback(
   analysis: FeedbackAnalysis,
   severityThreshold: number = 4,
 ): Promise<void> {
-  if (analysis.severity_score < severityThreshold) return;
+  if (analysis.severity_score < severityThreshold) {
+    return;
+  }
 
   const message = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
   await notifyAllWebhooks(userId, message);

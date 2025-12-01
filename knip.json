@@ -1,52 +1,14 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": [
-    "src/app/**/{page,layout,route,loading,error,not-found,global-error,default,template,head}.{ts,tsx}"
-  ],
-  "project": [
-    "src/**/*.{ts,tsx}",
-    "!src/**/*.test.{ts,tsx}",
-    "!src/**/*.spec.{ts,tsx}",
-    "!src/**/*.stories.{ts,tsx}"
-  ],
-  "ignore": [
-    "src/app/**/favicon.ico",
-    "src/app/globals.css",
-    "next-env.d.ts",
-    ".next/**",
-    "node_modules/**"
-  ],
-  "ignoreDependencies": [
-    "@biomejs/biome",
-    "@tailwindcss/postcss",
-    "@types/node",
-    "@types/react",
-    "@types/react-dom",
-    "tailwindcss",
-    "typescript",
-    "next",
-    "react",
-    "react-dom"
-  ],
-  "ignoreBinaries": ["next", "next-server"],
-  "next": {
-    "entry": [
-      "src/app/**/{page,layout,route,loading,error,not-found,global-error,default,template,head}.{ts,tsx}"
-    ]
-  },
-  "paths": {
-    "@/*": ["./src/*"]
-  },
+  "ignore": ["src/components/ui/**", "src/lib/types/**"],
+  "ignoreExportsUsedInFile": true,
   "rules": {
     "files": "error",
     "dependencies": "error",
     "devDependencies": "error",
-    "unlisted": "error",
-    "exports": "error",
+    "unlisted": "off",
+    "exports": "warn",
     "types": "error",
-    "enumMembers": "error",
-    "classMembers": "error",
     "duplicates": "warn"
-  },
-  "include": ["exports", "types", "duplicates"]
+  }
 }

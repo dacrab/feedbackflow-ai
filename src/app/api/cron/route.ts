@@ -29,7 +29,14 @@ function isValidCronRequest(req: Request): boolean {
 export async function GET(req: Request) {
   // Allow if valid cron request; otherwise require auth
   if (!isValidCronRequest(req)) {
-    await requireAuth();
+    try {
+      await requireAuth();
+    } catch (err) {
+      if (err instanceof Response) {
+        return err;
+      }
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const results: {

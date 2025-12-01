@@ -34,7 +34,9 @@ export const GET = withAuthGet(async (user) => {
 export const POST = withAuthRequest(async (req, user) => {
   const json = await req.json();
   const parsed = SettingsBody.safeParse(json);
-  if (!parsed.success) return errorResponse(parsed.error.message, 400);
+  if (!parsed.success) {
+    return errorResponse(parsed.error.message, 400);
+  }
 
   const { provider, model, apiKey } = parsed.data;
   const apiKeyCipher = encrypt(apiKey);

@@ -15,7 +15,7 @@ interface RawFeedbackRow {
   original_timestamp: Date | string | null;
   created_at: Date | string | null;
   sentiment: "positive" | "neutral" | "negative" | null;
-  topics: string[] | null;
+  topics: Array<string> | null;
   severity_score: number | null;
   summary: string | null;
   status: "New" | "Acknowledged" | "Actioned" | null;
@@ -30,7 +30,7 @@ function transformFeedbackRow(row: RawFeedbackRow): FeedbackItem {
       ? null
       : {
           sentiment: row.sentiment,
-          topics: (row.topics ?? []) as string[],
+          topics: (row.topics ?? []) as Array<string>,
           severity_score: row.severity_score ?? 0,
           summary: row.summary ?? "",
           status: (row.status ?? "New") as FeedbackStatus,
@@ -56,7 +56,7 @@ function transformFeedbackRow(row: RawFeedbackRow): FeedbackItem {
 export async function getFeedbackItems(
   userId: string,
   options: { limit?: number; offset?: number } = {},
-): Promise<FeedbackItem[]> {
+): Promise<Array<FeedbackItem>> {
   const { limit = 100, offset = 0 } = options;
 
   const rows = await db
@@ -104,7 +104,9 @@ export async function getFeedbackItem(userId: string, itemId: string): Promise<F
     .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))
     .limit(1);
 
-  if (!row) throw new Error("not found");
+  if (!row) {
+    throw new Error("not found");
+  }
 
   return transformFeedbackRow(row);
 }

@@ -2,7 +2,7 @@
  * Ingest service for processing feedback from sources
  */
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   feedbackAnalyses,
@@ -42,7 +42,9 @@ async function getUserLLMOpts(userId: string) {
     .where(eq(userSettings.userId, userId))
     .limit(1);
 
-  if (!settings) return undefined;
+  if (!settings) {
+    return undefined;
+  }
 
   const apiKey = settings.apiKeyCipher ? decrypt(settings.apiKeyCipher) : undefined;
   return {
@@ -60,11 +62,14 @@ async function getLatestTimestamp(userId: string): Promise<string> {
     .orderBy(desc(feedbackItems.originalTimestamp))
     .limit(1);
 
-  if (!row?.ts) return getDateNHoursAgo(24);
+  // On first run, fetch issues from last 30 days instead of 24 hours
+  if (!row?.ts) {
+    return getDateNHoursAgo(24 * 30);
+  }
   return row.ts instanceof Date ? row.ts.toISOString() : row.ts;
 }
 
-function issuesToRows(issues: GithubIssue[], userId: string) {
+function issuesToRows(issues: Array<GithubIssue>, userId: string) {
   return issues.map((i) => ({
     userId,
     source: "github" as const,
@@ -75,7 +80,9 @@ function issuesToRows(issues: GithubIssue[], userId: string) {
 }
 
 async function filterNewItems(rows: ReturnType<typeof issuesToRows>, userId: string) {
-  if (rows.length === 0) return [];
+  if (rows.length === 0) {
+    return [];
+  }
 
   const externalIds = rows.map((r) => r.externalId);
   const existing = await db
@@ -94,15 +101,29 @@ async function filterNewItems(rows: ReturnType<typeof issuesToRows>, userId: str
 }
 
 async function insertItems(items: ReturnType<typeof issuesToRows>) {
-  if (items.length === 0) return [];
+  if (items.length === 0) {
+    return [];
+  }
   return db
     .insert(feedbackItems)
     .values(items)
     .returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent });
 }
 
+async function getUnanalyzedItems(userId: string, limit = 50) {
+  return db
+    .select({
+      id: feedbackItems.id,
+      rawContent: feedbackItems.rawContent,
+    })
+    .from(feedbackItems)
+    .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
+    .where(and(eq(feedbackItems.userId, userId), isNull(feedbackAnalyses.id)))
+    .limit(limit);
+}
+
 async function analyzeAndStore(
-  items: { id: string; rawContent: string }[],
+  items: Array<{ id: string; rawContent: string }>,
   userId: string,
   llmOpts: Awaited<ReturnType<typeof getUserLLMOpts>>,
 ): Promise<number> {
@@ -137,8 +158,11 @@ async function analyzeAndStore(
       if (analysis.severity_score >= 4) {
         await notifyHighSeverityFeedback(userId, { ...analysis, status: "New" });
       }
-    } catch {
-      // Skip failed items
+    } catch (err) {
+      // Log error for debugging, then skip
+      const msg = err instanceof Error ? err.message : String(err);
+      // biome-ignore lint/suspicious/noConsole: needed for debugging LLM errors
+      console.error(`[Ingest] Failed to analyze item ${item.id}:`, msg);
     }
   }
 
@@ -174,7 +198,11 @@ async function processSource(
     llmOptsCache.set(userId, llmOptsPromise);
   }
 
-  const analyzed = await analyzeAndStore(inserted, userId, await llmOptsPromise);
+  // Also get any previously inserted but unanalyzed items
+  const unanalyzed = await getUnanalyzedItems(userId);
+  const toAnalyze = [...inserted, ...unanalyzed];
+
+  const analyzed = await analyzeAndStore(toAnalyze, userId, await llmOptsPromise);
 
   if (run?.id) {
     await db
@@ -201,7 +229,7 @@ export async function runIngest(): Promise<IngestResult> {
   const llmOptsCache = new Map<string, Promise<Awaited<ReturnType<typeof getUserLLMOpts>>>>();
   const totals: IngestResult = { fetched: 0, inserted: 0, analyzed: 0 };
 
-  for (const source of sources as UserSource[]) {
+  for (const source of sources as Array<UserSource>) {
     const result = await processSource(source, llmOptsCache);
     totals.fetched += result.fetched;
     totals.inserted += result.inserted;

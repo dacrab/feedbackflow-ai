@@ -13,7 +13,9 @@ import { getDashboardData } from "@/lib/dashboard-data";
 export default async function DashboardPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
-  if (!userId) redirect("/login");
+  if (!userId) {
+    redirect("/login");
+  }
 
   const data = await getDashboardData(userId);
   const metrics = computeMetrics(data);
@@ -79,7 +81,7 @@ export default async function DashboardPage() {
         {/* Sentiment Chart */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Sentiment Distribution</h3>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-64 w-full">
             <SentimentChart data={sentimentData} />
           </div>
           <div className="flex justify-center gap-6 mt-4">

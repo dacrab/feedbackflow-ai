@@ -1,7 +1,8 @@
 "use client";
 
 import { Activity, Bell, Database, Key, Settings } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { toast } from "sonner";
 import SettingsItem, {
   getNotificationLabel,
   getSourceDescription,
@@ -16,6 +17,9 @@ import { useApiQuery } from "@/hooks/use-api-query";
 import type { LLMProvider, TransformedNotificationRow, TransformedSourceRow } from "@/lib/types";
 
 export default function SettingsPage() {
+  const providerId = useId();
+  const modelId = useId();
+  const apiKeyId = useId();
   const [provider, setProvider] = useState<LLMProvider>("google");
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -35,13 +39,13 @@ export default function SettingsPage() {
     data: sources,
     isLoading: sourcesLoading,
     refetch: refetchSources,
-  } = useApiQuery<TransformedSourceRow[]>("/api/sources");
+  } = useApiQuery<Array<TransformedSourceRow>>("/api/sources");
 
   const {
     data: hooks,
     isLoading: hooksLoading,
     refetch: refetchHooks,
-  } = useApiQuery<TransformedNotificationRow[]>("/api/notifications");
+  } = useApiQuery<Array<TransformedNotificationRow>>("/api/notifications");
 
   const { mutate: createSource, isLoading: creatingSource } = useApiMutation({
     successMessage: "Source added",
@@ -70,6 +74,57 @@ export default function SettingsPage() {
       setApiKey("");
     },
   });
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{
+    stage: string;
+    message: string;
+    current?: number;
+    total?: number;
+  } | null>(null);
+
+  async function runSync() {
+    setSyncing(true);
+    setSyncProgress({ stage: "starting", message: "Starting sync..." });
+
+    try {
+      const response = await fetch("/api/sync");
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No reader available");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            setSyncProgress(data);
+            if (data.stage === "complete") {
+              toast.success(data.message);
+            } else if (data.stage === "error") {
+              toast.error(data.message);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     if (settingsData && !hasKey && settingsData.provider) {
@@ -139,13 +194,13 @@ export default function SettingsPage() {
                   <div className="space-y-2 text-sm">
                     <label
                       className="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
-                      htmlFor="provider"
+                      htmlFor={providerId}
                     >
                       Provider
                     </label>
                     <div className="relative">
                       <select
-                        id="provider"
+                        id={providerId}
                         className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         value={provider}
                         onChange={(e) => setProvider(e.target.value as LLMProvider)}
@@ -159,12 +214,12 @@ export default function SettingsPage() {
                   <div className="space-y-2 text-sm">
                     <label
                       className="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
-                      htmlFor="model"
+                      htmlFor={modelId}
                     >
                       Model
                     </label>
                     <Input
-                      id="model"
+                      id={modelId}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
                       placeholder="e.g. gpt-4o, gemini-2.5-pro"
@@ -175,7 +230,7 @@ export default function SettingsPage() {
                 <div className="space-y-2 text-sm">
                   <label
                     className="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
-                    htmlFor="apiKey"
+                    htmlFor={apiKeyId}
                   >
                     API Key{" "}
                     {hasKey && (
@@ -185,7 +240,7 @@ export default function SettingsPage() {
                     )}
                   </label>
                   <Input
-                    id="apiKey"
+                    id={apiKeyId}
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
@@ -247,6 +302,36 @@ export default function SettingsPage() {
                 <span className="font-semibold">Tip:</span> Keep at least one source enabled to
                 ensure continuous feedback ingestion.
               </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={syncing || enabledSources === 0}
+                onClick={() => runSync()}
+              >
+                {syncing ? "Syncing..." : "Sync Now"}
+              </Button>
+              {syncProgress && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {syncProgress.message}
+                  </p>
+                  {syncProgress.total && syncProgress.current !== undefined && (
+                    <div className="space-y-1">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300"
+                          style={{
+                            width: `${(syncProgress.current / syncProgress.total) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        {syncProgress.current} / {syncProgress.total}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
@@ -269,7 +354,7 @@ export default function SettingsPage() {
                     {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ type: "github", repo, token: ghToken }),
+                      body: JSON.stringify({ type: "github", repo, token: ghToken || undefined }),
                     },
                     () => {
                       setRepo("");

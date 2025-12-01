@@ -28,7 +28,9 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const email = credentials?.email;
         const password = credentials?.password;
-        if (!email || !password) return null;
+        if (!(email && password)) {
+          return null;
+        }
 
         const normalizedEmail = normalizeEmail(String(email));
         const [user] = await db
@@ -37,10 +39,14 @@ export const authOptions: NextAuthOptions = {
           .where(eq(appUsers.email, normalizedEmail))
           .limit(1);
 
-        if (!user || !user.passwordHash) return null;
+        if (!user?.passwordHash) {
+          return null;
+        }
 
         const isValid = await bcrypt.compare(String(password), user.passwordHash);
-        if (!isValid) return null;
+        if (!isValid) {
+          return null;
+        }
 
         return { id: user.id, email: user.email };
       },
@@ -57,7 +63,9 @@ export const authOptions: NextAuthOptions = {
       // Create user record for OAuth providers if it doesn't exist
       if (account?.provider === "github" || account?.provider === "google") {
         const email = user.email;
-        if (!email) return false;
+        if (!email) {
+          return false;
+        }
 
         const normalizedEmail = normalizeEmail(email);
         const [existing] = await db

@@ -17,7 +17,9 @@ async function getAuthUser(): Promise<AuthUser | null> {
   const user = session?.user as
     | { id?: string; name?: string | null; email?: string | null; image?: string | null }
     | undefined;
-  if (!user?.id) return null;
+  if (!user?.id) {
+    return null;
+  }
   return {
     id: user.id,
     name: user.name ?? null,

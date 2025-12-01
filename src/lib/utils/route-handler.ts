@@ -17,7 +17,9 @@ export function withAuthGet<T>(
       const user = await requireAuth();
       return await handler(user);
     } catch (error) {
-      if (error instanceof Response) return error;
+      if (error instanceof Response) {
+        return error;
+      }
       return errorResponse(String(error), 500);
     }
   };
@@ -35,7 +37,9 @@ export function withAuthRequest<T>(
       const user = await requireAuth();
       return await handler(req, user);
     } catch (error) {
-      if (error instanceof Response) return error;
+      if (error instanceof Response) {
+        return error;
+      }
       return errorResponse(String(error), 500);
     }
   };
@@ -58,7 +62,9 @@ export function withAuthParams<T>(
       const params = await ctx.params;
       return await handler(req, params, user);
     } catch (error) {
-      if (error instanceof Response) return error;
+      if (error instanceof Response) {
+        return error;
+      }
       return errorResponse(String(error), 500);
     }
   };
@@ -77,7 +83,9 @@ export function withAuthDelete<T>(
       const params = await ctx.params;
       return await handler(params, user);
     } catch (error) {
-      if (error instanceof Response) return error;
+      if (error instanceof Response) {
+        return error;
+      }
       return errorResponse(String(error), 500);
     }
   };

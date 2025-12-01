@@ -29,12 +29,16 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   for (const row of data || []) {
     countsBySentiment[row.sentiment] = (countsBySentiment[row.sentiment] || 0) + 1;
     if (Array.isArray(row.topics)) {
-      for (const t of row.topics) topicCounts[t] = (topicCounts[t] || 0) + 1;
+      for (const t of row.topics) {
+        topicCounts[t] = (topicCounts[t] || 0) + 1;
+      }
     }
     const sev = row.severityScore as 1 | 2 | 3 | 4 | 5;
     severityHist[sev] = (severityHist[sev] || 0) + 1;
 
-    if (!row.createdAt) continue;
+    if (!row.createdAt) {
+      continue;
+    }
     const day = getDateString(row.createdAt);
     trendByDay[day] = (trendByDay[day] || 0) + 1;
   }

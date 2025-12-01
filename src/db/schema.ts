@@ -35,9 +35,9 @@ export const feedbackItems = pgTable("feedback_items", {
 export const feedbackAnalyses = pgTable("feedback_analyses", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
-  feedbackItemId: uuid("feedback_item_id").notNull(),
+  feedbackItemId: uuid("feedback_item_id").notNull().unique(),
   sentiment: sentimentEnum("sentiment").notNull(),
-  topics: jsonb("topics").$type<string[]>().notNull(),
+  topics: jsonb("topics").$type<Array<string>>().notNull(),
   severityScore: integer("severity_score").notNull(),
   summary: text("summary").notNull(),
   status: analysisStatusEnum("status").notNull().default("New"),

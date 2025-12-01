@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   Area,
   AreaChart,
@@ -35,12 +36,21 @@ const tooltipStyle = {
   fontSize: "12px",
 };
 
-export function TrendChart({ data }: { data: ChartData[] }) {
+const sentimentTooltipStyle = {
+  backgroundColor: "#1f1f1f",
+  border: "1px solid #333",
+  borderRadius: "8px",
+  fontSize: "12px",
+  color: "#fff",
+};
+
+export function TrendChart({ data }: { data: Array<ChartData> }) {
+  const gradientId = useId();
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
       <AreaChart data={data}>
         <defs>
-          <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.2} />
             <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
           </linearGradient>
@@ -53,17 +63,17 @@ export function TrendChart({ data }: { data: ChartData[] }) {
           dataKey="value"
           stroke="var(--color-chart-1)"
           strokeWidth={2}
-          fill="url(#gradient)"
+          fill={`url(#${gradientId})`}
         />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
-export function SentimentChart({ data }: { data: SentimentChartData[] }) {
+export function SentimentChart({ data }: { data: Array<SentimentChartData> }) {
   const chartData = data.map((item) => ({ ...item }));
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
       <PieChart>
         <Pie
           data={chartData}
@@ -78,15 +88,19 @@ export function SentimentChart({ data }: { data: SentimentChartData[] }) {
             <Cell key={entry.name} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip contentStyle={tooltipStyle} />
+        <Tooltip
+          contentStyle={sentimentTooltipStyle}
+          itemStyle={{ color: "#fff" }}
+          labelStyle={{ color: "#fff" }}
+        />
       </PieChart>
     </ResponsiveContainer>
   );
 }
 
-export function TopicsChart({ data }: { data: TopicData[] }) {
+export function TopicsChart({ data }: { data: Array<TopicData> }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
       <BarChart data={data} layout="vertical" margin={{ left: 0 }}>
         <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
         <YAxis
@@ -104,9 +118,9 @@ export function TopicsChart({ data }: { data: TopicData[] }) {
   );
 }
 
-export function SeverityChart({ data }: { data: ChartData[] }) {
+export function SeverityChart({ data }: { data: Array<ChartData> }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
       <BarChart data={data}>
         <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
         <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={30} />

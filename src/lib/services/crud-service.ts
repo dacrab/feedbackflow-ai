@@ -51,7 +51,7 @@ export class CRUDService {
     this.userId = userId;
   }
 
-  async list(): Promise<TransformedType[]> {
+  async list(): Promise<Array<TransformedType>> {
     if (this.table === "user_sources") {
       const rows = await db
         .select({
@@ -65,7 +65,7 @@ export class CRUDService {
         .where(eq(userSources.userId, this.userId))
         .orderBy(desc(userSources.createdAt));
 
-      return (rows as RowType[]).map(transformRowWithSecret) as TransformedType[];
+      return (rows as Array<RowType>).map(transformRowWithSecret) as Array<TransformedType>;
     }
 
     const rows = await db
@@ -80,7 +80,7 @@ export class CRUDService {
       .where(eq(userNotifications.userId, this.userId))
       .orderBy(desc(userNotifications.createdAt));
 
-    return (rows as RowType[]).map(transformRowWithSecret) as TransformedType[];
+    return (rows as Array<RowType>).map(transformRowWithSecret) as Array<TransformedType>;
   }
 
   async create(input: CreateSourceInput | CreateNotificationInput): Promise<TransformedType> {
@@ -132,8 +132,12 @@ export class CRUDService {
 
     if (this.table === "user_sources") {
       const { enabled, repo, token } = input as UpdateSourceInput;
-      if (typeof enabled === "boolean") updates["enabled"] = enabled;
-      if (typeof repo === "string") updates["config"] = { repo };
+      if (typeof enabled === "boolean") {
+        updates["enabled"] = enabled;
+      }
+      if (typeof repo === "string") {
+        updates["config"] = { repo };
+      }
       if (typeof token === "string") {
         updates["secretCipher"] = token ? encrypt(token) : null;
       }
@@ -143,7 +147,9 @@ export class CRUDService {
         .where(and(eq(userSources.id, id), eq(userSources.userId, this.userId)));
     } else {
       const { enabled, webhook } = input as UpdateNotificationInput;
-      if (typeof enabled === "boolean") updates["enabled"] = enabled;
+      if (typeof enabled === "boolean") {
+        updates["enabled"] = enabled;
+      }
       if (typeof webhook === "string") {
         updates["secretCipher"] = webhook ? encrypt(webhook) : null;
       }

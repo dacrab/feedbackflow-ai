@@ -8,7 +8,7 @@ export type LLMProvider = "google" | "openai" | "anthropic";
 
 export interface FeedbackAnalysis {
   sentiment: Sentiment;
-  topics: string[];
+  topics: Array<string>;
   severity_score: number;
   summary: string;
   status: FeedbackStatus;
@@ -20,7 +20,7 @@ export interface FeedbackItem {
   raw_content: string;
   original_timestamp: string;
   created_at: string;
-  feedback_analyses: FeedbackAnalysis[] | FeedbackAnalysis | null;
+  feedback_analyses: Array<FeedbackAnalysis> | FeedbackAnalysis | null;
 }
 
 export interface UserSourceRow {
@@ -65,7 +65,7 @@ export interface DashboardData {
 export interface PaginatedResponse<T> {
   page: number;
   limit: number;
-  items: T[];
+  items: Array<T>;
 }
 
 export interface FeedbackFilterParams {

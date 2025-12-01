@@ -1,22 +1,34 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 
 interface SentimentBadgeProps {
   sentiment?: string | null | undefined;
+  size?: "sm" | "md";
   className?: string;
 }
 
-export function SentimentBadge({ sentiment, className }: SentimentBadgeProps) {
-  if (!sentiment) return null;
+const colors: Record<string, string> = {
+  positive: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  neutral: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+  negative: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+};
 
-  let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+export function SentimentBadge({ sentiment, size = "sm", className }: SentimentBadgeProps) {
+  if (!sentiment) {
+    return null;
+  }
 
-  if (sentiment === "positive") variant = "default";
-  if (sentiment === "negative") variant = "destructive";
+  const colorClass = colors[sentiment] ?? colors["neutral"];
 
   return (
-    <Badge variant={variant} className={cn("capitalize", className)}>
+    <span
+      className={cn(
+        "inline-flex rounded-full font-medium capitalize",
+        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
+        colorClass,
+        className,
+      )}
+    >
       {sentiment}
-    </Badge>
+    </span>
   );
 }

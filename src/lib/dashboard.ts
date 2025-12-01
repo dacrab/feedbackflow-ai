@@ -12,14 +12,14 @@ export interface ComputedMetrics {
   positiveShare: number;
   highSeverity: number;
   avgSeverity: string;
-  trendLabels: string[];
-  trendValues: number[];
+  trendLabels: Array<string>;
+  trendValues: Array<number>;
   latestCount: number;
   trendDelta: number;
   trendDeltaLabel: string;
   trendMomentum: string;
-  topTopics: { topic: string; value: number }[];
-  topicLabels: string[];
+  topTopics: Array<{ topic: string; value: number }>;
+  topicLabels: Array<string>;
 }
 
 export function computeMetrics(data: DashboardData): ComputedMetrics {

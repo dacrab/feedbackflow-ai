@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 
 interface StatusBadgeProps {
@@ -6,18 +5,24 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+const colors: Record<string, string> = {
+  New: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+  Acknowledged: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  Actioned: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+};
+
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  if (!status) return null;
+  if (!status || status === "New") {
+    return null;
+  }
 
-  let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
-
-  if (status === "New") variant = "secondary";
-  if (status === "Actioned") variant = "default";
-  if (status === "Acknowledged") variant = "outline";
+  const colorClass = colors[status] ?? "";
 
   return (
-    <Badge variant={variant} className={cn("capitalize", className)}>
+    <span
+      className={cn("inline-flex px-2 py-0.5 rounded text-xs font-medium", colorClass, className)}
+    >
       {status}
-    </Badge>
+    </span>
   );
 }

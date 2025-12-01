@@ -12,7 +12,9 @@ const PatchBody = z.object({
 export const PATCH = withAuthParams(async (req, params, user) => {
   const json = await req.json();
   const parsed = PatchBody.safeParse(json);
-  if (!parsed.success) return errorResponse(parsed.error.message, 400);
+  if (!parsed.success) {
+    return errorResponse(parsed.error.message, 400);
+  }
 
   const service = new CRUDService("user_sources", user.id);
   await service.update(params.id, parsed.data);

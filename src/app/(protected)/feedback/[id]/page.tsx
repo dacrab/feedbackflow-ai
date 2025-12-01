@@ -2,6 +2,7 @@ import { ArrowLeft, Calendar, Tag } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { SentimentBadge } from "@/components/ui/sentiment-badge";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
 import { formatDateUTC } from "@/lib/utils/date";
 import StatusChanger from "./status-changer";
@@ -9,7 +10,9 @@ import StatusChanger from "./status-changer";
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
-  if (!userId) redirect("/login");
+  if (!userId) {
+    redirect("/login");
+  }
 
   const { id } = await params;
   const item = await getFeedbackItem(userId, id);
@@ -18,6 +21,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
     : item.feedback_analyses;
 
   const topics = analysis?.topics || [];
+  const severityScore = analysis?.severity_score;
 
   return (
     <div className="space-y-6">
@@ -49,8 +53,8 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
                 <Calendar className="h-4 w-4" />
                 <span suppressHydrationWarning>{formatDateUTC(item.created_at)}</span>
               </div>
-              <SentimentBadge sentiment={analysis?.sentiment ?? null} />
-              <SeverityBadge score={analysis?.severity_score ?? null} />
+              <SentimentBadge sentiment={analysis?.sentiment} size="md" />
+              <SeverityBadge score={severityScore} />
             </div>
 
             {topics.length > 0 && (
@@ -71,30 +75,28 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           {/* Raw content */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="font-medium mb-4">Original Feedback</h2>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <pre className="whitespace-pre-wrap bg-muted rounded-lg p-4 text-sm font-mono overflow-auto max-h-96">
-                {item.raw_content || "No content available"}
-              </pre>
-            </div>
+            <pre className="whitespace-pre-wrap bg-muted rounded-lg p-4 text-sm font-mono overflow-auto max-h-96">
+              {item.raw_content || "No content available"}
+            </pre>
           </div>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Analysis details */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="font-medium mb-4">AI Analysis</h2>
             <dl className="space-y-4">
               <div>
                 <dt className="text-sm text-muted-foreground">Sentiment</dt>
                 <dd className="mt-1">
-                  <SentimentBadge sentiment={analysis?.sentiment ?? null} large />
+                  <SentimentBadge sentiment={analysis?.sentiment} size="md" />
+                  {!analysis?.sentiment && <span className="text-muted-foreground">—</span>}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Severity Score</dt>
                 <dd className="mt-1 text-2xl font-semibold">
-                  {analysis?.severity_score ?? "—"}
+                  {severityScore ?? "—"}
                   <span className="text-sm font-normal text-muted-foreground"> / 5</span>
                 </dd>
               </div>
@@ -105,14 +107,13 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
             </dl>
           </div>
 
-          {/* Actions card */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="font-medium mb-4">Quick Actions</h2>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>• Update status to track progress</p>
-              <p>• High severity items trigger Slack notifications</p>
-              <p>• Review related feedback in the inbox</p>
-            </div>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li>• Update status to track progress</li>
+              <li>• High severity items trigger Slack notifications</li>
+              <li>• Review related feedback in the inbox</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -120,37 +121,22 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
   );
 }
 
-function SentimentBadge({ sentiment, large }: { sentiment?: string | null; large?: boolean }) {
-  if (!sentiment) return <span className="text-muted-foreground">—</span>;
+function SeverityBadge({ score }: { score?: number | null | undefined }) {
+  if (!score) {
+    return null;
+  }
 
-  const colors = {
-    positive: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    neutral: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
-    negative: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  };
-
-  return (
-    <span
-      className={`inline-flex px-2.5 py-1 rounded-full font-medium capitalize ${colors[sentiment as keyof typeof colors] || colors.neutral} ${large ? "text-sm" : "text-xs"}`}
-    >
-      {sentiment}
-    </span>
-  );
-}
-
-function SeverityBadge({ score }: { score?: number | null }) {
-  if (!score) return null;
-
-  const colors = {
+  const colors: Record<string, string> = {
     high: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     medium: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
     low: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
   };
 
   const level = score >= 4 ? "high" : score >= 3 ? "medium" : "low";
+  const colorClass = colors[level] ?? "";
 
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colors[level]}`}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colorClass}`}>
       Severity {score}
     </span>
   );

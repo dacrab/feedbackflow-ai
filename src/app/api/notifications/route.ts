@@ -18,7 +18,9 @@ export const GET = withAuthGet(async (user) => {
 export const POST = withAuthRequest(async (req, user) => {
   const json = await req.json();
   const parsed = CreateBody.safeParse(json);
-  if (!parsed.success) return errorResponse(parsed.error.message, 400);
+  if (!parsed.success) {
+    return errorResponse(parsed.error.message, 400);
+  }
 
   const service = new CRUDService("user_notifications", user.id);
   const notification = await service.create(parsed.data);

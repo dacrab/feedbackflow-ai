@@ -13,7 +13,9 @@ const StatusBody = z.object({
 export const PATCH = withAuthParams(async (req, params, user) => {
   const json = await req.json();
   const parsed = StatusBody.safeParse(json);
-  if (!parsed.success) return errorResponse("invalid status", 400);
+  if (!parsed.success) {
+    return errorResponse("invalid status", 400);
+  }
   await db
     .update(feedbackAnalyses)
     .set({ status: parsed.data.status as FeedbackStatus })
