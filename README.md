@@ -74,7 +74,7 @@ The schema is defined via Drizzle in `src/db/schema.ts` and managed with migrati
 ### 1) Clone and install
 
 ```bash
-git clone https://github.com/your-org/feedbackflow-ai
+git clone https://github.com/dacrab/feedbackflow-ai
 cd feedbackflow-ai
 npm install
 ```
