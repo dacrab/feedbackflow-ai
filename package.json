@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
-    "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/google": "^3.0.1",
     "@ai-sdk/openai": "^2.0.77",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-select": "^2.2.6",
