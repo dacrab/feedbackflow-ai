@@ -1,45 +1,36 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "ignoreUnknown": true },
-  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "allowWrongLineComments": true,
+      "tailwindDirectives": true
+    },
+    "linter": {
+      "enabled": true
+    }
+  },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
   "linter": {
+    "enabled": true,
     "rules": {
       "recommended": true,
-      "correctness": {
-        "noUnusedImports": "error",
-        "noUnusedVariables": "error",
-        "noUnusedFunctionParameters": "error",
-        "useExhaustiveDependencies": "error",
-        "useHookAtTopLevel": "error"
-      },
-      "suspicious": {
-        "noUnknownAtRules": "off",
-        "noConsole": "warn",
-        "noExplicitAny": "error",
-        "noDoubleEquals": "error",
-        "noImplicitAnyLet": "error"
-      },
       "complexity": {
-        "useLiteralKeys": "off",
-        "noForEach": "off",
-        "noExcessiveCognitiveComplexity": {
-          "level": "warn",
-          "options": { "maxAllowedComplexity": 35 }
-        }
+        "useLiteralKeys": "off"
       },
       "style": {
-        "useConst": "error",
-        "useBlockStatements": "error",
-        "useSelfClosingElements": "error",
-        "useTemplate": "error",
-        "noNonNullAssertion": "warn"
+        "useComponentExportOnlyModules": "off"
       },
-      "security": { "noDangerouslySetInnerHtml": "error", "noGlobalEval": "error" },
-      "performance": { "noAccumulatingSpread": "warn", "noDelete": "warn" },
-      "a11y": { "useButtonType": "error", "useAltText": "error", "noAutofocus": "warn" }
-    },
-    "domains": { "next": "all", "react": "all" }
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
+    }
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 }
 }
