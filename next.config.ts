@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 // Suppress noisy baseline-browser-mapping warning about outdated data
-// biome-ignore lint/suspicious/noConsole: intentionally patching console to filter warnings
 const originalWarn = console.warn;
 console.warn = (...args: Parameters<typeof console.warn>) => {
   if (typeof args[0] === "string" && args[0].includes("[baseline-browser-mapping]")) {

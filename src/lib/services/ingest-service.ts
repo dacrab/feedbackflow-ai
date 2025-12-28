@@ -161,7 +161,6 @@ async function analyzeAndStore(
     } catch (err) {
       // Log error for debugging, then skip
       const msg = err instanceof Error ? err.message : String(err);
-      // biome-ignore lint/suspicious/noConsole: needed for debugging LLM errors
       console.error(`[Ingest] Failed to analyze item ${item.id}:`, msg);
     }
   }
