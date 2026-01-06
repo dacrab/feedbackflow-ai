@@ -20,7 +20,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
     "@ai-sdk/google": "^3.0.2",
-    "@ai-sdk/openai": "^2.0.77",
+    "@ai-sdk/openai": "^3.0.7",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
