@@ -1,9 +1,14 @@
 import crypto from "node:crypto";
 
-const ENC_SECRET = process.env["ENCRYPTION_KEY"] || "dev-insecure-key";
-
 function getKey() {
-  return crypto.createHash("sha256").update(ENC_SECRET).digest();
+  const secret = process.env["ENCRYPTION_KEY"];
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("ENCRYPTION_KEY is required in production");
+  }
+  return crypto
+    .createHash("sha256")
+    .update(secret ?? "dev-insecure-key-for-local-only")
+    .digest();
 }
 
 export function encrypt(plain: string): string {
@@ -25,4 +30,16 @@ export function decrypt(b64: string): string {
   decipher.setAuthTag(tag);
   const dec = Buffer.concat([decipher.update(data), decipher.final()]);
   return dec.toString("utf8");
+}
+
+/** Timing-safe string comparison to prevent timing attacks */
+export function timingSafeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    // Compare against self to maintain constant time
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
 }

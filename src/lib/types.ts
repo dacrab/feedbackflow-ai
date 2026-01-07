@@ -20,15 +20,7 @@ export interface FeedbackItem {
   raw_content: string;
   original_timestamp: string;
   created_at: string;
-  feedback_analyses: Array<FeedbackAnalysis> | FeedbackAnalysis | null;
-}
-
-export interface UserSourceRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  enabled: boolean;
-  secret_cipher: string | null;
+  feedback_analyses: FeedbackAnalysis | null;
 }
 
 export interface TransformedSourceRow {
@@ -39,33 +31,12 @@ export interface TransformedSourceRow {
   hasSecret: boolean;
 }
 
-export interface UserNotificationRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  enabled: boolean;
-  secret_cipher: string | null;
-}
-
 export interface TransformedNotificationRow {
   id: string;
   type: string;
   config: Record<string, unknown> | null;
   enabled: boolean;
   hasSecret: boolean;
-}
-
-export interface DashboardData {
-  countsBySentiment: Record<string, number>;
-  topicCounts: Record<string, number>;
-  severityHist: Record<string, number>;
-  trendByDay: Record<string, number>;
-}
-
-export interface PaginatedResponse<T> {
-  page: number;
-  limit: number;
-  items: Array<T>;
 }
 
 export interface FeedbackFilterParams {
@@ -77,4 +48,21 @@ export interface FeedbackFilterParams {
   severity_max?: number | undefined;
   page?: number | undefined;
   limit?: number | undefined;
+}
+
+// Internal types for CRUD service
+export interface UserSourceRow {
+  id: string;
+  type: string;
+  config: Record<string, unknown> | null;
+  enabled: boolean;
+  secret_cipher: string | null;
+}
+
+export interface UserNotificationRow {
+  id: string;
+  type: string;
+  config: Record<string, unknown> | null;
+  enabled: boolean;
+  secret_cipher: string | null;
 }

@@ -6,7 +6,7 @@ import { SentimentBadge } from "@/components/ui/sentiment-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
 import { filterFeedbackItems, parseFeedbackFilters } from "@/lib/services/query-builder";
-import { formatDateUTC } from "@/lib/utils/date";
+import { formatDateUTC } from "@/lib/utils";
 
 export default async function InboxPage({
   searchParams,
@@ -33,8 +33,8 @@ export default async function InboxPage({
 
   const sort = (spObj["sort"] as string) || "created_desc";
   items.sort((a, b) => {
-    const aA = Array.isArray(a.feedback_analyses) ? a.feedback_analyses[0] : a.feedback_analyses;
-    const bA = Array.isArray(b.feedback_analyses) ? b.feedback_analyses[0] : b.feedback_analyses;
+    const aA = a.feedback_analyses;
+    const bA = b.feedback_analyses;
     if (sort === "severity_desc") {
       return (bA?.severity_score ?? 0) - (aA?.severity_score ?? 0);
     }
@@ -103,9 +103,7 @@ export default async function InboxPage({
           </div>
         ) : (
           items.map((item) => {
-            const analysis = Array.isArray(item.feedback_analyses)
-              ? item.feedback_analyses[0]
-              : item.feedback_analyses;
+            const analysis = item.feedback_analyses;
 
             return (
               <Link

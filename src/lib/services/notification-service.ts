@@ -5,13 +5,11 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
+import { HIGH_SEVERITY_THRESHOLD, HOURS_IN_DAY, MAX_DIGEST_ITEMS } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
-import { notifySlack, notifySlackTo } from "@/lib/notify";
 import type { FeedbackAnalysis } from "@/lib/types";
+import { notifySlack, notifySlackTo } from "@/lib/utils";
 
-/**
- * Get enabled Slack webhook URLs for a user
- */
 async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
   const hooks = await db
     .select({
@@ -37,27 +35,19 @@ async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
   return urls;
 }
 
-/**
- * Send message to all user webhooks and global webhook
- */
 async function notifyAllWebhooks(userId: string, message: string): Promise<void> {
   const webhooks = await getUserSlackWebhooks(userId);
   for (const url of webhooks) {
     await notifySlackTo(url, message);
   }
-  // Fallback to global webhook if configured
   await notifySlack(message);
 }
 
-/**
- * Send high-severity notification for a user
- */
 export async function notifyHighSeverityFeedback(
   userId: string,
   analysis: FeedbackAnalysis,
-  severityThreshold: number = 4,
 ): Promise<void> {
-  if (analysis.severity_score < severityThreshold) {
+  if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) {
     return;
   }
 
@@ -65,17 +55,10 @@ export async function notifyHighSeverityFeedback(
   await notifyAllWebhooks(userId, message);
 }
 
-/**
- * Send daily digest notification for a user
- */
 export async function sendDailyDigest(
   userId: string,
   sinceISO: string,
-): Promise<{
-  total: number;
-  high: number;
-}> {
-  // Get user's feedback analyses
+): Promise<{ total: number; high: number }> {
   const analyses = await db
     .select({
       summary: feedbackAnalyses.summary,
@@ -89,21 +72,16 @@ export async function sendDailyDigest(
     )
     .orderBy(desc(feedbackAnalyses.createdAt));
 
-  const highSeverity = analyses.filter((a) => a.severityScore >= 4);
-  const summaryMsg = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${highSeverity.length}.`;
+  const highSeverity = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
+  const summaryMsg = `Daily digest: ${analyses.length} analyses in last ${HOURS_IN_DAY}h. High severity: ${highSeverity.length}.`;
 
-  // Get user webhooks and send digest
   const webhooks = await getUserSlackWebhooks(userId);
   for (const url of webhooks) {
     await notifySlackTo(url, summaryMsg);
-    // Send top high-severity items
-    for (const item of highSeverity.slice(0, 10)) {
+    for (const item of highSeverity.slice(0, MAX_DIGEST_ITEMS)) {
       await notifySlackTo(url, `• [sev ${item.severityScore}] ${item.summary}`);
     }
   }
 
-  return {
-    total: analyses.length,
-    high: highSeverity.length,
-  };
+  return { total: analyses.length, high: highSeverity.length };
 }

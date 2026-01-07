@@ -2,6 +2,13 @@
  * GitHub API service for fetching issues
  */
 
+import {
+  GITHUB_MAX_PAGES,
+  GITHUB_MAX_RETRIES,
+  GITHUB_PER_PAGE,
+  GITHUB_RETRY_BASE_DELAY_MS,
+} from "@/lib/constants";
+
 export interface GithubIssue {
   id: number;
   title: string;
@@ -9,17 +16,13 @@ export interface GithubIssue {
   created_at: string;
 }
 
-const MAX_PAGES = 10; // Fetch up to 1000 issues
-const PER_PAGE = 100; // GitHub max per page
-const MAX_RETRIES = 3;
-
 async function fetchPage(
   repo: string,
   sinceISO: string,
   page: number,
   token?: string,
 ): Promise<Array<GithubIssue>> {
-  const url = `https://api.github.com/repos/${repo}/issues?state=all&since=${encodeURIComponent(sinceISO)}&per_page=${PER_PAGE}&page=${page}&sort=updated&direction=desc`;
+  const url = `https://api.github.com/repos/${repo}/issues?state=all&since=${encodeURIComponent(sinceISO)}&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
 
   const headers: Record<string, string> = {
     "User-Agent": "feedbackflow-ai",
@@ -52,12 +55,12 @@ async function fetchWithRetry(
 ): Promise<Array<GithubIssue>> {
   let lastErr: unknown;
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt < GITHUB_MAX_RETRIES; attempt++) {
     try {
       return await fetchPage(repo, sinceISO, page, token);
     } catch (e) {
       lastErr = e;
-      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, GITHUB_RETRY_BASE_DELAY_MS * (attempt + 1)));
     }
   }
 
@@ -71,7 +74,7 @@ export async function fetchGithubIssues(
 ): Promise<Array<GithubIssue>> {
   const results: Array<GithubIssue> = [];
 
-  for (let page = 1; page <= MAX_PAGES; page++) {
+  for (let page = 1; page <= GITHUB_MAX_PAGES; page++) {
     try {
       const batch = await fetchWithRetry(repo, sinceISO, page, token);
       if (batch.length === 0) {

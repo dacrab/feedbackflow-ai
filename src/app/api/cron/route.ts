@@ -2,32 +2,11 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
-import { notifySlack } from "@/lib/notify";
 import { runIngest } from "@/lib/services/ingest-service";
 import { sendDailyDigest } from "@/lib/services/notification-service";
-import { requireAuth } from "@/lib/utils/api";
-import { getDateNHoursAgo } from "@/lib/utils/date";
-
-function isValidCronRequest(req: Request): boolean {
-  // Check Vercel's cron secret (automatically set in production)
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env["CRON_SECRET"];
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-    return true;
-  }
-
-  // Check custom cron token (for manual testing)
-  const token = req.headers.get("x-cron-token");
-  const cronToken = process.env["CRON_TOKEN"];
-  if (cronToken && token === cronToken) {
-    return true;
-  }
-
-  return false;
-}
+import { getDateNHoursAgo, isValidCronRequest, notifySlack, requireAuth } from "@/lib/utils";
 
 export async function GET(req: Request) {
-  // Allow if valid cron request; otherwise require auth
   if (!isValidCronRequest(req)) {
     try {
       await requireAuth();
@@ -47,24 +26,20 @@ export async function GET(req: Request) {
     digest: { total: 0, high: 0, notified: 0 },
   };
 
-  // Run ingest
   try {
     results.ingest = await runIngest();
   } catch (e: unknown) {
     results.ingest = { error: e instanceof Error ? e.message : String(e) };
   }
 
-  // Run digest
   try {
     const since = getDateNHoursAgo(24);
-
     const rows = await db
       .select({ userId: userNotifications.userId })
       .from(userNotifications)
       .where(eq(userNotifications.enabled, true));
 
     const userIds = [...new Set(rows.map((u) => u.userId as string))];
-
     let total = 0;
     let totalHigh = 0;
 

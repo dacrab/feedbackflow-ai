@@ -1,14 +1,9 @@
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, TrendingUp } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import {
-  SentimentChart,
-  SeverityChart,
-  TopicsChart,
-  TrendChart,
-} from "@/components/dashboard/dashboard-charts";
-import { computeMetrics } from "@/lib/dashboard";
-import { getDashboardData } from "@/lib/dashboard-data";
+import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "@/components/charts";
+import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY, MIN_SEVERITY } from "@/lib/constants";
+import { computeMetrics, getDashboardData } from "@/lib/dashboard";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -32,10 +27,12 @@ export default async function DashboardPage() {
   ];
 
   const topicData = metrics.topTopics.slice(0, 5);
-  const severityData = [1, 2, 3, 4, 5].map((s) => ({
-    name: String(s),
-    value: data.severityHist[s] || 0,
-  }));
+
+  // Generate severity data from MIN to MAX
+  const severityData = Array.from({ length: MAX_SEVERITY - MIN_SEVERITY + 1 }, (_, i) => {
+    const s = MIN_SEVERITY + i;
+    return { name: String(s), value: data.severityHist[s] || 0 };
+  });
 
   return (
     <div className="space-y-8">
@@ -63,14 +60,17 @@ export default async function DashboardPage() {
           value={metrics.highSeverity}
           icon={AlertTriangle}
           iconColor="text-orange-500"
-          subtitle="Severity 4-5"
+          subtitle={`Severity ${HIGH_SEVERITY_THRESHOLD}-${MAX_SEVERITY}`}
         />
-        <MetricCard title="Avg Severity" value={metrics.avgSeverity} subtitle="Scale 1-5" />
+        <MetricCard
+          title="Avg Severity"
+          value={metrics.avgSeverity}
+          subtitle={`Scale ${MIN_SEVERITY}-${MAX_SEVERITY}`}
+        />
       </div>
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Trend Chart */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Feedback Trend</h3>
           <div className="h-64">
@@ -78,7 +78,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Sentiment Chart */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Sentiment Distribution</h3>
           <div className="h-64 w-full">
@@ -94,7 +93,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Topics Chart */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Top Topics</h3>
           <div className="h-64">
@@ -102,7 +100,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Severity Chart */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="font-medium mb-4">Severity Distribution</h3>
           <div className="h-64">

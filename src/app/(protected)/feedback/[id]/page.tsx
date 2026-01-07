@@ -3,8 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SentimentBadge } from "@/components/ui/sentiment-badge";
+import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
-import { formatDateUTC } from "@/lib/utils/date";
+import { formatDateUTC } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,11 +17,8 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
 
   const { id } = await params;
   const item = await getFeedbackItem(userId, id);
-  const analysis = Array.isArray(item.feedback_analyses)
-    ? item.feedback_analyses[0]
-    : item.feedback_analyses;
-
-  const topics = analysis?.topics || [];
+  const analysis = item.feedback_analyses;
+  const topics = analysis?.topics ?? [];
   const severityScore = analysis?.severity_score;
 
   return (
@@ -34,9 +32,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
       </Link>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Summary */}
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
@@ -72,7 +68,6 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
             )}
           </div>
 
-          {/* Raw content */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="font-medium mb-4">Original Feedback</h2>
             <pre className="whitespace-pre-wrap bg-muted rounded-lg p-4 text-sm font-mono overflow-auto max-h-96">
@@ -81,7 +76,6 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="font-medium mb-4">AI Analysis</h2>
@@ -89,15 +83,21 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
               <div>
                 <dt className="text-sm text-muted-foreground">Sentiment</dt>
                 <dd className="mt-1">
-                  <SentimentBadge sentiment={analysis?.sentiment} size="md" />
-                  {!analysis?.sentiment && <span className="text-muted-foreground">—</span>}
+                  {analysis?.sentiment ? (
+                    <SentimentBadge sentiment={analysis.sentiment} size="md" />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Severity Score</dt>
                 <dd className="mt-1 text-2xl font-semibold">
                   {severityScore ?? "—"}
-                  <span className="text-sm font-normal text-muted-foreground"> / 5</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {" "}
+                    / {MAX_SEVERITY}
+                  </span>
                 </dd>
               </div>
               <div>
@@ -122,21 +122,23 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
 }
 
 function SeverityBadge({ score }: { score?: number | null | undefined }) {
-  if (!score) {
-    return null;
-  }
+  if (!score) return null;
 
-  const colors: Record<string, string> = {
+  const level =
+    score >= HIGH_SEVERITY_THRESHOLD
+      ? "high"
+      : score >= HIGH_SEVERITY_THRESHOLD - 1
+        ? "medium"
+        : "low";
+
+  const colors = {
     high: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     medium: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
     low: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
   };
 
-  const level = score >= 4 ? "high" : score >= 3 ? "medium" : "low";
-  const colorClass = colors[level] ?? "";
-
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colors[level]}`}>
       Severity {score}
     </span>
   );

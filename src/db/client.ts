@@ -1,26 +1,19 @@
 import { neon } from "@neondatabase/serverless";
-import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 
-let Db: NeonHttpDatabase | null = null;
+let _db: NeonHttpDatabase | null = null;
 
 function getDb(): NeonHttpDatabase {
-  if (Db) {
-    return Db;
+  if (!_db) {
+    const url = process.env["DATABASE_URL"];
+    if (!url) throw new Error("DATABASE_URL required");
+    _db = drizzle(neon(url));
   }
-
-  const url = process.env["DATABASE_URL"];
-  if (!url) {
-    throw new Error("DATABASE_URL is required for database client");
-  }
-
-  const sql = neon(url);
-  Db = drizzle(sql);
-  return Db;
+  return _db;
 }
 
 export const db = new Proxy({} as NeonHttpDatabase, {
-  get(_target, prop) {
+  get(_, prop) {
     return getDb()[prop as keyof NeonHttpDatabase];
   },
 });

@@ -3,6 +3,14 @@ import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject, type LanguageModel, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
+import {
+  LLM_MAX_RETRIES,
+  LLM_MAX_SUMMARY_LENGTH,
+  LLM_MAX_TOPICS,
+  LLM_MIN_SUMMARY_LENGTH,
+  LLM_RETRY_BASE_DELAY_MS,
+  MAX_LLM_INPUT_LENGTH,
+} from "./constants";
 
 const AnalysisSchema = z.object({
   sentiment: z
@@ -11,7 +19,7 @@ const AnalysisSchema = z.object({
   topics: z
     .array(z.string())
     .min(1)
-    .max(10)
+    .max(LLM_MAX_TOPICS)
     .describe("Topic labels like Bug Report, Feature Request, Pricing, Performance, UX"),
   severity_score: z
     .number()
@@ -19,7 +27,11 @@ const AnalysisSchema = z.object({
     .min(1)
     .max(5)
     .describe("Priority score from 1 (low) to 5 (critical)"),
-  summary: z.string().min(5).max(500).describe("A concise one-sentence summary"),
+  summary: z
+    .string()
+    .min(LLM_MIN_SUMMARY_LENGTH)
+    .max(LLM_MAX_SUMMARY_LENGTH)
+    .describe("A concise one-sentence summary"),
 });
 type Analysis = z.infer<typeof AnalysisSchema>;
 
@@ -40,10 +52,10 @@ type LLMOptions = {
 
 function getModel(opts?: LLMOptions): LanguageModel {
   const provider = opts?.provider ?? "google";
-  const modelName = opts?.model || DEFAULT_MODELS[provider];
+  const modelName = opts?.model ?? DEFAULT_MODELS[provider];
 
   if (provider === "openai") {
-    const apiKey = opts?.apiKey || process.env["OPENAI_API_KEY"];
+    const apiKey = opts?.apiKey ?? process.env["OPENAI_API_KEY"];
     if (!apiKey) {
       throw new Error("OPENAI_API_KEY missing");
     }
@@ -52,7 +64,7 @@ function getModel(opts?: LLMOptions): LanguageModel {
   }
 
   if (provider === "anthropic") {
-    const apiKey = opts?.apiKey || process.env["ANTHROPIC_API_KEY"];
+    const apiKey = opts?.apiKey ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) {
       throw new Error("ANTHROPIC_API_KEY missing");
     }
@@ -60,7 +72,6 @@ function getModel(opts?: LLMOptions): LanguageModel {
     return anthropic(modelName) as LanguageModel;
   }
 
-  // Google provider
   if (opts?.apiKey) {
     const g = createGoogleGenerativeAI({ apiKey: opts.apiKey });
     return g(modelName) as unknown as LanguageModel;
@@ -70,7 +81,7 @@ function getModel(opts?: LLMOptions): LanguageModel {
 
 export async function analyzeFeedback(
   text: string,
-  retries = 2,
+  retries = LLM_MAX_RETRIES,
   opts?: LLMOptions,
 ): Promise<Analysis> {
   const model = getModel(opts);
@@ -85,28 +96,28 @@ export async function analyzeFeedback(
         schema: AnalysisSchema,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Analyze this feedback:\n\n${text.slice(0, 8000)}` },
+          {
+            role: "user",
+            content: `Analyze this feedback:\n\n${text.slice(0, MAX_LLM_INPUT_LENGTH)}`,
+          },
         ],
       });
       return object;
     } catch (err: unknown) {
       lastErr = err;
 
-      // Log specific error details for debugging
       if (NoObjectGeneratedError.isInstance(err)) {
         const { text: generatedText, cause } = err;
         if (cause) {
-          // Validation or parsing error - don't retry
           throw new Error(`LLM output invalid: ${cause}`);
         }
-        // Model failed to generate - retry
         if (generatedText) {
-          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
           continue;
         }
       }
 
-      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
     }
   }
 

@@ -4,7 +4,7 @@
 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 interface BaseItem {
   id: string;

@@ -1,8 +1,18 @@
 /**
- * Dashboard data processing utilities
+ * Dashboard data fetching and processing
  */
 
-import type { DashboardData } from "@/lib/types";
+import { and, desc, eq, gte } from "drizzle-orm";
+import { db } from "@/db/client";
+import { feedbackAnalyses, feedbackItems } from "@/db/schema";
+import { DEFAULT_DASHBOARD_LIMIT, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+
+export interface DashboardData {
+  countsBySentiment: Record<string, number>;
+  topicCounts: Record<string, number>;
+  severityHist: Record<string, number>;
+  trendByDay: Record<string, number>;
+}
 
 export interface ComputedMetrics {
   total: number;
@@ -14,12 +24,45 @@ export interface ComputedMetrics {
   avgSeverity: string;
   trendLabels: Array<string>;
   trendValues: Array<number>;
-  latestCount: number;
   trendDelta: number;
-  trendDeltaLabel: string;
-  trendMomentum: string;
   topTopics: Array<{ topic: string; value: number }>;
-  topicLabels: Array<string>;
+}
+
+export async function getDashboardData(userId: string): Promise<DashboardData> {
+  const rows = await db
+    .select({
+      sentiment: feedbackAnalyses.sentiment,
+      topics: feedbackAnalyses.topics,
+      severityScore: feedbackAnalyses.severityScore,
+      createdAt: feedbackItems.createdAt,
+    })
+    .from(feedbackItems)
+    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+    .where(
+      and(
+        eq(feedbackItems.userId, userId),
+        gte(feedbackItems.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+      ),
+    )
+    .orderBy(desc(feedbackItems.createdAt))
+    .limit(DEFAULT_DASHBOARD_LIMIT);
+
+  const countsBySentiment: Record<string, number> = {};
+  const topicCounts: Record<string, number> = {};
+  const severityHist: Record<string, number> = {};
+  const trendByDay: Record<string, number> = {};
+
+  for (const row of rows) {
+    countsBySentiment[row.sentiment] = (countsBySentiment[row.sentiment] || 0) + 1;
+    for (const topic of row.topics ?? []) {
+      topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+    }
+    severityHist[row.severityScore] = (severityHist[row.severityScore] || 0) + 1;
+    const day = row.createdAt instanceof Date ? row.createdAt.toISOString().slice(0, 10) : "";
+    if (day) trendByDay[day] = (trendByDay[day] || 0) + 1;
+  }
+
+  return { countsBySentiment, topicCounts, severityHist, trendByDay };
 }
 
 export function computeMetrics(data: DashboardData): ComputedMetrics {
@@ -30,23 +73,20 @@ export function computeMetrics(data: DashboardData): ComputedMetrics {
   const negative = countsBySentiment["negative"] ?? 0;
   const total = positive + neutral + negative;
 
-  const positiveShare = total ? Math.round((positive / total) * 100) : 0;
-  const highSeverity = (severityHist["4"] ?? 0) + (severityHist["5"] ?? 0);
+  let highSeverity = 0;
+  for (let s = HIGH_SEVERITY_THRESHOLD; s <= MAX_SEVERITY; s++) {
+    highSeverity += severityHist[s] ?? 0;
+  }
 
   const avgSeverity = total
     ? (
-        Object.entries(severityHist).reduce(
-          (acc, [score, val]) => acc + Number(score) * Number(val || 0),
-          0,
-        ) / total
+        Object.entries(severityHist).reduce((acc, [s, v]) => acc + Number(s) * (v || 0), 0) / total
       ).toFixed(1)
     : "0.0";
 
   const trendLabels = Object.keys(trendByDay).sort();
   const trendValues = trendLabels.map((d) => trendByDay[d] ?? 0);
-  const latestCount = trendValues.at(-1) ?? 0;
-  const previousCount = trendValues.at(-2) ?? 0;
-  const trendDelta = latestCount - previousCount;
+  const trendDelta = (trendValues.at(-1) ?? 0) - (trendValues.at(-2) ?? 0);
 
   const topTopics = Object.entries(topicCounts)
     .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
@@ -58,16 +98,12 @@ export function computeMetrics(data: DashboardData): ComputedMetrics {
     positive,
     neutral,
     negative,
-    positiveShare,
+    positiveShare: total ? Math.round((positive / total) * 100) : 0,
     highSeverity,
     avgSeverity,
     trendLabels,
     trendValues,
-    latestCount,
     trendDelta,
-    trendDeltaLabel: `${trendDelta >= 0 ? "+" : ""}${trendDelta}`,
-    trendMomentum: trendDelta >= 0 ? "Accelerating" : "Cooling",
     topTopics,
-    topicLabels: Object.keys(topicCounts),
   };
 }

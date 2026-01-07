@@ -1,18 +1,11 @@
-import { z } from "zod";
 import { CRUDService } from "@/lib/services/crud-service";
-import { errorResponse, successResponse } from "@/lib/utils/api";
-import { withAuthDelete, withAuthParams } from "@/lib/utils/route-handler";
-
-const PatchBody = z.object({
-  enabled: z.boolean().optional(),
-  webhook: z.string().optional(), // empty string clears
-});
+import { errorResponse, successResponse, withAuthDelete, withAuthParams } from "@/lib/utils";
+import { parseOrError, UpdateNotificationSchema } from "@/lib/validations";
 
 export const PATCH = withAuthParams(async (req, params, user) => {
-  const json = await req.json();
-  const parsed = PatchBody.safeParse(json);
+  const parsed = parseOrError(UpdateNotificationSchema, await req.json());
   if (!parsed.success) {
-    return errorResponse(parsed.error.message, 400);
+    return errorResponse(parsed.error, 400);
   }
 
   const service = new CRUDService("user_notifications", user.id);
