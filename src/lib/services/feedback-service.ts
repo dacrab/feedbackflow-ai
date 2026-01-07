@@ -1,11 +1,11 @@
 /**
  * Feedback service for direct database queries
- * Eliminates unnecessary API round-trips in server components
  */
 
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
+import { DEFAULT_FEEDBACK_LIMIT } from "@/lib/constants";
 import type { FeedbackAnalysis, FeedbackItem, FeedbackStatus } from "@/lib/types";
 
 interface RawFeedbackRow {
@@ -21,9 +21,6 @@ interface RawFeedbackRow {
   status: "New" | "Acknowledged" | "Actioned" | null;
 }
 
-/**
- * Transform raw database row to FeedbackItem
- */
 function transformFeedbackRow(row: RawFeedbackRow): FeedbackItem {
   const analysis: FeedbackAnalysis | null =
     row.sentiment == null
@@ -50,14 +47,11 @@ function transformFeedbackRow(row: RawFeedbackRow): FeedbackItem {
   };
 }
 
-/**
- * Get paginated feedback items for a user (direct DB query)
- */
 export async function getFeedbackItems(
   userId: string,
   options: { limit?: number; offset?: number } = {},
 ): Promise<Array<FeedbackItem>> {
-  const { limit = 100, offset = 0 } = options;
+  const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0 } = options;
 
   const rows = await db
     .select({
@@ -82,9 +76,6 @@ export async function getFeedbackItems(
   return rows.map(transformFeedbackRow);
 }
 
-/**
- * Get a single feedback item by ID for a user
- */
 export async function getFeedbackItem(userId: string, itemId: string): Promise<FeedbackItem> {
   const [row] = await db
     .select({

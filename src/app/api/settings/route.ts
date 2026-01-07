@@ -1,17 +1,10 @@
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "@/db/client";
 import { userSettings } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
 import type { LLMProvider } from "@/lib/types";
-import { errorResponse, successResponse } from "@/lib/utils/api";
-import { withAuthGet, withAuthRequest } from "@/lib/utils/route-handler";
-
-const SettingsBody = z.object({
-  provider: z.enum(["google", "openai", "anthropic"]),
-  model: z.string().min(1),
-  apiKey: z.string().min(5),
-});
+import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/utils";
+import { parseOrError, SettingsSchema } from "@/lib/validations";
 
 export const GET = withAuthGet(async (user) => {
   const [row] = await db
@@ -32,10 +25,9 @@ export const GET = withAuthGet(async (user) => {
 });
 
 export const POST = withAuthRequest(async (req, user) => {
-  const json = await req.json();
-  const parsed = SettingsBody.safeParse(json);
+  const parsed = parseOrError(SettingsSchema, await req.json());
   if (!parsed.success) {
-    return errorResponse(parsed.error.message, 400);
+    return errorResponse(parsed.error, 400);
   }
 
   const { provider, model, apiKey } = parsed.data;

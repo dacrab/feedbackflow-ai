@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import { AuthDivider, OAuthButtons } from "@/components/auth/oauth-buttons";
+import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
 import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {

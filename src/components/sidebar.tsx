@@ -4,7 +4,7 @@ import { ChevronLeft, Home, Inbox, LogOut, Settings, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },

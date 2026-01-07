@@ -1,8 +1,8 @@
 import { Zap } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { Sidebar } from "@/components/layout/sidebar";
-import { SessionProvider } from "@/components/providers/session-provider";
+import { SessionProvider } from "@/components/providers";
+import { Sidebar } from "@/components/sidebar";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
