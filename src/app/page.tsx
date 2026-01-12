@@ -1,188 +1,172 @@
-import { ArrowRight, BarChart3, Bell, Brain, Github, Shield, Zap } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-mono">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-              <Zap className="h-4 w-4" />
-            </div>
-            <span>FeedbackFlow</span>
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2 text-sm">
+            <Logo />
+            <span className="font-medium">feedbackflow</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Sign in
+          <div className="flex items-center gap-3 text-sm">
+            <ThemeToggle />
+            <Link href="/login" className="text-muted-foreground hover:text-foreground">
+              login
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
+              className="rounded bg-foreground px-3 py-1.5 text-background hover:bg-foreground/90"
             >
-              Get started
+              signup
             </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm text-muted-foreground">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-              </span>
-              Now with GitHub Issues integration
-            </div>
-            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-              Turn feedback into
-              <span className="block text-muted-foreground">actionable insights</span>
+      <section className="pt-32 pb-16">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="max-w-2xl">
+            <p className="text-sm text-muted-foreground mb-4">// feedback analysis for developers</p>
+            <h1 className="text-3xl sm:text-4xl font-medium tracking-tight leading-tight">
+              Stop drowning in GitHub issues.
+              <br />
+              <span className="text-muted-foreground">Let AI do the triage.</span>
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
-              Automatically ingest, analyze, and triage customer feedback using AI. Identify
-              critical issues before they escalate.
+            <p className="mt-6 text-muted-foreground leading-relaxed max-w-lg">
+              Ingest issues from your repos, get sentiment + severity + topics extracted automatically. 
+              Focus on what matters.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-8 flex items-center gap-4">
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 rounded-lg bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
+                className="inline-flex items-center gap-2 rounded bg-foreground px-4 py-2 text-sm text-background hover:bg-foreground/90"
               >
-                Start free trial
-                <ArrowRight className="h-4 w-4" />
+                get started <ArrowRight className="h-3.5 w-3.5" />
               </Link>
-              <Link
-                href="https://github.com"
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-6 py-3 text-sm font-medium transition-colors hover:bg-muted"
+              <a
+                href="https://github.com/dacrab/feedbackflow-ai"
+                className="text-sm text-muted-foreground hover:text-foreground"
               >
-                <Github className="h-4 w-4" />
-                View on GitHub
-              </Link>
+                view source →
+              </a>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="mt-20 grid grid-cols-3 gap-8 rounded-2xl border border-border bg-card p-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold">10x</div>
-              <div className="mt-1 text-sm text-muted-foreground">Faster triage</div>
+          {/* Terminal mockup */}
+          <div className="mt-16 rounded-lg border border-border bg-card overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30">
+              <div className="flex gap-1.5">
+                <div className="h-3 w-3 rounded-full bg-red-500/70" />
+                <div className="h-3 w-3 rounded-full bg-yellow-500/70" />
+                <div className="h-3 w-3 rounded-full bg-green-500/70" />
+              </div>
+              <span className="text-xs text-muted-foreground ml-2">feedbackflow analysis</span>
             </div>
-            <div className="text-center border-x border-border">
-              <div className="text-4xl font-bold">95%</div>
-              <div className="mt-1 text-sm text-muted-foreground">Accuracy rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold">24/7</div>
-              <div className="mt-1 text-sm text-muted-foreground">Monitoring</div>
+            <div className="p-6 text-sm space-y-4">
+              <div>
+                <span className="text-muted-foreground">$</span> feedbackflow analyze --repo vercel/next.js
+              </div>
+              <div className="text-muted-foreground">fetching latest issues...</div>
+              <div className="border-l-2 border-border pl-4 space-y-3">
+                <AnalysisItem
+                  id="#58234"
+                  title="Build fails with turbopack on monorepo"
+                  sentiment="negative"
+                  severity={4}
+                  topics={["bug", "turbopack"]}
+                />
+                <AnalysisItem
+                  id="#58231"
+                  title="Add support for partial prerendering in pages router"
+                  sentiment="neutral"
+                  severity={2}
+                  topics={["feature-request"]}
+                />
+                <AnalysisItem
+                  id="#58229"
+                  title="Great DX improvements in 15.1!"
+                  sentiment="positive"
+                  severity={1}
+                  topics={["feedback"]}
+                />
+              </div>
+              <div className="text-muted-foreground">
+                <span className="text-green-500">✓</span> 3 issues analyzed, 1 high severity flagged
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-20 border-t border-border">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold">Everything you need</h2>
-            <p className="mt-3 text-muted-foreground">
-              Powerful features to help you understand your customers better
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon={Brain}
-              title="AI Analysis"
-              description="Automatic sentiment analysis, topic classification, and severity scoring powered by advanced LLMs."
-            />
-            <FeatureCard
-              icon={BarChart3}
-              title="Real-time Dashboard"
-              description="Visualize trends, track sentiment shifts, and identify patterns in your feedback data."
-            />
-            <FeatureCard
-              icon={Bell}
-              title="Smart Alerts"
-              description="Get notified instantly when high-severity issues are detected via Slack webhooks."
-            />
-            <FeatureCard
-              icon={Github}
-              title="GitHub Integration"
-              description="Automatically ingest issues from your GitHub repositories for analysis."
-            />
-            <FeatureCard
-              icon={Zap}
-              title="Automated Ingest"
-              description="Daily cron jobs fetch and process new feedback automatically."
-            />
-            <FeatureCard
-              icon={Shield}
-              title="Secure & Private"
-              description="Your data is encrypted and never shared. Self-host or use our cloud."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 border-t border-border">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="rounded-2xl bg-foreground p-12 text-center text-background">
-            <h2 className="text-3xl font-bold">Ready to get started?</h2>
-            <p className="mt-3 text-background/70">
-              Start analyzing your feedback in minutes. No credit card required.
-            </p>
-            <Link
-              href="/signup"
-              className="mt-8 inline-flex items-center gap-2 rounded-lg bg-background px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-background/90"
-            >
-              Create free account
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+      {/* How it works */}
+      <section className="py-16 border-t border-border">
+        <div className="mx-auto max-w-5xl px-6">
+          <p className="text-sm text-muted-foreground mb-8">// how it works</p>
+          <div className="grid gap-8 sm:grid-cols-3">
+            <Step n={1} title="connect" desc="Point to any GitHub repo or paste feedback manually" />
+            <Step n={2} title="analyze" desc="LLM extracts sentiment, topics, severity (1-5)" />
+            <Step n={3} title="act" desc="Filter inbox, get Slack alerts for critical items" />
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-foreground text-background">
-                <Zap className="h-3 w-3" />
-              </div>
-              <span>FeedbackFlow</span>
-            </div>
-            <div>Built with Next.js, Neon, and AI</div>
-          </div>
+      <footer className="border-t border-border py-6">
+        <div className="mx-auto max-w-5xl px-6 flex items-center justify-between text-xs text-muted-foreground">
+          <span>feedbackflow © 2026</span>
+          <span>next.js + neon + llm</span>
         </div>
       </footer>
     </div>
   );
 }
 
-function FeatureCard({
-  icon: Icon,
+function AnalysisItem({
+  id,
   title,
-  description,
+  sentiment,
+  severity,
+  topics,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  id: string;
   title: string;
-  description: string;
+  sentiment: "positive" | "neutral" | "negative";
+  severity: number;
+  topics: string[];
 }) {
+  const sentimentColor = {
+    positive: "text-green-500",
+    neutral: "text-muted-foreground",
+    negative: "text-red-500",
+  }[sentiment];
+
   return (
-    <div className="group rounded-xl border border-border bg-card p-6 transition-colors hover:border-border/80 hover:bg-muted/30">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-        <Icon className="h-5 w-5 text-foreground" />
+    <div className="space-y-1">
+      <div>
+        <span className="text-muted-foreground">{id}</span>{" "}
+        <span className="text-foreground">{title}</span>
       </div>
-      <h3 className="mt-4 font-semibold">{title}</h3>
-      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{description}</p>
+      <div className="flex gap-4 text-xs">
+        <span className={sentimentColor}>{sentiment}</span>
+        <span>severity: {severity}/5</span>
+        <span className="text-muted-foreground">[{topics.join(", ")}]</span>
+      </div>
+    </div>
+  );
+}
+
+function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
+  return (
+    <div>
+      <div className="text-muted-foreground text-sm mb-2">0{n}</div>
+      <div className="font-medium">{title}</div>
+      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
     </div>
   );
 }

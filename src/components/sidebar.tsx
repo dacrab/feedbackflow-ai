@@ -1,15 +1,16 @@
 "use client";
 
-import { ChevronLeft, Home, Inbox, LogOut, Settings, Zap } from "lucide-react";
+import { ChevronLeft, Home, Inbox, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "dashboard", icon: Home },
+  { href: "/inbox", label: "inbox", icon: Inbox },
+  { href: "/settings", label: "settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -36,23 +37,21 @@ export function Sidebar({ userEmail }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r border-border bg-card transition-all duration-300",
-        collapsed ? "w-16" : "w-60",
+        "hidden md:flex flex-col border-r border-border bg-background transition-all duration-200",
+        collapsed ? "w-14" : "w-52",
       )}
     >
       <div
         className={cn(
-          "flex h-16 items-center border-b border-border",
-          collapsed ? "justify-center px-2" : "gap-2 px-6",
+          "flex h-14 items-center border-b border-border",
+          collapsed ? "justify-center px-2" : "gap-2 px-4",
         )}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background shrink-0">
-          <Zap className="h-4 w-4" />
-        </div>
-        {!collapsed && <span className="font-semibold">FeedbackFlow</span>}
+        <Logo />
+        {!collapsed && <span className="text-sm">feedbackflow</span>}
       </div>
 
-      <nav className={cn("flex-1 p-2 space-y-1", collapsed ? "px-2" : "p-4")}>
+      <nav className={cn("flex-1 py-2", collapsed ? "px-2" : "px-2")}>
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
@@ -61,8 +60,8 @@ export function Sidebar({ userEmail }: SidebarProps) {
               href={item.href}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "flex items-center rounded-lg text-sm font-medium transition-colors",
-                collapsed ? "justify-center p-3" : "gap-3 px-3 py-2",
+                "flex items-center rounded text-sm transition-colors mb-1",
+                collapsed ? "justify-center p-2" : "gap-2 px-2 py-1.5",
                 isActive
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -75,28 +74,28 @@ export function Sidebar({ userEmail }: SidebarProps) {
         })}
       </nav>
 
-      <div className={cn("border-t border-border", collapsed ? "p-2" : "p-4")}>
-        <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "gap-3 px-3 py-2")}>
+      <div className={cn("border-t border-border", collapsed ? "p-2" : "p-2")}>
+        <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "gap-2 px-2 py-1")}>
           <div
-            className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0"
+            className="h-6 w-6 rounded bg-muted flex items-center justify-center text-xs shrink-0"
             title={collapsed ? userEmail : undefined}
           >
-            {userEmail.charAt(0).toUpperCase()}
+            {userEmail.charAt(0).toLowerCase()}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{userEmail}</p>
+              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
           )}
           <Link
             href="/logout"
-            title="Sign out"
+            title="logout"
             className={cn(
-              "rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
-              collapsed ? "p-2" : "p-1.5",
+              "rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+              collapsed ? "p-1.5" : "p-1",
             )}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -104,13 +103,11 @@ export function Sidebar({ userEmail }: SidebarProps) {
       <button
         type="button"
         onClick={toggleCollapsed}
-        className={cn(
-          "flex items-center justify-center h-10 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
-        )}
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        title={collapsed ? "expand" : "collapse"}
       >
         <ChevronLeft
-          className={cn("h-4 w-4 transition-transform duration-300", collapsed && "rotate-180")}
+          className={cn("h-3.5 w-3.5 transition-transform duration-200", collapsed && "rotate-180")}
         />
       </button>
     </aside>

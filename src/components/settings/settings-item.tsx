@@ -1,10 +1,4 @@
-/**
- * Unified settings item component for sources and notifications
- */
-
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 interface BaseItem {
   id: string;
@@ -28,67 +22,66 @@ export default function SettingsItem<T extends BaseItem>({
   label,
   description,
 }: SettingsItemProps<T>) {
-  const handleToggle = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleToggle() {
     const res = await fetch(`/api/${apiPath}/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: !item.enabled }),
     });
-    if (res.ok) {
-      onUpdate();
-    } else {
-      toast.error(`Failed to update ${apiPath.slice(0, -1)}`);
-    }
-  };
+    if (res.ok) onUpdate();
+    else toast.error("failed to update");
+  }
 
-  const handleDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleDelete() {
     const res = await fetch(`/api/${apiPath}/${item.id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success(`${apiPath === "sources" ? "Source" : "Notification"} deleted`);
+      toast.success("deleted");
       onUpdate();
     } else {
-      toast.error(`Failed to delete ${apiPath.slice(0, -1)}`);
+      toast.error("failed to delete");
     }
-  };
+  }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 px-5 py-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p className="font-medium text-foreground">{label}</p>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        <span className={cn("badge mt-2", item.enabled ? "badge-enabled" : "badge-disabled")}>
-          {item.enabled ? "Enabled" : "Disabled"}
+    <div className="flex items-center justify-between gap-3 rounded border border-border bg-muted/20 px-3 py-2">
+      <div className="min-w-0">
+        <p className="text-sm truncate">{label}</p>
+        {description && <p className="text-xs text-muted-foreground truncate">{description}</p>}
+        <span className={`text-xs ${item.enabled ? "text-green-500" : "text-muted-foreground"}`}>
+          {item.enabled ? "● enabled" : "○ disabled"}
         </span>
       </div>
-      <div className="flex gap-2">
-        <form onSubmit={handleToggle}>
-          <Button size="sm" variant="outline" type="submit">
-            {item.enabled ? "Disable" : "Enable"}
-          </Button>
-        </form>
-        <form onSubmit={handleDelete}>
-          <Button size="sm" variant="ghost" type="submit">
-            Delete
-          </Button>
-        </form>
+      <div className="flex gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={handleToggle}
+          className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors"
+        >
+          {item.enabled ? "disable" : "enable"}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          delete
+        </button>
       </div>
     </div>
   );
 }
 
 export function getSourceLabel(type: string): string {
-  return type === "github" ? "GitHub Issues" : type;
+  return type === "github" ? "github" : type;
 }
 
 export function getSourceDescription(config: Record<string, unknown> | null | undefined): string {
   if (config && typeof config === "object" && "repo" in config) {
     return String(config["repo"]);
   }
-  return "Custom configuration";
+  return "";
 }
 
 export function getNotificationLabel(type: string): string {
-  return type === "slack" ? "Slack webhook" : type;
+  return type === "slack" ? "slack" : type;
 }
