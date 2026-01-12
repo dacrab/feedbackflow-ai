@@ -64,21 +64,12 @@ export const RegisterSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-// Type exports (used by crud-service)
-export type CreateSourceInput = z.infer<typeof CreateSourceSchema>;
-export type UpdateSourceInput = z.infer<typeof UpdateSourceSchema>;
-export type CreateNotificationInput = z.infer<typeof CreateNotificationSchema>;
-export type UpdateNotificationInput = z.infer<typeof UpdateNotificationSchema>;
-
 // Validation helper
 export function parseOrError<T>(
   schema: z.ZodSchema<T>,
   data: unknown,
 ): { success: true; data: T } | { success: false; error: string } {
   const result = schema.safeParse(data);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  const error = result.error.issues.map((e) => e.message).join(", ");
-  return { success: false, error };
+  if (result.success) return { success: true, data: result.data };
+  return { success: false, error: result.error.issues.map((e) => e.message).join(", ") };
 }

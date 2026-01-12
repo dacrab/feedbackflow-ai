@@ -1,20 +1,21 @@
-import { CRUDService } from "@/lib/services/crud-service";
-import { errorResponse, successResponse, withAuthDelete, withAuthParams } from "@/lib/api";
-import { parseOrError, UpdateSourceSchema } from "@/lib/validations";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { userSources } from "@/db/schema";
+import { encrypt } from "@/lib/crypto";
+import { successResponse, withAuthDelete, withAuthParams } from "@/lib/api";
 
 export const PATCH = withAuthParams(async (req, params, user) => {
-  const parsed = parseOrError(UpdateSourceSchema, await req.json());
-  if (!parsed.success) {
-    return errorResponse(parsed.error, 400);
-  }
+  const { repo, token, enabled } = await req.json();
+  const updates: Record<string, unknown> = {};
+  if (typeof enabled === "boolean") updates["enabled"] = enabled;
+  if (typeof repo === "string") updates["config"] = { repo };
+  if (typeof token === "string") updates["secretCipher"] = token ? encrypt(token) : null;
 
-  const service = new CRUDService("user_sources", user.id);
-  await service.update(params.id, parsed.data);
+  await db.update(userSources).set(updates).where(and(eq(userSources.id, params.id), eq(userSources.userId, user.id)));
   return successResponse({ ok: true });
 });
 
 export const DELETE = withAuthDelete(async (params, user) => {
-  const service = new CRUDService("user_sources", user.id);
-  await service.delete(params.id);
+  await db.delete(userSources).where(and(eq(userSources.id, params.id), eq(userSources.userId, user.id)));
   return successResponse({ ok: true });
 });
