@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -15,6 +16,8 @@ import {
 // Enums
 export const sentimentEnum = pgEnum("sentiment_type", ["positive", "neutral", "negative"]);
 export const analysisStatusEnum = pgEnum("analysis_status", ["New", "Acknowledged", "Actioned"]);
+export const sourceTypeEnum = pgEnum("source_type", ["github"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["slack"]);
 
 // ============================================================================
 // Better Auth Tables
@@ -30,36 +33,44 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const session = pgTable("session", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  token: text("token").notNull().unique(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("session_expires_at_idx").on(t.expiresAt)],
+);
 
-export const account = pgTable("account", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accountId: text("account_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
-  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
-  scope: text("scope"),
-  idToken: text("id_token"),
-  password: text("password"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    idToken: text("id_token"),
+    password: text("password"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("account_user_provider_idx").on(t.userId, t.providerId, t.accountId)],
+);
 
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
@@ -92,7 +103,7 @@ export const feedbackItems = pgTable(
   (t) => [
     unique("feedback_items_user_source_external_idx").on(t.userId, t.source, t.externalId),
     index("feedback_items_user_id_idx").on(t.userId),
-    index("feedback_items_created_at_idx").on(t.createdAt),
+    index("feedback_items_user_created_idx").on(t.userId, t.createdAt),
   ],
 );
 
@@ -120,24 +131,8 @@ export const feedbackAnalyses = pgTable(
     index("feedback_analyses_user_id_idx").on(t.userId),
     index("feedback_analyses_sentiment_idx").on(t.sentiment),
     index("feedback_analyses_severity_idx").on(t.severityScore),
+    check("severity_score_range", sql`${t.severityScore} >= 1 AND ${t.severityScore} <= 5`),
   ],
-);
-
-// Analysis Topics (denormalized for querying)
-export const analysisTopics = pgTable(
-  "analysis_topics",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    feedbackAnalysisId: uuid("feedback_analysis_id")
-      .notNull()
-      .references(() => feedbackAnalyses.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    topic: text("topic").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (t) => [index("analysis_topics_user_topic_idx").on(t.userId, t.topic)],
 );
 
 // Ingest Runs
@@ -179,7 +174,7 @@ export const userSources = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
+    type: sourceTypeEnum("type").notNull(),
     config: jsonb("config").$type<Record<string, unknown>>().notNull(),
     secretCipher: text("secret_cipher"),
     enabled: boolean("enabled").default(true).notNull(),
@@ -198,7 +193,7 @@ export const userNotifications = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
+    type: notificationTypeEnum("type").notNull(),
     config: jsonb("config").$type<Record<string, unknown>>().notNull(),
     secretCipher: text("secret_cipher"),
     enabled: boolean("enabled").default(true).notNull(),
@@ -233,11 +228,10 @@ export const feedbackItemsRelations = relations(feedbackItems, ({ one }) => ({
   analysis: one(feedbackAnalyses),
 }));
 
-export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one, many }) => ({
+export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one }) => ({
   user: one(user, { fields: [feedbackAnalyses.userId], references: [user.id] }),
   feedbackItem: one(feedbackItems, {
     fields: [feedbackAnalyses.feedbackItemId],
     references: [feedbackItems.id],
   }),
-  topics: many(analysisTopics),
 }));
