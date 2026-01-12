@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -130,7 +130,7 @@ export default async function InboxPage({
 
                 <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
                   <span suppressHydrationWarning>{formatDateUTC(item.created_at)}</span>
-                  <ChevronRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
+                  <IconChevronRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
                 </div>
               </Link>
             );

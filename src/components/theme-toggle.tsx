@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
+import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -13,7 +13,7 @@ export function ThemeToggle() {
   if (!mounted) return <div className="h-7 w-7" />;
 
   const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-  const icon = theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />;
+  const icon = theme === "dark" ? <IconMoon className="h-3.5 w-3.5" /> : <IconSun className="h-3.5 w-3.5" />;
 
   return (
     <button
