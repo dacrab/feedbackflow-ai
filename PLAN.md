@@ -97,7 +97,7 @@ severity_score (1..5), summary, status (enum: New/Acknowledged/Actioned), create
 ## 6) Architecture (Concise)
 
 **[Frontend (Next.js + Tailwind)]**
-↓ Auth (**Auth.js / NextAuth**)
+↓ Auth (**Better Auth**)
 **[API Layer (Next.js API Routes + Drizzle ORM over Neon)]**
 ├── Auth Controller → Users
 ├── Feedback Controller → FeedbackItem + FeedbackAnalysis
@@ -115,7 +115,7 @@ severity_score (1..5), summary, status (enum: New/Acknowledged/Actioned), create
 
 ### Database & schema notes
 - Enums for `sentiment` and `status` improve data integrity and simplify filters.
-- `app_users` contains login identities used by Auth.js; emails are stored case‑normalized and unique.
+- `user` table is managed by Better Auth; emails are stored case‑normalized and unique.
 - `analysis_topics` is a normalized, queryable view of topics; it is kept in sync with `feedback_analyses.topics`.
 - All tables are user‑scoped (`user_id`), with owner‑only access enforced by application queries and optional Neon RLS.
 
