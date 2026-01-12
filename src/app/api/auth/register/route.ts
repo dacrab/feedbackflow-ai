@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { appUsers } from "@/db/schema";
 import { BCRYPT_ROUNDS } from "@/lib/constants";
-import { extractErrorMessage, normalizeEmail } from "@/lib/utils";
+import { normalizeEmail } from "@/lib/utils";
 import { parseOrError, RegisterSchema } from "@/lib/validations";
 
 export async function POST(req: Request) {
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (e) {
-    return NextResponse.json({ error: extractErrorMessage(e) }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

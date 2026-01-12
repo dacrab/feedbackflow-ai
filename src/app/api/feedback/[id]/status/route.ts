@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses } from "@/db/schema";
 import type { FeedbackStatus } from "@/lib/types";
-import { errorResponse, successResponse, withAuthParams } from "@/lib/utils";
+import { errorResponse, successResponse, withAuthParams } from "@/lib/api";
 import { FeedbackStatusSchema, parseOrError } from "@/lib/validations";
 
 export const PATCH = withAuthParams(async (req, params, user) => {

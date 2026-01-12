@@ -1,5 +1,5 @@
 import { CRUDService } from "@/lib/services/crud-service";
-import { errorResponse, successResponse, withAuthDelete, withAuthParams } from "@/lib/utils";
+import { errorResponse, successResponse, withAuthDelete, withAuthParams } from "@/lib/api";
 import { parseOrError, UpdateSourceSchema } from "@/lib/validations";
 
 export const PATCH = withAuthParams(async (req, params, user) => {

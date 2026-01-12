@@ -1,6 +1,6 @@
 import { CRUDService } from "@/lib/services/crud-service";
 import { runIngest } from "@/lib/services/ingest-service";
-import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/utils";
+import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/api";
 import { CreateSourceSchema, parseOrError } from "@/lib/validations";
 
 export const GET = withAuthGet(async (user) => {

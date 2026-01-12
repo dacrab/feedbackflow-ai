@@ -13,7 +13,7 @@ import {
   insertItems,
   issuesToRows,
 } from "@/lib/services/ingest-service";
-import { requireAuth } from "@/lib/utils";
+import { requireAuth } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 

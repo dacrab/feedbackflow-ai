@@ -3,7 +3,7 @@ import { db } from "@/db/client";
 import { userSettings } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
 import type { LLMProvider } from "@/lib/types";
-import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/utils";
+import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/api";
 import { parseOrError, SettingsSchema } from "@/lib/validations";
 
 export const GET = withAuthGet(async (user) => {
