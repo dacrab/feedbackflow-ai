@@ -1,4 +1,3 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, TrendingUp } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "@/components/charts";
@@ -21,88 +20,71 @@ export default async function DashboardPage() {
   }));
 
   const sentimentData = [
-    { name: "Positive", value: metrics.positive, color: "var(--color-chart-4)" },
-    { name: "Neutral", value: metrics.neutral, color: "var(--color-muted-foreground)" },
-    { name: "Negative", value: metrics.negative, color: "var(--color-chart-5)" },
+    { name: "positive", value: metrics.positive, color: "var(--color-chart-4)" },
+    { name: "neutral", value: metrics.neutral, color: "var(--color-muted-foreground)" },
+    { name: "negative", value: metrics.negative, color: "var(--color-chart-5)" },
   ];
 
   const topicData = metrics.topTopics.slice(0, 5);
 
-  // Generate severity data from MIN to MAX
   const severityData = Array.from({ length: MAX_SEVERITY - MIN_SEVERITY + 1 }, (_, i) => {
     const s = MIN_SEVERITY + i;
     return { name: String(s), value: data.severityHist[s] || 0 };
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Overview of your feedback analytics</p>
+        <p className="text-sm text-muted-foreground">// overview</p>
+        <h1 className="text-xl font-medium">dashboard</h1>
       </div>
 
       {/* Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard label="total" value={metrics.total} delta={metrics.trendDelta} />
+        <MetricCard label="positive" value={`${metrics.positiveShare}%`} />
         <MetricCard
-          title="Total Feedback"
-          value={metrics.total}
-          change={metrics.trendDelta}
-          changeLabel="vs last period"
-        />
-        <MetricCard
-          title="Positive Rate"
-          value={`${metrics.positiveShare}%`}
-          icon={TrendingUp}
-          iconColor="text-green-600"
-        />
-        <MetricCard
-          title="Critical Issues"
+          label="critical"
           value={metrics.highSeverity}
-          icon={AlertTriangle}
-          iconColor="text-orange-500"
-          subtitle={`Severity ${HIGH_SEVERITY_THRESHOLD}-${MAX_SEVERITY}`}
+          note={`severity ${HIGH_SEVERITY_THRESHOLD}+`}
         />
-        <MetricCard
-          title="Avg Severity"
-          value={metrics.avgSeverity}
-          subtitle={`Scale ${MIN_SEVERITY}-${MAX_SEVERITY}`}
-        />
+        <MetricCard label="avg severity" value={metrics.avgSeverity} note={`of ${MAX_SEVERITY}`} />
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-medium mb-4">Feedback Trend</h3>
-          <div className="h-64">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded border border-border bg-card p-4">
+          <p className="text-sm text-muted-foreground mb-3">// trend</p>
+          <div className="h-52">
             <TrendChart data={trendData} />
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-medium mb-4">Sentiment Distribution</h3>
-          <div className="h-64 w-full">
+        <div className="rounded border border-border bg-card p-4">
+          <p className="text-sm text-muted-foreground mb-3">// sentiment</p>
+          <div className="h-52">
             <SentimentChart data={sentimentData} />
           </div>
-          <div className="flex justify-center gap-6 mt-4">
+          <div className="flex justify-center gap-4 mt-3 text-xs">
             {sentimentData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2 text-sm">
-                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+              <div key={item.name} className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
                 <span className="text-muted-foreground">{item.name}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-medium mb-4">Top Topics</h3>
-          <div className="h-64">
+        <div className="rounded border border-border bg-card p-4">
+          <p className="text-sm text-muted-foreground mb-3">// topics</p>
+          <div className="h-52">
             <TopicsChart data={topicData} />
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-medium mb-4">Severity Distribution</h3>
-          <div className="h-64">
+        <div className="rounded border border-border bg-card p-4">
+          <p className="text-sm text-muted-foreground mb-3">// severity distribution</p>
+          <div className="h-52">
             <SeverityChart data={severityData} />
           </div>
         </div>
@@ -112,44 +94,29 @@ export default async function DashboardPage() {
 }
 
 function MetricCard({
-  title,
+  label,
   value,
-  change,
-  changeLabel,
-  icon: Icon,
-  iconColor,
-  subtitle,
+  delta,
+  note,
 }: {
-  title: string;
+  label: string;
   value: string | number;
-  change?: number;
-  changeLabel?: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  iconColor?: string;
-  subtitle?: string;
+  delta?: number;
+  note?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{title}</p>
-        {Icon && <Icon className={`h-4 w-4 ${iconColor}`} />}
-      </div>
-      <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
-      {change !== undefined && (
-        <p className="mt-1 flex items-center gap-1 text-sm">
-          {change >= 0 ? (
-            <ArrowUpRight className="h-3.5 w-3.5 text-green-600" />
-          ) : (
-            <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
-          )}
-          <span className={change >= 0 ? "text-green-600" : "text-red-500"}>
-            {change >= 0 ? "+" : ""}
-            {change}
+    <div className="rounded border border-border bg-card p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-medium">{value}</p>
+      {delta !== undefined && (
+        <p className="text-xs mt-1">
+          <span className={delta >= 0 ? "text-green-500" : "text-red-500"}>
+            {delta >= 0 ? "+" : ""}{delta}
           </span>
-          {changeLabel && <span className="text-muted-foreground">{changeLabel}</span>}
+          <span className="text-muted-foreground"> vs last period</span>
         </p>
       )}
-      {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+      {note && <p className="text-xs text-muted-foreground mt-1">{note}</p>}
     </div>
   );
 }

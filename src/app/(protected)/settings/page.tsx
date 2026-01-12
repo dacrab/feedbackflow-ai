@@ -1,6 +1,5 @@
 "use client";
 
-import { Activity, Settings } from "lucide-react";
 import { useMemo } from "react";
 import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
@@ -33,34 +32,21 @@ export default function SettingsPage() {
 
   if (settingsLoading || sourcesLoading || hooksLoading) {
     return (
-      <div className="flex h-72 items-center justify-center">
-        <div className="info-box text-sm text-muted-foreground flex items-center gap-2">
-          <Activity className="h-4 w-4 animate-spin" />
-          Loading workspace settings…
-        </div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+        loading...
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 max-w-5xl">
-      <header className="space-y-2 border-b border-border/40 pb-6">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-            <Settings className="h-3.5 w-3.5" />
-          </div>
-          Settings
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Workspace Configuration
-        </h1>
-        <p className="text-muted-foreground max-w-2xl text-base">
-          Manage your LLM providers, data sources, and notification channels.
-        </p>
-      </header>
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <p className="text-sm text-muted-foreground">// configuration</p>
+        <h1 className="text-xl font-medium">settings</h1>
+      </div>
 
-      <div className="grid gap-8">
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid gap-4">
+        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
           <LLMSettingsCard
             initialProvider={settingsData?.provider ?? null}
             initialModel={settingsData?.model ?? null}
@@ -71,9 +57,9 @@ export default function SettingsPage() {
             totalSources={(sources ?? []).length}
             enabledHooks={enabledHooks}
           />
-        </section>
+        </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4">
           <DataSourcesCard sources={sources ?? []} onRefetch={refetchSources} />
           <NotificationsCard hooks={hooks ?? []} onRefetch={refetchHooks} />
         </div>

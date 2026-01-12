@@ -7,7 +7,6 @@ import { signIn } from "next-auth/react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
-import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const emailId = useId();
@@ -29,61 +28,61 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        toast.error("invalid credentials");
         return;
       }
 
-      toast.success("Welcome back!");
+      toast.success("authenticated");
       router.push("/dashboard");
       router.refresh();
     } catch {
-      toast.error("Something went wrong");
+      toast.error("something went wrong");
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">
-          Enter your credentials to access your account
-        </p>
+    <div className="space-y-6 font-mono">
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">// authentication</p>
+        <h1 className="text-xl font-medium">login</h1>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor={emailId} className="text-sm font-medium">
-            Email
+          <label htmlFor={emailId} className="text-sm text-muted-foreground">
+            email
           </label>
-          <Input
+          <input
             id={emailId}
             type="email"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="w-full h-10 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor={passwordId} className="text-sm font-medium">
-            Password
+          <label htmlFor={passwordId} className="text-sm text-muted-foreground">
+            password
           </label>
-          <Input
+          <input
             id={passwordId}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="w-full h-10 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
           />
         </div>
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full h-10 rounded-lg bg-foreground text-background text-sm font-medium transition-colors hover:bg-foreground/90 disabled:opacity-50 flex items-center justify-center"
+          className="w-full h-10 rounded bg-foreground text-background text-sm transition-colors hover:bg-foreground/90 disabled:opacity-50 flex items-center justify-center"
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "sign in →"}
         </button>
       </form>
 
@@ -91,9 +90,9 @@ export default function LoginPage() {
       <OAuthButtons />
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-foreground hover:underline">
-          Sign up
+        no account?{" "}
+        <Link href="/signup" className="text-foreground hover:underline">
+          signup
         </Link>
       </p>
     </div>

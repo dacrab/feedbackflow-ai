@@ -1,43 +1,63 @@
-import { Zap } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-foreground text-background p-12 flex-col justify-between">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background text-foreground">
-            <Zap className="h-4 w-4" />
-          </div>
-          <span>FeedbackFlow</span>
+    <div className="min-h-screen flex font-mono">
+      {/* Left side - terminal style */}
+      <div className="hidden lg:flex lg:w-1/2 bg-foreground text-background p-8 flex-col">
+        <Link href="/" className="flex items-center gap-2 text-sm">
+          <Logo className="h-7 w-7 invert" />
+          <span>feedbackflow</span>
         </Link>
-        <div>
-          <blockquote className="text-xl font-medium leading-relaxed">
-            "FeedbackFlow transformed how we handle customer feedback. What used to take hours now
-            happens automatically."
-          </blockquote>
-          <div className="mt-4 text-background/70">
-            <div className="font-medium text-background">Sarah Chen</div>
-            <div className="text-sm">Head of Product, TechCorp</div>
+
+        <div className="flex-1 flex items-center">
+          <div className="w-full">
+            <p className="text-background/50 text-sm mb-4">$ feedbackflow --info</p>
+            <div className="space-y-6 text-sm">
+              <div>
+                <span className="text-green-400">→</span> ingest feedback from github, slack, or manual input
+              </div>
+              <div>
+                <span className="text-green-400">→</span> llm extracts sentiment, topics, severity
+              </div>
+              <div>
+                <span className="text-green-400">→</span> filter, sort, and act on what matters
+              </div>
+              <div>
+                <span className="text-green-400">→</span> get slack alerts for critical issues
+              </div>
+            </div>
+            <div className="mt-8 text-background/50 text-sm">
+              <span className="animate-pulse">_</span>
+            </div>
           </div>
         </div>
-        <div className="text-sm text-background/50">Trusted by teams at companies worldwide</div>
+
+        <div className="text-xs text-background/40">
+          next.js + neon + llm
+        </div>
       </div>
 
       {/* Right side - form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8 flex justify-center">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-                <Zap className="h-4 w-4" />
-              </div>
-              <span>FeedbackFlow</span>
-            </Link>
+      <div className="flex-1 flex flex-col p-8 bg-background">
+        <Link href="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          back
+        </Link>
+        
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-sm">
+            {/* Mobile logo */}
+            <div className="lg:hidden mb-8 flex justify-center">
+              <Link href="/" className="flex items-center gap-2 text-sm">
+                <Logo />
+                <span>feedbackflow</span>
+              </Link>
+            </div>
+            {children}
           </div>
-          {children}
         </div>
       </div>
     </div>
