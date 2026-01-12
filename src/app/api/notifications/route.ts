@@ -1,5 +1,5 @@
 import { CRUDService } from "@/lib/services/crud-service";
-import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/utils";
+import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/api";
 import { CreateNotificationSchema, parseOrError } from "@/lib/validations";
 
 export const GET = withAuthGet(async (user) => {

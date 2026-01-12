@@ -1,6 +1,6 @@
 import { getFeedbackItems } from "@/lib/services/feedback-service";
 import { filterFeedbackItems, parseFeedbackFilters } from "@/lib/services/query-builder";
-import { successResponse, withAuthRequest } from "@/lib/utils";
+import { successResponse, withAuthRequest } from "@/lib/api";
 
 export const GET = withAuthRequest(async (req, user) => {
   const { searchParams } = new URL(req.url);

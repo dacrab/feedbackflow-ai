@@ -4,7 +4,8 @@ import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
 import { runIngest } from "@/lib/services/ingest-service";
 import { sendDailyDigest } from "@/lib/services/notification-service";
-import { getDateNHoursAgo, isValidCronRequest, notifySlack, requireAuth } from "@/lib/utils";
+import { isValidCronRequest, requireAuth } from "@/lib/api";
+import { getDateNHoursAgo, notifySlack } from "@/lib/utils";
 
 export async function GET(req: Request) {
   if (!isValidCronRequest(req)) {
