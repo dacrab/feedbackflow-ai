@@ -1,107 +1,58 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import {
-  feedbackAnalyses,
-  feedbackItems,
-  ingestRuns,
-  userSettings,
-  userSources,
-} from "@/db/schema";
-import {
-  DEFAULT_ANALYSIS_BATCH_SIZE,
-  HIGH_SEVERITY_THRESHOLD,
-  HOURS_IN_DAY,
-  INITIAL_FETCH_DAYS,
-  MAX_RAW_CONTENT_LENGTH,
-} from "@/lib/constants";
+import { feedbackAnalyses, feedbackItems, ingestRuns, userSettings, userSources } from "@/db/schema";
+import { DEFAULT_ANALYSIS_BATCH_SIZE, HIGH_SEVERITY_THRESHOLD, HOURS_IN_DAY, INITIAL_FETCH_DAYS, MAX_RAW_CONTENT_LENGTH } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
 import { getDateNHoursAgo } from "@/lib/utils";
 import { fetchGithubIssues, type GithubIssue } from "./github-service";
 
-type LLMOpts =
-  | { provider: "google" | "openai" | "anthropic"; model?: string; apiKey?: string }
-  | undefined;
+type LLMOpts = { provider: "google" | "openai" | "anthropic"; model?: string; apiKey?: string } | undefined;
 
 export async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
-  const [s] = await db
-    .select({
-      provider: userSettings.provider,
-      model: userSettings.model,
-      apiKeyCipher: userSettings.apiKeyCipher,
-    })
-    .from(userSettings)
-    .where(eq(userSettings.userId, userId))
-    .limit(1);
+  const [s] = await db.select({ provider: userSettings.provider, model: userSettings.model, apiKeyCipher: userSettings.apiKeyCipher })
+    .from(userSettings).where(eq(userSettings.userId, userId)).limit(1);
   if (!s) return undefined;
   const apiKey = s.apiKeyCipher ? decrypt(s.apiKeyCipher) : undefined;
-  return {
-    provider: s.provider as "google" | "openai" | "anthropic",
-    ...(s.model && { model: s.model }),
-    ...(apiKey && { apiKey }),
-  };
+  return { provider: s.provider as "google" | "openai" | "anthropic", ...(s.model && { model: s.model }), ...(apiKey && { apiKey }) };
 }
 
 export async function getLatestTimestamp(userId: string): Promise<string> {
-  const [row] = await db
-    .select({ ts: feedbackItems.originalTimestamp })
-    .from(feedbackItems)
+  const [row] = await db.select({ ts: feedbackItems.originalTimestamp }).from(feedbackItems)
     .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.source, "github")))
-    .orderBy(desc(feedbackItems.originalTimestamp))
-    .limit(1);
+    .orderBy(desc(feedbackItems.originalTimestamp)).limit(1);
   if (!row?.ts) return getDateNHoursAgo(HOURS_IN_DAY * INITIAL_FETCH_DAYS);
   return row.ts instanceof Date ? row.ts.toISOString() : row.ts;
 }
 
-export function issuesToRows(issues: GithubIssue[], userId: string) {
-  return issues.map((i) => ({
-    userId,
-    source: "github" as const,
-    externalId: String(i.id),
+export const issuesToRows = (issues: GithubIssue[], userId: string) =>
+  issues.map((i) => ({
+    userId, source: "github" as const, externalId: String(i.id),
     rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, MAX_RAW_CONTENT_LENGTH),
     originalTimestamp: new Date(i.created_at),
   }));
-}
 
 export async function filterNewItems(rows: ReturnType<typeof issuesToRows>, userId: string) {
   if (!rows.length) return [];
-  const ids = rows.map((r) => r.externalId);
-  const existing = await db
-    .select({ externalId: feedbackItems.externalId })
-    .from(feedbackItems)
-    .where(
-      and(
-        eq(feedbackItems.userId, userId),
-        eq(feedbackItems.source, "github"),
-        inArray(feedbackItems.externalId, ids),
-      ),
-    );
+  const existing = await db.select({ externalId: feedbackItems.externalId }).from(feedbackItems)
+    .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.source, "github"), inArray(feedbackItems.externalId, rows.map((r) => r.externalId))));
   const set = new Set(existing.map((e) => e.externalId));
   return rows.filter((r) => !set.has(r.externalId));
 }
 
 export async function insertItems(items: ReturnType<typeof issuesToRows>) {
-  if (!items.length) return [];
-  return db
-    .insert(feedbackItems)
-    .values(items)
-    .returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent });
+  return items.length ? db.insert(feedbackItems).values(items).returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent }) : [];
 }
 
 export async function getUnanalyzedItems(userId: string, limit = DEFAULT_ANALYSIS_BATCH_SIZE) {
-  return db
-    .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
-    .from(feedbackItems)
+  return db.select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent }).from(feedbackItems)
     .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
-    .where(and(eq(feedbackItems.userId, userId), isNull(feedbackAnalyses.id)))
-    .limit(limit);
+    .where(and(eq(feedbackItems.userId, userId), isNull(feedbackAnalyses.id))).limit(limit);
 }
 
 export async function analyzeAndStore(
-  items: { id: string; rawContent: string }[],
-  userId: string,
-  llmOpts: LLMOpts,
+  items: { id: string; rawContent: string }[], userId: string, llmOpts: LLMOpts,
   onProgress?: (current: number, total: number, summary: string) => void,
 ): Promise<number> {
   let count = 0;
@@ -110,49 +61,26 @@ export async function analyzeAndStore(
     if (!item) continue;
     try {
       const a = await analyzeFeedback(item.rawContent, 2, llmOpts);
-      await db
-        .insert(feedbackAnalyses)
-        .values({
-          userId,
-          feedbackItemId: item.id,
-          sentiment: a.sentiment,
-          topics: a.topics,
-          severityScore: a.severity_score,
-          summary: a.summary,
-        })
-        .onConflictDoUpdate({
-          target: feedbackAnalyses.feedbackItemId,
-          set: {
-            sentiment: a.sentiment,
-            topics: a.topics,
-            severityScore: a.severity_score,
-            summary: a.summary,
-          },
-        });
+      await db.insert(feedbackAnalyses).values({
+        userId, feedbackItemId: item.id, sentiment: a.sentiment, topics: a.topics, severityScore: a.severity_score, summary: a.summary,
+      }).onConflictDoUpdate({
+        target: feedbackAnalyses.feedbackItemId,
+        set: { sentiment: a.sentiment, topics: a.topics, severityScore: a.severity_score, summary: a.summary },
+      });
       count++;
       onProgress?.(i + 1, items.length, a.summary);
-      if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
-        await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
+      if (a.severity_score >= HIGH_SEVERITY_THRESHOLD) await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[Ingest] Failed to analyze ${item.id}:`, msg);
-      onProgress?.(i + 1, items.length, `Failed: ${msg}`);
+      console.error(`[Ingest] Failed to analyze ${item.id}:`, err instanceof Error ? err.message : err);
+      onProgress?.(i + 1, items.length, `Failed: ${err instanceof Error ? err.message : err}`);
     }
   }
   return count;
 }
 
 export async function runIngest() {
-  const sources = await db
-    .select({
-      id: userSources.id,
-      userId: userSources.userId,
-      type: userSources.type,
-      config: userSources.config,
-      secretCipher: userSources.secretCipher,
-    })
-    .from(userSources)
-    .where(eq(userSources.enabled, true));
+  const sources = await db.select({ id: userSources.id, userId: userSources.userId, type: userSources.type, config: userSources.config, secretCipher: userSources.secretCipher })
+    .from(userSources).where(eq(userSources.enabled, true));
 
   const llmCache = new Map<string, Promise<LLMOpts>>();
   const totals = { fetched: 0, inserted: 0, analyzed: 0 };
@@ -166,21 +94,13 @@ export async function runIngest() {
     const newItems = await filterNewItems(issuesToRows(issues, src.userId), src.userId);
     const inserted = await insertItems(newItems);
 
-    const [run] = await db
-      .insert(ingestRuns)
-      .values({ userId: src.userId, fetched: issues.length })
-      .returning({ id: ingestRuns.id });
+    const [run] = await db.insert(ingestRuns).values({ userId: src.userId, fetched: issues.length }).returning({ id: ingestRuns.id });
 
     if (!llmCache.has(src.userId)) llmCache.set(src.userId, getUserLLMOpts(src.userId));
     const unanalyzed = await getUnanalyzedItems(src.userId);
-    const llmOpts = await llmCache.get(src.userId);
-    const analyzed = await analyzeAndStore([...inserted, ...unanalyzed], src.userId, llmOpts);
+    const analyzed = await analyzeAndStore([...inserted, ...unanalyzed], src.userId, await llmCache.get(src.userId));
 
-    if (run?.id)
-      await db
-        .update(ingestRuns)
-        .set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed })
-        .where(eq(ingestRuns.id, run.id));
+    if (run?.id) await db.update(ingestRuns).set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed }).where(eq(ingestRuns.id, run.id));
 
     totals.fetched += issues.length;
     totals.inserted += inserted.length;

@@ -50,19 +50,4 @@ export interface FeedbackFilterParams {
   limit?: number | undefined;
 }
 
-// Internal types for CRUD service
-export interface UserSourceRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  enabled: boolean;
-  secret_cipher: string | null;
-}
 
-export interface UserNotificationRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  enabled: boolean;
-  secret_cipher: string | null;
-}

@@ -8,7 +8,7 @@ import { feedbackAnalyses, userNotifications } from "@/db/schema";
 import { HIGH_SEVERITY_THRESHOLD, HOURS_IN_DAY, MAX_DIGEST_ITEMS } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysis } from "@/lib/types";
-import { notifySlack, notifySlackTo } from "@/lib/utils";
+import { notifySlack } from "@/lib/utils";
 
 async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
   const hooks = await db
@@ -37,9 +37,7 @@ async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
 
 async function notifyAllWebhooks(userId: string, message: string): Promise<void> {
   const webhooks = await getUserSlackWebhooks(userId);
-  for (const url of webhooks) {
-    await notifySlackTo(url, message);
-  }
+  for (const url of webhooks) await notifySlack(message, url);
   await notifySlack(message);
 }
 
@@ -77,9 +75,9 @@ export async function sendDailyDigest(
 
   const webhooks = await getUserSlackWebhooks(userId);
   for (const url of webhooks) {
-    await notifySlackTo(url, summaryMsg);
+    await notifySlack(summaryMsg, url);
     for (const item of highSeverity.slice(0, MAX_DIGEST_ITEMS)) {
-      await notifySlackTo(url, `• [sev ${item.severityScore}] ${item.summary}`);
+      await notifySlack(`• [sev ${item.severityScore}] ${item.summary}`, url);
     }
   }
 

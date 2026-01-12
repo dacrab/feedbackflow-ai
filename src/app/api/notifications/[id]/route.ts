@@ -1,20 +1,20 @@
-import { CRUDService } from "@/lib/services/crud-service";
-import { errorResponse, successResponse, withAuthDelete, withAuthParams } from "@/lib/api";
-import { parseOrError, UpdateNotificationSchema } from "@/lib/validations";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { userNotifications } from "@/db/schema";
+import { encrypt } from "@/lib/crypto";
+import { successResponse, withAuthDelete, withAuthParams } from "@/lib/api";
 
 export const PATCH = withAuthParams(async (req, params, user) => {
-  const parsed = parseOrError(UpdateNotificationSchema, await req.json());
-  if (!parsed.success) {
-    return errorResponse(parsed.error, 400);
-  }
+  const { webhook, enabled } = await req.json();
+  const updates: Record<string, unknown> = {};
+  if (typeof enabled === "boolean") updates["enabled"] = enabled;
+  if (typeof webhook === "string") updates["secretCipher"] = webhook ? encrypt(webhook) : null;
 
-  const service = new CRUDService("user_notifications", user.id);
-  await service.update(params.id, parsed.data);
+  await db.update(userNotifications).set(updates).where(and(eq(userNotifications.id, params.id), eq(userNotifications.userId, user.id)));
   return successResponse({ ok: true });
 });
 
 export const DELETE = withAuthDelete(async (params, user) => {
-  const service = new CRUDService("user_notifications", user.id);
-  await service.delete(params.id);
+  await db.delete(userNotifications).where(and(eq(userNotifications.id, params.id), eq(userNotifications.userId, user.id)));
   return successResponse({ ok: true });
 });
