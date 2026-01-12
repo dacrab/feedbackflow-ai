@@ -47,16 +47,14 @@ export default async function InboxPage({
         <p className="text-sm text-muted-foreground mt-1">{items.length} items</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <form className="flex-1 min-w-[180px] max-w-xs">
-          <input
-            type="text"
-            name="q"
-            placeholder="search..."
-            defaultValue={sp.get("q") || ""}
-            className="w-full h-8 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
-          />
-        </form>
+      <form className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          name="q"
+          placeholder="search..."
+          defaultValue={sp.get("q") || ""}
+          className="flex-1 min-w-[180px] max-w-xs h-8 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
+        />
 
         <select
           name="sentiment"
@@ -79,7 +77,14 @@ export default async function InboxPage({
           <option value="Acknowledged">acknowledged</option>
           <option value="Actioned">actioned</option>
         </select>
-      </div>
+
+        <button
+          type="submit"
+          className="h-8 px-3 rounded bg-muted text-sm hover:bg-muted/80 transition-colors"
+        >
+          filter
+        </button>
+      </form>
 
       <div className="rounded border border-border bg-card divide-y divide-border">
         {items.length === 0 ? (
