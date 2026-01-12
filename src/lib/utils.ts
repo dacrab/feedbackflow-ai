@@ -5,8 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
 export const formatDateUTC = (iso: string) => {
   try {
     return new Date(iso).toLocaleString("en-US", {
@@ -29,7 +27,12 @@ export async function notifySlack(text: string, url?: string) {
   const webhook = url || process.env["SLACK_WEBHOOK_URL"];
   if (!webhook) return;
   try {
-    await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-  } catch {}
+    await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+  } catch {
+    // Fire-and-forget: Slack notification failures are non-critical
+  }
 }
-

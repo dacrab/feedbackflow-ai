@@ -1,12 +1,13 @@
 "use client";
 
-import { IconLoader2 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { signIn, signUp } from "@/lib/auth-client";
 
 type Mode = "login" | "signup";
 
@@ -26,30 +27,22 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     try {
       if (isSignup) {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+        const { error } = await signUp.email({
+          email: email.trim().toLowerCase(),
+          password,
+          name: email.split("@")[0] || "User",
         });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "failed to create account");
-        }
+        if (error) throw new Error(error.message || "failed to create account");
         toast.success("account created");
       }
 
-      const result = await signIn("credentials", {
+      const { error } = await signIn.email({
         email: email.trim().toLowerCase(),
         password,
-        redirect: false,
       });
 
-      if (result?.error) {
-        if (isSignup) {
-          router.push("/login");
-        } else {
-          toast.error("invalid credentials");
-        }
+      if (error) {
+        toast.error(error.message || "invalid credentials");
         return;
       }
 
@@ -66,43 +59,48 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <div className="space-y-6 font-mono">
       <div className="space-y-1">
-        <p className="text-sm text-muted-foreground">{isSignup ? "// new user" : "// authentication"}</p>
+        <p className="text-sm text-muted-foreground">
+          {isSignup ? "// new user" : "// authentication"}
+        </p>
         <h1 className="text-xl font-medium">{mode}</h1>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor={emailId} className="text-sm text-muted-foreground">email</label>
-          <input
+          <label htmlFor={emailId} className="text-sm text-muted-foreground">
+            email
+          </label>
+          <Input
             id={emailId}
             type="email"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full h-10 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor={passwordId} className="text-sm text-muted-foreground">password</label>
-          <input
+          <label htmlFor={passwordId} className="text-sm text-muted-foreground">
+            password
+          </label>
+          <Input
             id={passwordId}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={isSignup ? 8 : undefined}
-            className="w-full h-10 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
           />
-          {isSignup && <p className="text-xs text-muted-foreground">min 8 chars, uppercase, lowercase, number</p>}
+          {isSignup && <p className="text-xs text-muted-foreground">min 8 chars</p>}
         </div>
-        <button
+        <Button
           type="submit"
-          disabled={isLoading}
-          className="w-full h-10 rounded bg-foreground text-background text-sm transition-colors hover:bg-foreground/90 disabled:opacity-50 flex items-center justify-center"
+          variant="primary"
+          isLoading={isLoading}
+          className="w-full flex items-center justify-center"
         >
-          {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : isSignup ? "create account →" : "sign in →"}
-        </button>
+          {isSignup ? "create account →" : "sign in →"}
+        </Button>
       </form>
 
       <AuthDivider />

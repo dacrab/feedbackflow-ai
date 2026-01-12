@@ -1,7 +1,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject, type LanguageModel, NoObjectGeneratedError } from "ai";
+import { generateObject, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import {
   LLM_MAX_RETRIES,
@@ -50,7 +50,7 @@ type LLMOptions = {
   apiKey?: string;
 };
 
-function getModel(opts?: LLMOptions): LanguageModel {
+function getModel(opts?: LLMOptions) {
   const provider = opts?.provider ?? "google";
   const modelName = opts?.model ?? DEFAULT_MODELS[provider];
 
@@ -59,8 +59,7 @@ function getModel(opts?: LLMOptions): LanguageModel {
     if (!apiKey) {
       throw new Error("OPENAI_API_KEY missing");
     }
-    const openai = createOpenAI({ apiKey });
-    return openai(modelName) as LanguageModel;
+    return createOpenAI({ apiKey })(modelName);
   }
 
   if (provider === "anthropic") {
@@ -68,15 +67,13 @@ function getModel(opts?: LLMOptions): LanguageModel {
     if (!apiKey) {
       throw new Error("ANTHROPIC_API_KEY missing");
     }
-    const anthropic = createAnthropic({ apiKey });
-    return anthropic(modelName) as LanguageModel;
+    return createAnthropic({ apiKey })(modelName);
   }
 
   if (opts?.apiKey) {
-    const g = createGoogleGenerativeAI({ apiKey: opts.apiKey });
-    return g(modelName) as unknown as LanguageModel;
+    return createGoogleGenerativeAI({ apiKey: opts.apiKey })(modelName);
   }
-  return google(modelName) as unknown as LanguageModel;
+  return google(modelName);
 }
 
 export async function analyzeFeedback(

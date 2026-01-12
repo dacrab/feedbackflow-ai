@@ -5,6 +5,9 @@ import SettingsItem, {
   getSourceDescription,
   getSourceLabel,
 } from "@/components/settings/settings-item";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks";
 import type { TransformedSourceRow } from "@/lib/types";
 
@@ -37,30 +40,31 @@ export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
   }
 
   return (
-    <div className="rounded border border-border bg-card p-4 space-y-4">
-      <p className="text-xs text-muted-foreground">// data sources</p>
-
+    <Card title="data sources">
       <form onSubmit={onSubmit} className="space-y-2">
-        <input
+        <Input
+          variant="sm"
           placeholder="owner/repo"
           value={repo}
           onChange={(e) => setRepo(e.target.value)}
-          className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
         />
-        <input
+        <Input
+          variant="sm"
           placeholder="github token (optional)"
           value={ghToken}
           onChange={(e) => setGhToken(e.target.value)}
           type="password"
-          className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
         />
-        <button
+        <Button
           type="submit"
-          disabled={isLoading || !repo}
-          className="w-full h-8 rounded border border-border text-sm hover:bg-muted disabled:opacity-50 transition-colors"
+          size="sm"
+          isLoading={isLoading}
+          loadingText="adding..."
+          disabled={!repo}
+          className="w-full"
         >
-          {isLoading ? "adding..." : "add source"}
-        </button>
+          add source
+        </Button>
       </form>
 
       <div className="space-y-2 border-t border-border pt-4">
@@ -79,6 +83,6 @@ export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
           ))
         )}
       </div>
-    </div>
+    </Card>
   );
 }

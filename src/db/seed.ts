@@ -1,6 +1,12 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { analysisStatusEnum, feedbackAnalyses, feedbackItems, sentimentEnum } from "@/db/schema";
+import {
+  analysisStatusEnum,
+  feedbackAnalyses,
+  feedbackItems,
+  sentimentEnum,
+  user,
+} from "@/db/schema";
 
 async function main() {
   const url = process.env["DATABASE_URL"];
@@ -17,10 +23,17 @@ async function main() {
     return;
   }
 
+  // Get first user or skip seeding if no users exist
+  const [existingUser] = await db.select({ id: user.id }).from(user).limit(1);
+  if (!existingUser) {
+    process.stdout.write("No users found - skipping seed (create a user first)\n");
+    return;
+  }
+
   const [item] = await db
     .insert(feedbackItems)
     .values({
-      userId: "00000000-0000-0000-0000-000000000000",
+      userId: existingUser.id,
       source: "seed",
       externalId: "seed-1",
       rawContent: "This is a seeded feedback item to verify Neon + Drizzle wiring.",

@@ -57,19 +57,3 @@ export const SettingsSchema = z.object({
 export const FeedbackStatusSchema = z.object({
   status: z.enum(["New", "Acknowledged", "Actioned"]),
 });
-
-// Auth
-export const RegisterSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-// Validation helper
-export function parseOrError<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown,
-): { success: true; data: T } | { success: false; error: string } {
-  const result = schema.safeParse(data);
-  if (result.success) return { success: true, data: result.data };
-  return { success: false, error: result.error.issues.map((e) => e.message).join(", ") };
-}

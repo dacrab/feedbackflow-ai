@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface SystemHealthCardProps {
   enabledSources: number;
@@ -55,9 +57,7 @@ export function SystemHealthCard({
   }
 
   return (
-    <div className="rounded border border-border bg-card p-4 space-y-4">
-      <p className="text-xs text-muted-foreground">// system</p>
-
+    <Card title="system">
       <div className="space-y-3">
         <div>
           <p className="text-xs text-muted-foreground">sources</p>
@@ -72,16 +72,18 @@ export function SystemHealthCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        disabled={syncing || enabledSources === 0}
+      <Button
+        size="sm"
+        isLoading={syncing}
+        loadingText="syncing..."
+        disabled={enabledSources === 0}
         onClick={runSync}
-        className="w-full h-8 rounded border border-border text-sm hover:bg-muted disabled:opacity-50 transition-colors"
+        className="w-full"
       >
-        {syncing ? "syncing..." : "sync now"}
-      </button>
+        sync now
+      </Button>
 
       {progress && <p className="text-xs text-muted-foreground text-center">{progress}</p>}
-    </div>
+    </Card>
   );
 }

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import SettingsItem, { getNotificationLabel } from "@/components/settings/settings-item";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks";
 import type { TransformedNotificationRow } from "@/lib/types";
 
@@ -32,23 +35,24 @@ export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) 
   }
 
   return (
-    <div className="rounded border border-border bg-card p-4 space-y-4">
-      <p className="text-xs text-muted-foreground">// notifications</p>
-
+    <Card title="notifications">
       <form onSubmit={onSubmit} className="space-y-2">
-        <input
+        <Input
+          variant="sm"
           placeholder="slack webhook url"
           value={slackUrl}
           onChange={(e) => setSlackUrl(e.target.value)}
-          className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
         />
-        <button
+        <Button
           type="submit"
-          disabled={isLoading || !slackUrl}
-          className="w-full h-8 rounded border border-border text-sm hover:bg-muted disabled:opacity-50 transition-colors"
+          size="sm"
+          isLoading={isLoading}
+          loadingText="adding..."
+          disabled={!slackUrl}
+          className="w-full"
         >
-          {isLoading ? "adding..." : "add webhook"}
-        </button>
+          add webhook
+        </Button>
       </form>
 
       <div className="space-y-2 border-t border-border pt-4">
@@ -66,6 +70,6 @@ export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) 
           ))
         )}
       </div>
-    </div>
+    </Card>
   );
 }

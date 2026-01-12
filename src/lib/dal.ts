@@ -2,24 +2,14 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { auth } from "@/auth";
+import { getServerSession } from "@/lib/session";
 
 export const verifySession = cache(async () => {
-  const session = await auth();
-  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const session = await getServerSession();
 
-  if (!userId) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
 
-  return { userId, email: session?.user?.email ?? "" };
-});
-
-export const getOptionalSession = cache(async () => {
-  const session = await auth();
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-
-  if (!userId) return null;
-
-  return { userId, email: session?.user?.email ?? "" };
+  return { userId: session.user.id, email: session.user.email ?? "" };
 });

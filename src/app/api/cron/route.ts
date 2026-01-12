@@ -2,21 +2,14 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
+import { isValidCronRequest, requireAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 import { sendDailyDigest } from "@/lib/services/notification-service";
-import { isValidCronRequest, requireAuth } from "@/lib/api";
 import { getDateNHoursAgo, notifySlack } from "@/lib/utils";
 
 export async function GET(req: Request) {
   if (!isValidCronRequest(req)) {
-    try {
-      await requireAuth();
-    } catch (err) {
-      if (err instanceof Response) {
-        return err;
-      }
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAuth();
   }
 
   const results: {
@@ -64,8 +57,4 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({ ok: true, ...results });
-}
-
-export async function POST(req: Request) {
-  return GET(req);
 }

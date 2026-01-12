@@ -1,21 +1,30 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "@/db/client";
 import { userSources } from "@/db/schema";
+import {
+  isErrorResponse,
+  successResponse,
+  validateBody,
+  withAuthDelete,
+  withAuthParams,
+} from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
-import { successResponse, withAuthDelete, withAuthParams } from "@/lib/api";
+import { deleteUserRow, updateUserRow } from "@/lib/db/queries";
+import { UpdateSourceSchema } from "@/lib/validations";
 
 export const PATCH = withAuthParams(async (req, params, user) => {
-  const { repo, token, enabled } = await req.json();
-  const updates: Record<string, unknown> = {};
-  if (typeof enabled === "boolean") updates["enabled"] = enabled;
-  if (typeof repo === "string") updates["config"] = { repo };
-  if (typeof token === "string") updates["secretCipher"] = token ? encrypt(token) : null;
+  const data = await validateBody(req, UpdateSourceSchema);
+  if (isErrorResponse(data)) return data;
 
-  await db.update(userSources).set(updates).where(and(eq(userSources.id, params.id), eq(userSources.userId, user.id)));
+  const updates: Record<string, unknown> = {};
+  if (typeof data.enabled === "boolean") updates["enabled"] = data.enabled;
+  if (typeof data.repo === "string") updates["config"] = { repo: data.repo };
+  if (typeof data.token === "string")
+    updates["secretCipher"] = data.token ? encrypt(data.token) : null;
+
+  await updateUserRow(userSources, params.id, user.id, updates);
   return successResponse({ ok: true });
 });
 
 export const DELETE = withAuthDelete(async (params, user) => {
-  await db.delete(userSources).where(and(eq(userSources.id, params.id), eq(userSources.userId, user.id)));
+  await deleteUserRow(userSources, params.id, user.id);
   return successResponse({ ok: true });
 });

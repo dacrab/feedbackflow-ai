@@ -1,29 +1,45 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import type { z } from "zod";
 import { timingSafeEqual } from "@/lib/crypto";
+import { getServerSession } from "@/lib/session";
 
 type AuthUser = { id: string; email: string | null };
 
+/** Validate request body against schema, returns errorResponse on failure */
+export async function validateBody<T>(req: Request, schema: z.ZodSchema<T>): Promise<T | Response> {
+  const body = await req.json();
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    return errorResponse(result.error.issues[0]?.message || "Invalid input", 400);
+  }
+  return result.data;
+}
+
+/** Check if validation result is an error response */
+export function isErrorResponse(result: unknown): result is Response {
+  return result instanceof Response;
+}
+
 async function getAuthUser(): Promise<AuthUser | null> {
-  const session = await auth();
-  const user = session?.user as { id?: string; email?: string | null } | undefined;
-  if (!user?.id) return null;
-  return { id: user.id, email: user.email ?? null };
+  const session = await getServerSession();
+  if (!session?.user?.id) return null;
+  return { id: session.user.id, email: session.user.email ?? null };
 }
 
 export async function requireAuth(): Promise<AuthUser> {
   const user = await getAuthUser();
-  if (!user) throw NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) {
+    throw NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   return user;
 }
 
 export const errorResponse = (message: string, status = 500) =>
   NextResponse.json({ error: message }, { status });
 
-export const successResponse = (data: unknown, status = 200) =>
-  NextResponse.json(data, { status });
+export const successResponse = (data: unknown, status = 200) => NextResponse.json(data, { status });
 
 export function withAuthGet<T>(handler: (user: AuthUser) => Promise<T>) {
   return async (): Promise<T | Response> => {
@@ -72,7 +88,11 @@ export function withAuthDelete<T>(handler: (params: { id: string }, user: AuthUs
 export function isValidCronRequest(req: Request): boolean {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env["CRON_SECRET"];
-  if (cronSecret && authHeader?.startsWith("Bearer ") && timingSafeEqual(authHeader.slice(7), cronSecret)) {
+  if (
+    cronSecret &&
+    authHeader?.startsWith("Bearer ") &&
+    timingSafeEqual(authHeader.slice(7), cronSecret)
+  ) {
     return true;
   }
   const token = req.headers.get("x-cron-token");
