@@ -85,12 +85,19 @@
     @apply bg-background text-foreground;
   }
 
-  button, [role="button"], a, select, input[type="checkbox"], input[type="radio"], label[for] {
+  button,
+  [role="button"],
+  a,
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  label[for] {
     cursor: pointer;
   }
 
   /* Page transitions */
-  main, .page-content {
+  main,
+  .page-content {
     animation: fadeIn 0.3s ease-out;
   }
 

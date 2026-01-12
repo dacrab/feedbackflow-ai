@@ -1,21 +1,16 @@
 import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { SentimentBadge } from "@/components/ui/sentiment-badge";
 import { MAX_SEVERITY } from "@/lib/constants";
+import { verifySession } from "@/lib/dal";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
 import { formatDateUTC } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  const userId = (session?.user as { id?: string })?.id;
-  if (!userId) {
-    redirect("/login");
-  }
-
+  const { userId } = await verifySession();
   const { id } = await params;
+
   const item = await getFeedbackItem(userId, id);
   const analysis = item.feedback_analyses;
   const topics = analysis?.topics ?? [];
@@ -32,15 +27,12 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
       </Link>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Main content */}
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs text-muted-foreground">// summary</p>
-                <h1 className="text-lg font-medium mt-1">
-                  {analysis?.summary || "no summary"}
-                </h1>
+                <h1 className="text-lg font-medium mt-1">{analysis?.summary || "no summary"}</h1>
               </div>
               <StatusChanger id={item.id} initial={analysis?.status || "New"} />
             </div>
@@ -51,7 +43,9 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
               </span>
               <SentimentBadge sentiment={analysis?.sentiment} />
               {severity && (
-                <span className={`text-xs ${severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground"}`}>
+                <span
+                  className={`text-xs ${severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground"}`}
+                >
                   severity: {severity}/{MAX_SEVERITY}
                 </span>
               )}
@@ -76,7 +70,6 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
           <div className="rounded border border-border bg-card p-4">
             <p className="text-xs text-muted-foreground mb-3">// analysis</p>

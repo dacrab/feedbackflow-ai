@@ -2,6 +2,8 @@
  * Feedback service for direct database queries
  */
 
+import "server-only";
+
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";

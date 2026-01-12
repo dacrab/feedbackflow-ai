@@ -17,7 +17,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <p className="text-background/50 text-sm mb-4">$ feedbackflow --info</p>
             <div className="space-y-6 text-sm">
               <div>
-                <span className="text-green-400">→</span> ingest feedback from github, slack, or manual input
+                <span className="text-green-400">→</span> ingest feedback from github, slack, or
+                manual input
               </div>
               <div>
                 <span className="text-green-400">→</span> llm extracts sentiment, topics, severity
@@ -35,18 +36,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <div className="text-xs text-background/40">
-          next.js + neon + llm
-        </div>
+        <div className="text-xs text-background/40">next.js + neon + llm</div>
       </div>
 
       {/* Right side - form */}
       <div className="flex-1 flex flex-col p-8 bg-background">
-        <Link href="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit"
+        >
           <IconArrowLeft className="h-3.5 w-3.5" />
           back
         </Link>
-        
+
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-sm">
             {/* Mobile logo */}

@@ -34,7 +34,7 @@ export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) 
   return (
     <div className="rounded border border-border bg-card p-4 space-y-4">
       <p className="text-xs text-muted-foreground">// notifications</p>
-      
+
       <form onSubmit={onSubmit} className="space-y-2">
         <input
           placeholder="slack webhook url"

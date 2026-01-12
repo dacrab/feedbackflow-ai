@@ -57,12 +57,13 @@ export function SystemHealthCard({
   return (
     <div className="rounded border border-border bg-card p-4 space-y-4">
       <p className="text-xs text-muted-foreground">// system</p>
-      
+
       <div className="space-y-3">
         <div>
           <p className="text-xs text-muted-foreground">sources</p>
           <p className="text-lg font-medium">
-            {enabledSources}<span className="text-muted-foreground text-sm">/{totalSources}</span>
+            {enabledSources}
+            <span className="text-muted-foreground text-sm">/{totalSources}</span>
           </p>
         </div>
         <div>
@@ -79,10 +80,8 @@ export function SystemHealthCard({
       >
         {syncing ? "syncing..." : "sync now"}
       </button>
-      
-      {progress && (
-        <p className="text-xs text-muted-foreground text-center">{progress}</p>
-      )}
+
+      {progress && <p className="text-xs text-muted-foreground text-center">{progress}</p>}
     </div>
   );
 }

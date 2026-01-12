@@ -32,15 +32,17 @@ export default function LandingPage() {
       <section className="pt-32 pb-16">
         <div className="mx-auto max-w-5xl px-6">
           <div className="max-w-2xl">
-            <p className="text-sm text-muted-foreground mb-4">// feedback analysis for developers</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              // feedback analysis for developers
+            </p>
             <h1 className="text-3xl sm:text-4xl font-medium tracking-tight leading-tight">
               Stop drowning in GitHub issues.
               <br />
               <span className="text-muted-foreground">Let AI do the triage.</span>
             </h1>
             <p className="mt-6 text-muted-foreground leading-relaxed max-w-lg">
-              Ingest issues from your repos, get sentiment + severity + topics extracted automatically. 
-              Focus on what matters.
+              Ingest issues from your repos, get sentiment + severity + topics extracted
+              automatically. Focus on what matters.
             </p>
             <div className="mt-8 flex items-center gap-4">
               <Link
@@ -70,7 +72,8 @@ export default function LandingPage() {
             </div>
             <div className="p-6 text-sm space-y-4">
               <div>
-                <span className="text-muted-foreground">$</span> feedbackflow analyze --repo vercel/next.js
+                <span className="text-muted-foreground">$</span> feedbackflow analyze --repo
+                vercel/next.js
               </div>
               <div className="text-muted-foreground">fetching latest issues...</div>
               <div className="border-l-2 border-border pl-4 space-y-3">
@@ -109,7 +112,11 @@ export default function LandingPage() {
         <div className="mx-auto max-w-5xl px-6">
           <p className="text-sm text-muted-foreground mb-8">// how it works</p>
           <div className="grid gap-8 sm:grid-cols-3">
-            <Step n={1} title="connect" desc="Point to any GitHub repo or paste feedback manually" />
+            <Step
+              n={1}
+              title="connect"
+              desc="Point to any GitHub repo or paste feedback manually"
+            />
             <Step n={2} title="analyze" desc="LLM extracts sentiment, topics, severity (1-5)" />
             <Step n={3} title="act" desc="Filter inbox, get Slack alerts for critical items" />
           </div>
