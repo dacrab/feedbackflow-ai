@@ -6,6 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FeedbackFlow",
   description: "AI-powered feedback analysis and insights",
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
