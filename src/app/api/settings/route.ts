@@ -1,10 +1,16 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { userSettings } from "@/db/schema";
+import {
+  isErrorResponse,
+  successResponse,
+  validateBody,
+  withAuthGet,
+  withAuthRequest,
+} from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
 import type { LLMProvider } from "@/lib/types";
-import { errorResponse, successResponse, withAuthGet, withAuthRequest } from "@/lib/api";
-import { parseOrError, SettingsSchema } from "@/lib/validations";
+import { SettingsSchema } from "@/lib/validations";
 
 export const GET = withAuthGet(async (user) => {
   const [row] = await db
@@ -25,20 +31,17 @@ export const GET = withAuthGet(async (user) => {
 });
 
 export const POST = withAuthRequest(async (req, user) => {
-  const parsed = parseOrError(SettingsSchema, await req.json());
-  if (!parsed.success) {
-    return errorResponse(parsed.error, 400);
-  }
+  const data = await validateBody(req, SettingsSchema);
+  if (isErrorResponse(data)) return data;
 
-  const { provider, model, apiKey } = parsed.data;
-  const apiKeyCipher = encrypt(apiKey);
+  const apiKeyCipher = encrypt(data.apiKey);
 
   await db
     .insert(userSettings)
-    .values({ userId: user.id, provider, model, apiKeyCipher })
+    .values({ userId: user.id, provider: data.provider, model: data.model, apiKeyCipher })
     .onConflictDoUpdate({
       target: userSettings.userId,
-      set: { provider, model, apiKeyCipher },
+      set: { provider: data.provider, model: data.model, apiKeyCipher },
     });
 
   return successResponse({ ok: true });

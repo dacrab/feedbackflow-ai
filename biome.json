@@ -28,7 +28,8 @@
         "useComponentExportOnlyModules": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noCommentText": "off"
       }
     }
   },

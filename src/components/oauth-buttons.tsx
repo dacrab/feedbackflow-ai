@@ -1,14 +1,14 @@
 "use client";
 
 import { IconBrandGithub } from "@tabler/icons-react";
-import { signIn } from "next-auth/react";
+import { signIn } from "@/lib/auth-client";
 
 export function OAuthButtons() {
   return (
     <div className="grid grid-cols-2 gap-3 font-mono">
       <button
         type="button"
-        onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+        onClick={() => signIn.social({ provider: "github", callbackURL: "/dashboard" })}
         className="h-10 rounded border border-border text-sm transition-colors hover:bg-muted flex items-center justify-center gap-2"
       >
         <IconBrandGithub className="h-4 w-4" />
@@ -16,10 +16,11 @@ export function OAuthButtons() {
       </button>
       <button
         type="button"
-        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        onClick={() => signIn.social({ provider: "google", callbackURL: "/dashboard" })}
         className="h-10 rounded border border-border text-sm transition-colors hover:bg-muted flex items-center justify-center gap-2"
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+        <svg className="h-4 w-4" viewBox="0 0 24 24" role="img" aria-label="Google">
+          <title>Google</title>
           <path
             fill="currentColor"
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

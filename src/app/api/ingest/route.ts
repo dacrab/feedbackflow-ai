@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { runIngest } from "@/lib/services/ingest-service";
 import { isValidCronRequest, requireAuth } from "@/lib/api";
+import { runIngest } from "@/lib/services/ingest-service";
 
 export async function POST(req: Request) {
   if (!isValidCronRequest(req)) {

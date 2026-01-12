@@ -34,9 +34,6 @@ export const HIGH_SEVERITY_THRESHOLD = 4;
 export const MIN_SEVERITY = 1;
 export const MAX_SEVERITY = 5;
 
-// Auth
-export const BCRYPT_ROUNDS = 12;
-
 // Retry configuration
 export const GITHUB_RETRY_BASE_DELAY_MS = 400;
 export const GITHUB_MAX_RETRIES = 3;

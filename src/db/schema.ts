@@ -16,27 +16,72 @@ import {
 export const sentimentEnum = pgEnum("sentiment_type", ["positive", "neutral", "negative"]);
 export const analysisStatusEnum = pgEnum("analysis_status", ["New", "Acknowledged", "Actioned"]);
 
-// Users
-export const appUsers = pgTable(
-  "app_users",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    email: text("email").notNull().unique(),
-    passwordHash: text("password_hash"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (t) => [index("app_users_email_idx").on(t.email)],
-);
+// ============================================================================
+// Better Auth Tables
+// ============================================================================
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const session = pgTable("session", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const account = pgTable("account", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+  scope: text("scope"),
+  idToken: text("id_token"),
+  password: text("password"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================================
+// App Tables (reference Better Auth user table)
+// ============================================================================
 
 // Feedback Items
 export const feedbackItems = pgTable(
   "feedback_items",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     source: text("source").notNull(),
     externalId: text("external_id").notNull(),
     rawContent: text("raw_content").notNull(),
@@ -56,9 +101,9 @@ export const feedbackAnalyses = pgTable(
   "feedback_analyses",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     feedbackItemId: uuid("feedback_item_id")
       .notNull()
       .unique()
@@ -86,9 +131,9 @@ export const analysisTopics = pgTable(
     feedbackAnalysisId: uuid("feedback_analysis_id")
       .notNull()
       .references(() => feedbackAnalyses.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     topic: text("topic").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -100,9 +145,9 @@ export const ingestRuns = pgTable(
   "ingest_runs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     ok: boolean("ok"),
@@ -116,9 +161,9 @@ export const ingestRuns = pgTable(
 
 // User Settings
 export const userSettings = pgTable("user_settings", {
-  userId: uuid("user_id")
+  userId: text("user_id")
     .primaryKey()
-    .references(() => appUsers.id, { onDelete: "cascade" }),
+    .references(() => user.id, { onDelete: "cascade" }),
   provider: text("provider").notNull(),
   model: text("model").notNull(),
   apiKeyCipher: text("api_key_cipher"),
@@ -131,9 +176,9 @@ export const userSources = pgTable(
   "user_sources",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     config: jsonb("config").$type<Record<string, unknown>>().notNull(),
     secretCipher: text("secret_cipher"),
@@ -150,9 +195,9 @@ export const userNotifications = pgTable(
   "user_notifications",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     config: jsonb("config").$type<Record<string, unknown>>().notNull(),
     secretCipher: text("secret_cipher"),
@@ -164,7 +209,9 @@ export const userNotifications = pgTable(
 );
 
 // Relations
-export const appUsersRelations = relations(appUsers, ({ many, one }) => ({
+export const userRelations = relations(user, ({ many, one }) => ({
+  sessions: many(session),
+  accounts: many(account),
   feedbackItems: many(feedbackItems),
   feedbackAnalyses: many(feedbackAnalyses),
   settings: one(userSettings),
@@ -173,13 +220,21 @@ export const appUsersRelations = relations(appUsers, ({ many, one }) => ({
   ingestRuns: many(ingestRuns),
 }));
 
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
+
 export const feedbackItemsRelations = relations(feedbackItems, ({ one }) => ({
-  user: one(appUsers, { fields: [feedbackItems.userId], references: [appUsers.id] }),
+  user: one(user, { fields: [feedbackItems.userId], references: [user.id] }),
   analysis: one(feedbackAnalyses),
 }));
 
 export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one, many }) => ({
-  user: one(appUsers, { fields: [feedbackAnalyses.userId], references: [appUsers.id] }),
+  user: one(user, { fields: [feedbackAnalyses.userId], references: [user.id] }),
   feedbackItem: one(feedbackItems, {
     fields: [feedbackAnalyses.feedbackItemId],
     references: [feedbackItems.id],

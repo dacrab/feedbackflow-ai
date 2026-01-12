@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks";
 import type { LLMProvider } from "@/lib/types";
 
@@ -71,12 +73,12 @@ export function LLMSettingsCard({
             <label htmlFor={modelId} className="text-xs text-muted-foreground">
               model
             </label>
-            <input
+            <Input
               id={modelId}
+              variant="sm"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="e.g. gpt-4o, gemini-2.5-pro"
-              className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
             />
           </div>
         </div>
@@ -84,22 +86,24 @@ export function LLMSettingsCard({
           <label htmlFor={apiKeyId} className="text-xs text-muted-foreground">
             api key {hasKey && <span className="text-green-500 ml-1">● connected</span>}
           </label>
-          <input
+          <Input
             id={apiKeyId}
+            variant="sm"
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder={hasKey ? "••••••••" : "sk-..."}
-            className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
           />
         </div>
-        <button
+        <Button
           type="submit"
-          disabled={isLoading}
-          className="h-8 px-4 rounded bg-foreground text-background text-sm hover:bg-foreground/90 disabled:opacity-50"
+          variant="primary"
+          size="sm"
+          isLoading={isLoading}
+          loadingText="saving..."
         >
-          {isLoading ? "saving..." : "save"}
-        </button>
+          save
+        </Button>
       </form>
     </div>
   );
