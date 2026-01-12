@@ -95,12 +95,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -110,11 +106,7 @@
         "account_user_provider_idx": {
           "name": "account_user_provider_idx",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "provider_id",
-            "account_id"
-          ]
+          "columns": ["user_id", "provider_id", "account_id"]
         }
       },
       "policies": {},
@@ -243,12 +235,8 @@
           "name": "feedback_analyses_user_id_user_id_fk",
           "tableFrom": "feedback_analyses",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -256,12 +244,8 @@
           "name": "feedback_analyses_feedback_item_id_feedback_items_id_fk",
           "tableFrom": "feedback_analyses",
           "tableTo": "feedback_items",
-          "columnsFrom": [
-            "feedback_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["feedback_item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -271,9 +255,7 @@
         "feedback_analyses_feedback_item_id_unique": {
           "name": "feedback_analyses_feedback_item_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "feedback_item_id"
-          ]
+          "columns": ["feedback_item_id"]
         }
       },
       "policies": {},
@@ -383,12 +365,8 @@
           "name": "feedback_items_user_id_user_id_fk",
           "tableFrom": "feedback_items",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -398,11 +376,7 @@
         "feedback_items_user_source_external_idx": {
           "name": "feedback_items_user_source_external_idx",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "source",
-            "external_id"
-          ]
+          "columns": ["user_id", "source", "external_id"]
         }
       },
       "policies": {},
@@ -492,12 +466,8 @@
           "name": "ingest_runs_user_id_user_id_fk",
           "tableFrom": "ingest_runs",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -585,12 +555,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -600,9 +566,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -666,9 +630,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -755,12 +717,8 @@
           "name": "user_notifications_user_id_user_id_fk",
           "tableFrom": "user_notifications",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -820,12 +778,8 @@
           "name": "user_settings_user_id_user_id_fk",
           "tableFrom": "user_settings",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -922,12 +876,8 @@
           "name": "user_sources_user_id_user_id_fk",
           "tableFrom": "user_sources",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -994,34 +944,22 @@
     "public.analysis_status": {
       "name": "analysis_status",
       "schema": "public",
-      "values": [
-        "New",
-        "Acknowledged",
-        "Actioned"
-      ]
+      "values": ["New", "Acknowledged", "Actioned"]
     },
     "public.notification_type": {
       "name": "notification_type",
       "schema": "public",
-      "values": [
-        "slack"
-      ]
+      "values": ["slack"]
     },
     "public.sentiment_type": {
       "name": "sentiment_type",
       "schema": "public",
-      "values": [
-        "positive",
-        "neutral",
-        "negative"
-      ]
+      "values": ["positive", "neutral", "negative"]
     },
     "public.source_type": {
       "name": "source_type",
       "schema": "public",
-      "values": [
-        "github"
-      ]
+      "values": ["github"]
     }
   },
   "schemas": {},
