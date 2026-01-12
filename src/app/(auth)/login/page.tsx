@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -82,7 +82,7 @@ export default function LoginPage() {
           disabled={isLoading}
           className="w-full h-10 rounded bg-foreground text-background text-sm transition-colors hover:bg-foreground/90 disabled:opacity-50 flex items-center justify-center"
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "sign in →"}
+          {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : "sign in →"}
         </button>
       </form>
 

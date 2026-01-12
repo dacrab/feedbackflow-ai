@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -27,7 +27,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
         href="/inbox"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="h-3.5 w-3.5" />
+        <IconArrowLeft className="h-3.5 w-3.5" />
         back
       </Link>
 

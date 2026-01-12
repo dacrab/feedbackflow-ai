@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Home, Inbox, LogOut, Settings } from "lucide-react";
+import { IconChevronLeft, IconHome, IconInbox, IconLogout, IconSettings } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,9 +8,9 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "dashboard", icon: Home },
-  { href: "/inbox", label: "inbox", icon: Inbox },
-  { href: "/settings", label: "settings", icon: Settings },
+  { href: "/dashboard", label: "dashboard", icon: IconHome },
+  { href: "/inbox", label: "inbox", icon: IconInbox },
+  { href: "/settings", label: "settings", icon: IconSettings },
 ];
 
 interface SidebarProps {
@@ -95,7 +95,7 @@ export function Sidebar({ userEmail }: SidebarProps) {
               collapsed ? "p-1.5" : "p-1",
             )}
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <IconLogout className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -106,7 +106,7 @@ export function Sidebar({ userEmail }: SidebarProps) {
         className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         title={collapsed ? "expand" : "collapse"}
       >
-        <ChevronLeft
+        <IconChevronLeft
           className={cn("h-3.5 w-3.5 transition-transform duration-200", collapsed && "rotate-180")}
         />
       </button>

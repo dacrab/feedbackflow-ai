@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { IconArrowRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -47,7 +47,7 @@ export default function LandingPage() {
                 href="/signup"
                 className="inline-flex items-center gap-2 rounded bg-foreground px-4 py-2 text-sm text-background hover:bg-foreground/90"
               >
-                get started <ArrowRight className="h-3.5 w-3.5" />
+                get started <IconArrowRight className="h-3.5 w-3.5" />
               </Link>
               <a
                 href="https://github.com/dacrab/feedbackflow-ai"

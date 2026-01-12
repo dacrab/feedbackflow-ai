@@ -1,6 +1,6 @@
 "use client";
 
-import { Github } from "lucide-react";
+import { IconBrandGithub } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 
 export function OAuthButtons() {
@@ -11,7 +11,7 @@ export function OAuthButtons() {
         onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
         className="h-10 rounded border border-border text-sm transition-colors hover:bg-muted flex items-center justify-center gap-2"
       >
-        <Github className="h-4 w-4" />
+        <IconBrandGithub className="h-4 w-4" />
         github
       </button>
       <button

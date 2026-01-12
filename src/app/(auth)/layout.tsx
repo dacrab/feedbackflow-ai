@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 
@@ -43,7 +43,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Right side - form */}
       <div className="flex-1 flex flex-col p-8 bg-background">
         <Link href="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <IconArrowLeft className="h-3.5 w-3.5" />
           back
         </Link>
         
