@@ -1,15 +1,10 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "@/components/charts";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY, MIN_SEVERITY } from "@/lib/constants";
+import { verifySession } from "@/lib/dal";
 import { computeMetrics, getDashboardData } from "@/lib/dashboard";
 
 export default async function DashboardPage() {
-  const session = await auth();
-  const userId = (session?.user as { id?: string })?.id;
-  if (!userId) {
-    redirect("/login");
-  }
+  const { userId } = await verifySession();
 
   const data = await getDashboardData(userId);
   const metrics = computeMetrics(data);
@@ -39,7 +34,6 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-medium">dashboard</h1>
       </div>
 
-      {/* Metrics */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="total" value={metrics.total} delta={metrics.trendDelta} />
         <MetricCard label="positive" value={`${metrics.positiveShare}%`} />
@@ -51,7 +45,6 @@ export default async function DashboardPage() {
         <MetricCard label="avg severity" value={metrics.avgSeverity} note={`of ${MAX_SEVERITY}`} />
       </div>
 
-      {/* Charts */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground mb-3">// trend</p>
@@ -111,7 +104,8 @@ function MetricCard({
       {delta !== undefined && (
         <p className="text-xs mt-1">
           <span className={delta >= 0 ? "text-green-500" : "text-red-500"}>
-            {delta >= 0 ? "+" : ""}{delta}
+            {delta >= 0 ? "+" : ""}
+            {delta}
           </span>
           <span className="text-muted-foreground"> vs last period</span>
         </p>

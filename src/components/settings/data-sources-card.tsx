@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import SettingsItem, { getSourceDescription, getSourceLabel } from "@/components/settings/settings-item";
+import SettingsItem, {
+  getSourceDescription,
+  getSourceLabel,
+} from "@/components/settings/settings-item";
 import { useApiMutation } from "@/hooks";
 import type { TransformedSourceRow } from "@/lib/types";
 
@@ -36,7 +39,7 @@ export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
   return (
     <div className="rounded border border-border bg-card p-4 space-y-4">
       <p className="text-xs text-muted-foreground">// data sources</p>
-      
+
       <form onSubmit={onSubmit} className="space-y-2">
         <input
           placeholder="owner/repo"

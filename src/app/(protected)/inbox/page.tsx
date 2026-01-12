@@ -1,9 +1,8 @@
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { SentimentBadge } from "@/components/ui/sentiment-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { verifySession } from "@/lib/dal";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
 import { filterFeedbackItems, parseFeedbackFilters } from "@/lib/services/query-builder";
 import { formatDateUTC } from "@/lib/utils";
@@ -13,11 +12,7 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
-  const session = await auth();
-  const userId = (session?.user as { id?: string })?.id;
-  if (!userId) {
-    redirect("/login");
-  }
+  const { userId } = await verifySession();
 
   const spObj = await searchParams;
   const sp = new URLSearchParams();
@@ -52,7 +47,6 @@ export default async function InboxPage({
         <p className="text-sm text-muted-foreground mt-1">{items.length} items</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <form className="flex-1 min-w-[180px] max-w-xs">
           <input
@@ -87,7 +81,6 @@ export default async function InboxPage({
         </select>
       </div>
 
-      {/* Items */}
       <div className="rounded border border-border bg-card divide-y divide-border">
         {items.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
@@ -107,7 +100,11 @@ export default async function InboxPage({
               >
                 <div
                   className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    severity >= 4 ? "bg-red-500" : severity >= 3 ? "bg-orange-500" : "bg-muted-foreground/30"
+                    severity >= 4
+                      ? "bg-red-500"
+                      : severity >= 3
+                        ? "bg-orange-500"
+                        : "bg-muted-foreground/30"
                   }`}
                 />
 

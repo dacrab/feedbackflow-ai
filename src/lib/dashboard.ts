@@ -2,6 +2,8 @@
  * Dashboard data fetching and processing
  */
 
+import "server-only";
+
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";

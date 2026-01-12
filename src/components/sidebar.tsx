@@ -1,6 +1,12 @@
 "use client";
 
-import { IconChevronLeft, IconHome, IconInbox, IconLogout, IconSettings } from "@tabler/icons-react";
+import {
+  IconChevronLeft,
+  IconHome,
+  IconInbox,
+  IconLogout,
+  IconSettings,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";

@@ -82,8 +82,7 @@ export function LLMSettingsCard({
         </div>
         <div className="space-y-1.5">
           <label htmlFor={apiKeyId} className="text-xs text-muted-foreground">
-            api key{" "}
-            {hasKey && <span className="text-green-500 ml-1">● connected</span>}
+            api key {hasKey && <span className="text-green-500 ml-1">● connected</span>}
           </label>
           <input
             id={apiKeyId}

@@ -88,9 +88,7 @@ export default function SignupPage() {
             minLength={8}
             className="w-full h-10 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
           />
-          <p className="text-xs text-muted-foreground">
-            min 8 chars, uppercase, lowercase, number
-          </p>
+          <p className="text-xs text-muted-foreground">min 8 chars, uppercase, lowercase, number</p>
         </div>
         <button
           type="submit"
