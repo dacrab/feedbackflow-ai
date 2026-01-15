@@ -20,7 +20,7 @@ async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
     .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
 
   const urls: Array<string> = [];
-  for (const hook of hooks || []) {
+  for (const hook of hooks) {
     if (hook.type === "slack" && hook.secretCipher) {
       try {
         const url = decrypt(hook.secretCipher as string);
