@@ -27,4 +27,4 @@ jobs:
           else
             bun install
           fi
-      - run: bun run check
+      - run: bun run typecheck
