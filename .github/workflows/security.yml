@@ -1,0 +1,31 @@
+name: Security
+
+on:
+  push:
+    branches: [main, master]
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install
+
+      - uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: fs
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+        continue-on-error: true
