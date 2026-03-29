@@ -4,5 +4,6 @@
       "path": "/api/cron",
       "schedule": "0 7 * * *"
     }
-  ]
+  ],
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_AUTHOR_LOGIN\" = \"dependabot[bot]\" ] && exit 0 || exit 1"
 }
