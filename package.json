@@ -18,17 +18,17 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.69",
-    "@ai-sdk/google": "^3.0.62",
-    "@ai-sdk/openai": "^3.0.52",
-    "@neondatabase/serverless": "^1.0.2",
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/google": "^3.0.64",
+    "@ai-sdk/openai": "^3.0.53",
+    "@neondatabase/serverless": "^1.1.0",
     "@tabler/icons-react": "^3.41.1",
     "@vercel/analytics": "^2.0.1",
-    "ai": "^6.0.158",
-    "better-auth": "^1.6.2",
+    "ai": "^6.0.168",
+    "better-auth": "^1.6.5",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
-    "next": "16.2.3",
+    "next": "16.2.4",
     "next-themes": "^0.4.6",
     "react": "19.2.5",
     "react-dom": "19.2.5",
@@ -39,16 +39,16 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.11",
+    "@biomejs/biome": "2.4.12",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "dotenv": "^17.4.1",
+    "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
-    "knip": "^6.4.0",
-    "postcss": "^8.5.9",
+    "knip": "^6.4.1",
+    "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   }
 }
