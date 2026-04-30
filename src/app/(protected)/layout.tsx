@@ -1,10 +1,13 @@
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { Sidebar } from "@/components/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { verifySession } from "@/lib/dal";
+import { getServerSession } from "@/lib/session";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { email } = await verifySession();
+  const session = await getServerSession();
+  if (!session?.user?.id) redirect("/login");
+  const email = session.user.email ?? "";
 
   return (
     <div className="flex min-h-screen font-mono">

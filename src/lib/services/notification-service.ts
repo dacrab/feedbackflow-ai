@@ -5,7 +5,7 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
-import { HIGH_SEVERITY_THRESHOLD, HOURS_IN_DAY, MAX_DIGEST_ITEMS } from "@/lib/constants";
+import { HIGH_SEVERITY_THRESHOLD } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysis } from "@/lib/types";
 import { notifySlack } from "@/lib/utils";
@@ -71,12 +71,12 @@ export async function sendDailyDigest(
     .orderBy(desc(feedbackAnalyses.createdAt));
 
   const highSeverity = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
-  const summaryMsg = `Daily digest: ${analyses.length} analyses in last ${HOURS_IN_DAY}h. High severity: ${highSeverity.length}.`;
+  const summaryMsg = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${highSeverity.length}.`;
 
   const webhooks = await getUserSlackWebhooks(userId);
   for (const url of webhooks) {
     await notifySlack(summaryMsg, url);
-    for (const item of highSeverity.slice(0, MAX_DIGEST_ITEMS)) {
+    for (const item of highSeverity.slice(0, 10)) {
       await notifySlack(`• [sev ${item.severityScore}] ${item.summary}`, url);
     }
   }

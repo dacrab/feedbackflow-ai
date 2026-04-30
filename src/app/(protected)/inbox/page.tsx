@@ -1,10 +1,11 @@
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SentimentBadge } from "@/components/ui/sentiment-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { verifySession } from "@/lib/dal";
+import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
-import { filterFeedbackItems, parseFeedbackFilters } from "@/lib/services/query-builder";
+import { getServerSession } from "@/lib/session";
 import { formatDateUTC } from "@/lib/utils";
 
 export default async function InboxPage({
@@ -12,19 +13,43 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
-  const { userId } = await verifySession();
+  const session = await getServerSession();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
 
   const spObj = await searchParams;
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(spObj)) {
-    if (typeof v === "string" && v) {
-      sp.set(k, v);
-    }
+    if (typeof v === "string" && v) sp.set(k, v);
   }
 
-  const filters = parseFeedbackFilters(sp);
   const allItems = await getFeedbackItems(userId, { limit: 100 });
-  const items = filterFeedbackItems(allItems, filters);
+
+  // Inline filtering
+  const sentiment = sp.get("sentiment");
+  const status = sp.get("status");
+  const topic = sp.get("topic");
+  const q = sp.get("q");
+  const severityMin = Number.parseInt(sp.get("severity_min") || "1", 10);
+  const severityMax = Number.parseInt(sp.get("severity_max") || String(MAX_SEVERITY), 10);
+
+  const items = allItems.filter((item) => {
+    const analysis = item.feedback_analyses;
+    if (sentiment && analysis?.sentiment !== sentiment) return false;
+    if (status && analysis?.status !== status) return false;
+    if (topic && !analysis?.topics?.includes(topic)) return false;
+    if (q) {
+      const query = q.toLowerCase();
+      if (
+        !item.raw_content.toLowerCase().includes(query) &&
+        !analysis?.summary?.toLowerCase().includes(query)
+      )
+        return false;
+    }
+    if ((analysis?.severity_score ?? 0) < severityMin) return false;
+    if ((analysis?.severity_score ?? MAX_SEVERITY) > severityMax) return false;
+    return true;
+  });
 
   const sort = (spObj["sort"] as string) || "created_desc";
   items.sort((a, b) => {

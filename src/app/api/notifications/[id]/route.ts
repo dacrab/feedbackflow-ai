@@ -1,3 +1,5 @@
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
 import {
   isErrorResponse,
@@ -7,7 +9,6 @@ import {
   withAuthParams,
 } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
-import { deleteUserRow, updateUserRow } from "@/lib/db/queries";
 import { UpdateNotificationSchema } from "@/lib/validations";
 
 export const PATCH = withAuthParams(async (req, params, user) => {
@@ -19,11 +20,16 @@ export const PATCH = withAuthParams(async (req, params, user) => {
   if (typeof data.webhook === "string")
     updates["secretCipher"] = data.webhook ? encrypt(data.webhook) : null;
 
-  await updateUserRow(userNotifications, params.id, user.id, updates);
+  await db
+    .update(userNotifications)
+    .set(updates)
+    .where(and(eq(userNotifications.id, params.id), eq(userNotifications.userId, user.id)));
   return successResponse({ ok: true });
 });
 
 export const DELETE = withAuthDelete(async (params, user) => {
-  await deleteUserRow(userNotifications, params.id, user.id);
+  await db
+    .delete(userNotifications)
+    .where(and(eq(userNotifications.id, params.id), eq(userNotifications.userId, user.id)));
   return successResponse({ ok: true });
 });

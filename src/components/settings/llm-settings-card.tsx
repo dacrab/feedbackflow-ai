@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks";
@@ -17,10 +17,6 @@ export function LLMSettingsCard({
   initialModel,
   initialHasKey,
 }: LLMSettingsCardProps) {
-  const providerId = useId();
-  const modelId = useId();
-  const apiKeyId = useId();
-
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "google");
   const [model, setModel] = useState(initialModel ?? "");
   const [apiKey, setApiKey] = useState("");
@@ -33,12 +29,6 @@ export function LLMSettingsCard({
       setApiKey("");
     },
   });
-
-  useEffect(() => {
-    if (initialProvider) setProvider(initialProvider);
-    if (initialModel) setModel(initialModel);
-    setHasKey(initialHasKey);
-  }, [initialProvider, initialModel, initialHasKey]);
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -54,12 +44,9 @@ export function LLMSettingsCard({
       <p className="text-xs text-muted-foreground mb-3">// llm provider</p>
       <form onSubmit={onSave} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <label htmlFor={providerId} className="text-xs text-muted-foreground">
-              provider
-            </label>
+          <label className="space-y-1.5">
+            <span className="text-xs text-muted-foreground">provider</span>
             <select
-              id={providerId}
               className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
               value={provider}
               onChange={(e) => setProvider(e.target.value as LLMProvider)}
@@ -68,13 +55,10 @@ export function LLMSettingsCard({
               <option value="openai">openai</option>
               <option value="anthropic">anthropic</option>
             </select>
-          </div>
+          </label>
           <div className="space-y-1.5">
-            <label htmlFor={modelId} className="text-xs text-muted-foreground">
-              model
-            </label>
+            <div className="text-xs text-muted-foreground">model</div>
             <Input
-              id={modelId}
               variant="sm"
               value={model}
               onChange={(e) => setModel(e.target.value)}
@@ -83,11 +67,10 @@ export function LLMSettingsCard({
           </div>
         </div>
         <div className="space-y-1.5">
-          <label htmlFor={apiKeyId} className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             api key {hasKey && <span className="text-green-500 ml-1">● connected</span>}
-          </label>
+          </div>
           <Input
-            id={apiKeyId}
             variant="sm"
             type="password"
             value={apiKey}

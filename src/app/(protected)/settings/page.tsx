@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
@@ -27,9 +26,6 @@ export default function SettingsPage() {
     refetch: refetchHooks,
   } = useApiQuery<Array<TransformedNotificationRow>>("/api/notifications");
 
-  const enabledSources = useMemo(() => (sources ?? []).filter((s) => s.enabled).length, [sources]);
-  const enabledHooks = useMemo(() => (hooks ?? []).filter((h) => h.enabled).length, [hooks]);
-
   if (settingsLoading || sourcesLoading || hooksLoading) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
@@ -37,6 +33,9 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  const enabledSources = (sources ?? []).filter((s) => s.enabled).length;
+  const enabledHooks = (hooks ?? []).filter((h) => h.enabled).length;
 
   return (
     <div className="space-y-6 max-w-4xl">

@@ -1,14 +1,17 @@
 import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SentimentBadge } from "@/components/ui/sentiment-badge";
 import { MAX_SEVERITY } from "@/lib/constants";
-import { verifySession } from "@/lib/dal";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
+import { getServerSession } from "@/lib/session";
 import { formatDateUTC } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { userId } = await verifySession();
+  const session = await getServerSession();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
   const { id } = await params;
 
   const item = await getFeedbackItem(userId, id);

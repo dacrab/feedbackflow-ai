@@ -1,10 +1,13 @@
+import { redirect } from "next/navigation";
 import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "@/components/charts";
-import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY, MIN_SEVERITY } from "@/lib/constants";
-import { verifySession } from "@/lib/dal";
+import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { computeMetrics, getDashboardData } from "@/lib/dashboard";
+import { getServerSession } from "@/lib/session";
 
 export default async function DashboardPage() {
-  const { userId } = await verifySession();
+  const session = await getServerSession();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
 
   const data = await getDashboardData(userId);
   const metrics = computeMetrics(data);
@@ -22,8 +25,8 @@ export default async function DashboardPage() {
 
   const topicData = metrics.topTopics.slice(0, 5);
 
-  const severityData = Array.from({ length: MAX_SEVERITY - MIN_SEVERITY + 1 }, (_, i) => {
-    const s = MIN_SEVERITY + i;
+  const severityData = Array.from({ length: MAX_SEVERITY }, (_, i) => {
+    const s = i + 1;
     return { name: String(s), value: data.severityHist[s] || 0 };
   });
 

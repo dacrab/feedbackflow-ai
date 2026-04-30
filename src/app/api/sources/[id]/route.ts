@@ -1,3 +1,5 @@
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
 import { userSources } from "@/db/schema";
 import {
   isErrorResponse,
@@ -7,7 +9,6 @@ import {
   withAuthParams,
 } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
-import { deleteUserRow, updateUserRow } from "@/lib/db/queries";
 import { UpdateSourceSchema } from "@/lib/validations";
 
 export const PATCH = withAuthParams(async (req, params, user) => {
@@ -20,11 +21,16 @@ export const PATCH = withAuthParams(async (req, params, user) => {
   if (typeof data.token === "string")
     updates["secretCipher"] = data.token ? encrypt(data.token) : null;
 
-  await updateUserRow(userSources, params.id, user.id, updates);
+  await db
+    .update(userSources)
+    .set(updates)
+    .where(and(eq(userSources.id, params.id), eq(userSources.userId, user.id)));
   return successResponse({ ok: true });
 });
 
 export const DELETE = withAuthDelete(async (params, user) => {
-  await deleteUserRow(userSources, params.id, user.id);
+  await db
+    .delete(userSources)
+    .where(and(eq(userSources.id, params.id), eq(userSources.userId, user.id)));
   return successResponse({ ok: true });
 });
