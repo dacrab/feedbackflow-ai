@@ -1,40 +1,32 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-const protectedRoutes = ["/dashboard", "/inbox", "/settings", "/feedback"];
-const authRoutes = ["/login", "/signup"];
+const protectedPaths = ["/dashboard", "/inbox", "/settings", "/feedback"];
+const authPaths = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isProtected = protectedRoutes.some((r) => pathname.startsWith(r));
-  const isAuthRoute = authRoutes.includes(pathname);
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isAuth = authPaths.includes(pathname);
 
-  // Skip auth check for non-protected routes
-  if (!isProtected && !isAuthRoute) {
-    return NextResponse.next();
-  }
+  if (!isProtected && !isAuth) return NextResponse.next();
 
   try {
-    // Validate session properly using Better Auth
     const session = await auth.api.getSession({ headers: request.headers });
-    const hasValidSession = !!session?.user?.id;
+    const isLoggedIn = !!session?.user?.id;
 
-    if (isProtected && !hasValidSession) {
+    if (isProtected && !isLoggedIn) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-
-    if (isAuthRoute && hasValidSession) {
+    if (isAuth && isLoggedIn) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-
-    return NextResponse.next();
   } catch {
-    if (isProtected) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    return NextResponse.next();
+    if (isProtected) return NextResponse.redirect(new URL("/login", request.url));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {

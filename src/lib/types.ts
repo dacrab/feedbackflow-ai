@@ -1,7 +1,3 @@
-/**
- * Centralized type definitions
- */
-
 export type Sentiment = "positive" | "neutral" | "negative";
 export type FeedbackStatus = "New" | "Acknowledged" | "Actioned";
 export type LLMProvider = "google" | "openai" | "anthropic";
@@ -23,7 +19,7 @@ export interface FeedbackItem {
   feedback_analyses: FeedbackAnalysis | null;
 }
 
-export interface TransformedSourceRow {
+export interface TransformedConfigRow {
   id: string;
   type: string;
   config: Record<string, unknown> | null;
@@ -31,21 +27,5 @@ export interface TransformedSourceRow {
   hasSecret: boolean;
 }
 
-export interface TransformedNotificationRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  enabled: boolean;
-  hasSecret: boolean;
-}
-
-export interface FeedbackFilterParams {
-  sentiment?: Sentiment | undefined;
-  topic?: string | undefined;
-  status?: FeedbackStatus | undefined;
-  q?: string | undefined;
-  severity_min?: number | undefined;
-  severity_max?: number | undefined;
-  page?: number | undefined;
-  limit?: number | undefined;
-}
+export type TransformedSourceRow = TransformedConfigRow;
+export type TransformedNotificationRow = TransformedConfigRow;

@@ -5,9 +5,7 @@ import { generateObject, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import {
   LLM_MAX_RETRIES,
-  LLM_MAX_SUMMARY_LENGTH,
   LLM_MAX_TOPICS,
-  LLM_MIN_SUMMARY_LENGTH,
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "./constants";
@@ -27,11 +25,7 @@ const AnalysisSchema = z.object({
     .min(1)
     .max(5)
     .describe("Priority score from 1 (low) to 5 (critical)"),
-  summary: z
-    .string()
-    .min(LLM_MIN_SUMMARY_LENGTH)
-    .max(LLM_MAX_SUMMARY_LENGTH)
-    .describe("A concise one-sentence summary"),
+  summary: z.string().min(5).max(500).describe("A concise one-sentence summary"),
 });
 type Analysis = z.infer<typeof AnalysisSchema>;
 

@@ -8,22 +8,15 @@ import { sendDailyDigest } from "@/lib/services/notification-service";
 import { getDateNHoursAgo, notifySlack } from "@/lib/utils";
 
 export async function GET(req: Request) {
-  if (!isValidCronRequest(req)) {
-    await requireAuth();
-  }
+  if (!isValidCronRequest(req)) await requireAuth();
 
-  const results: {
-    ingest: { fetched: number; inserted: number; analyzed: number } | { error: string };
-    digest: { total: number; high: number; notified: number } | { error: string };
-  } = {
-    ingest: { fetched: 0, inserted: 0, analyzed: 0 },
-    digest: { total: 0, high: 0, notified: 0 },
-  };
+  let ingest = { fetched: 0, inserted: 0, analyzed: 0 };
+  let digest = { total: 0, high: 0, notified: 0 };
 
   try {
-    results.ingest = await runIngest();
-  } catch (e: unknown) {
-    results.ingest = { error: e instanceof Error ? e.message : String(e) };
+    ingest = await runIngest();
+  } catch (e) {
+    console.error("Ingest failed:", e);
   }
 
   try {
@@ -35,26 +28,23 @@ export async function GET(req: Request) {
 
     const userIds = [...new Set(rows.map((u) => u.userId as string))];
     let total = 0;
-    let totalHigh = 0;
+    let high = 0;
 
     for (const userId of userIds) {
       try {
         const result = await sendDailyDigest(userId, since);
         total += result.total;
-        totalHigh += result.high;
+        high += result.high;
       } catch {
         // Continue on error
       }
     }
 
-    if (total > 0) {
-      await notifySlack(`Daily digest (aggregate): total ${total}, high ${totalHigh}.`);
-    }
-
-    results.digest = { total, high: totalHigh, notified: userIds.length };
-  } catch (e: unknown) {
-    results.digest = { error: e instanceof Error ? e.message : String(e) };
+    if (total > 0) await notifySlack(`Daily digest: ${total} total, ${high} high severity`);
+    digest = { total, high, notified: userIds.length };
+  } catch (e) {
+    console.error("Digest failed:", e);
   }
 
-  return NextResponse.json({ ok: true, ...results });
+  return NextResponse.json({ ok: true, ingest, digest });
 }

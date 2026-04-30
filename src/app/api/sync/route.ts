@@ -1,18 +1,15 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
-import { ingestRuns, userSources } from "@/db/schema";
+import { feedbackItems, ingestRuns, userSources } from "@/db/schema";
 import { requireAuth } from "@/lib/api";
-import { MAX_SUMMARY_PREVIEW_LENGTH } from "@/lib/constants";
+import { MAX_RAW_CONTENT_LENGTH } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import { fetchGithubIssues } from "@/lib/services/github-service";
 import {
   analyzeAndStore,
-  filterNewItems,
   getLatestTimestamp,
   getUnanalyzedItems,
   getUserLLMOpts,
-  insertItems,
-  issuesToRows,
 } from "@/lib/services/ingest-service";
 
 export const dynamic = "force-dynamic";
@@ -67,8 +64,43 @@ export async function GET() {
           const issues = await fetchGithubIssues(repo, await getLatestTimestamp(user.id), token);
           fetched += issues.length;
 
-          const newItems = await filterNewItems(issuesToRows(issues, user.id), user.id);
-          const ins = await insertItems(newItems);
+          // Transform issues to rows
+          const rows = issues.map((i) => ({
+            userId: user.id,
+            source: "github" as const,
+            externalId: String(i.id),
+            rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, MAX_RAW_CONTENT_LENGTH),
+            originalTimestamp: new Date(i.created_at),
+          }));
+
+          // Filter out existing items
+          const newItems = rows.length
+            ? await (async () => {
+                const existing = await db
+                  .select({ externalId: feedbackItems.externalId })
+                  .from(feedbackItems)
+                  .where(
+                    and(
+                      eq(feedbackItems.userId, user.id),
+                      eq(feedbackItems.source, "github"),
+                      inArray(
+                        feedbackItems.externalId,
+                        rows.map((r) => r.externalId),
+                      ),
+                    ),
+                  );
+                const set = new Set(existing.map((e) => e.externalId));
+                return rows.filter((r) => !set.has(r.externalId));
+              })()
+            : [];
+
+          // Insert new items
+          const ins = newItems.length
+            ? await db
+                .insert(feedbackItems)
+                .values(newItems)
+                .returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+            : [];
           inserted += ins.length;
           send(ctrl, {
             stage: "fetching",
@@ -94,9 +126,7 @@ export async function GET() {
             (cur, tot, sum) => {
               send(ctrl, {
                 stage: "analyzing",
-                message: sum.startsWith("Failed")
-                  ? sum
-                  : `${sum.slice(0, MAX_SUMMARY_PREVIEW_LENGTH)}...`,
+                message: sum.startsWith("Failed") ? sum : `${sum.slice(0, 50)}...`,
                 current: cur,
                 total: tot,
               });

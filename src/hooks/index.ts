@@ -2,21 +2,19 @@
  * API hooks for data fetching and mutations
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export function useApiQuery<T>(url: string, options: RequestInit = {}) {
+export function useApiQuery<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(url, { ...optionsRef.current, cache: "no-store" });
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error((await res.text()) || `Request failed: ${res.status}`);
       const json = await res.json();
       setData(json);

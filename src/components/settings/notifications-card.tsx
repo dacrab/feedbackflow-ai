@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import SettingsItem, { getNotificationLabel } from "@/components/settings/settings-item";
+import SettingsItem from "@/components/settings/settings-item";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,7 +65,7 @@ export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) 
               item={h}
               apiPath="notifications"
               onUpdate={onRefetch}
-              label={getNotificationLabel(h.type)}
+              label={h.type}
             />
           ))
         )}

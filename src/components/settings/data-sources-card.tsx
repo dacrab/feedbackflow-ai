@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import SettingsItem, {
-  getSourceDescription,
-  getSourceLabel,
-} from "@/components/settings/settings-item";
+import SettingsItem from "@/components/settings/settings-item";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -77,8 +74,8 @@ export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
               item={s}
               apiPath="sources"
               onUpdate={onRefetch}
-              label={getSourceLabel(s.type)}
-              description={getSourceDescription(s.config)}
+              label={s.type}
+              description={s.config?.["repo"] ? String(s.config["repo"]) : ""}
             />
           ))
         )}

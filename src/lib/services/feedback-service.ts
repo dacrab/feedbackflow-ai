@@ -8,46 +8,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT } from "@/lib/constants";
-import type { FeedbackAnalysis, FeedbackItem, FeedbackStatus } from "@/lib/types";
-
-interface RawFeedbackRow {
-  id: string;
-  source: string;
-  raw_content: string;
-  original_timestamp: Date | string | null;
-  created_at: Date | string | null;
-  sentiment: "positive" | "neutral" | "negative" | null;
-  topics: Array<string> | null;
-  severity_score: number | null;
-  summary: string | null;
-  status: "New" | "Acknowledged" | "Actioned" | null;
-}
-
-function transformFeedbackRow(row: RawFeedbackRow): FeedbackItem {
-  const analysis: FeedbackAnalysis | null =
-    row.sentiment == null
-      ? null
-      : {
-          sentiment: row.sentiment,
-          topics: (row.topics ?? []) as Array<string>,
-          severity_score: row.severity_score ?? 0,
-          summary: row.summary ?? "",
-          status: (row.status ?? "New") as FeedbackStatus,
-        };
-
-  const createdAt = row.created_at;
-  const originalTs = row.original_timestamp;
-
-  return {
-    id: row.id,
-    source: row.source,
-    raw_content: row.raw_content,
-    original_timestamp:
-      typeof originalTs === "string" ? originalTs : (originalTs?.toISOString() ?? ""),
-    created_at: typeof createdAt === "string" ? createdAt : (createdAt?.toISOString() ?? ""),
-    feedback_analyses: analysis,
-  };
-}
+import type { FeedbackItem } from "@/lib/types";
 
 export async function getFeedbackItems(
   userId: string,
@@ -75,7 +36,26 @@ export async function getFeedbackItems(
     .limit(limit)
     .offset(offset);
 
-  return rows.map(transformFeedbackRow);
+  return rows.map((row) => ({
+    id: row.id,
+    source: row.source,
+    raw_content: row.raw_content,
+    original_timestamp:
+      row.original_timestamp instanceof Date
+        ? row.original_timestamp.toISOString()
+        : (row.original_timestamp ?? ""),
+    created_at:
+      row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at ?? ""),
+    feedback_analyses: row.sentiment
+      ? {
+          sentiment: row.sentiment,
+          topics: (row.topics ?? []) as Array<string>,
+          severity_score: row.severity_score ?? 0,
+          summary: row.summary ?? "",
+          status: (row.status ?? "New") as "New" | "Acknowledged" | "Actioned",
+        }
+      : null,
+  }));
 }
 
 export async function getFeedbackItem(userId: string, itemId: string): Promise<FeedbackItem> {
@@ -97,9 +77,26 @@ export async function getFeedbackItem(userId: string, itemId: string): Promise<F
     .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))
     .limit(1);
 
-  if (!row) {
-    throw new Error("not found");
-  }
+  if (!row) throw new Error("not found");
 
-  return transformFeedbackRow(row);
+  return {
+    id: row.id,
+    source: row.source,
+    raw_content: row.raw_content,
+    original_timestamp:
+      row.original_timestamp instanceof Date
+        ? row.original_timestamp.toISOString()
+        : (row.original_timestamp ?? ""),
+    created_at:
+      row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at ?? ""),
+    feedback_analyses: row.sentiment
+      ? {
+          sentiment: row.sentiment,
+          topics: (row.topics ?? []) as Array<string>,
+          severity_score: row.severity_score ?? 0,
+          summary: row.summary ?? "",
+          status: (row.status ?? "New") as "New" | "Acknowledged" | "Actioned",
+        }
+      : null,
+  };
 }

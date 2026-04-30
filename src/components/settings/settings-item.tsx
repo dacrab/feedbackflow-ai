@@ -70,18 +70,3 @@ export default function SettingsItem<T extends BaseItem>({
     </div>
   );
 }
-
-export function getSourceLabel(type: string): string {
-  return type === "github" ? "github" : type;
-}
-
-export function getSourceDescription(config: Record<string, unknown> | null | undefined): string {
-  if (config && typeof config === "object" && "repo" in config) {
-    return String(config["repo"]);
-  }
-  return "";
-}
-
-export function getNotificationLabel(type: string): string {
-  return type === "slack" ? "slack" : type;
-}
