@@ -1,18 +1,13 @@
 import { desc, eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { userSources } from "@/db/schema";
-import {
-  isErrorResponse,
-  successResponse,
-  validateBody,
-  withAuthGet,
-  withAuthRequest,
-} from "@/lib/api";
+import { validateBody, withAuth } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
 import { runIngest } from "@/lib/services/ingest-service";
 import { CreateSourceSchema } from "@/lib/validations";
 
-export const GET = withAuthGet(async (user) => {
+export const GET = withAuth(async (_req, _ctx, user) => {
   const rows = await db
     .select({
       id: userSources.id,
@@ -23,12 +18,11 @@ export const GET = withAuthGet(async (user) => {
     .from(userSources)
     .where(eq(userSources.userId, user.id))
     .orderBy(desc(userSources.createdAt));
-  return successResponse(rows);
+  return NextResponse.json(rows);
 });
 
-export const POST = withAuthRequest(async (req, user) => {
+export const POST = withAuth(async (req, _ctx, user) => {
   const data = await validateBody(req, CreateSourceSchema);
-  if (isErrorResponse(data)) return data;
 
   const { type, repo, token } = data;
   const [row] = await db
@@ -47,5 +41,5 @@ export const POST = withAuthRequest(async (req, user) => {
     });
 
   runIngest().catch(console.error);
-  return successResponse(row);
+  return NextResponse.json(row);
 });

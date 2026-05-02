@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import SettingsItem from "@/components/settings/settings-item";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,10 @@ import type { TransformedSourceRow } from "@/lib/types";
 
 interface DataSourcesCardProps {
   sources: Array<TransformedSourceRow>;
-  onRefetch: () => void;
 }
 
-export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
+export function DataSourcesCard({ sources }: DataSourcesCardProps) {
+  const router = useRouter();
   const [repo, setRepo] = useState("");
   const [ghToken, setGhToken] = useState("");
 
@@ -23,7 +24,7 @@ export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
     onSuccess: () => {
       setRepo("");
       setGhToken("");
-      onRefetch();
+      router.refresh();
     },
   });
 
@@ -73,7 +74,6 @@ export function DataSourcesCard({ sources, onRefetch }: DataSourcesCardProps) {
               key={s.id}
               item={s}
               apiPath="sources"
-              onUpdate={onRefetch}
               label={s.type}
               description={s.config?.["repo"] ? String(s.config["repo"]) : ""}
             />

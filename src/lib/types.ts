@@ -19,13 +19,20 @@ export interface FeedbackItem {
   feedback_analyses: FeedbackAnalysis | null;
 }
 
-export interface TransformedConfigRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  enabled: boolean;
-  hasSecret: boolean;
+export function isLLMProvider(val: unknown): val is LLMProvider {
+  return typeof val === "string" && ["google", "openai", "anthropic"].includes(val);
 }
 
-export type TransformedSourceRow = TransformedConfigRow;
-export type TransformedNotificationRow = TransformedConfigRow;
+export interface TransformedSourceRow {
+  id: string;
+  type: string;
+  config: Record<string, unknown>;
+  enabled: boolean;
+}
+
+export interface TransformedNotificationRow {
+  id: string;
+  type: string;
+  config: Record<string, unknown>;
+  enabled: boolean;
+}

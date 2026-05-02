@@ -1,7 +1,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject, NoObjectGeneratedError } from "ai";
+import { generateObject } from "ai";
 import { z } from "zod";
 import {
   LLM_MAX_RETRIES,
@@ -9,6 +9,7 @@ import {
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "./constants";
+import { withRetry } from "./retry";
 
 const AnalysisSchema = z.object({
   sentiment: z
@@ -77,9 +78,8 @@ export async function analyzeFeedback(
 ): Promise<Analysis> {
   const model = getModel(opts);
 
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
+  return withRetry(
+    async () => {
       const { object } = await generateObject({
         model,
         schemaName: "FeedbackAnalysis",
@@ -94,26 +94,8 @@ export async function analyzeFeedback(
         ],
       });
       return object;
-    } catch (err: unknown) {
-      lastErr = err;
-
-      if (NoObjectGeneratedError.isInstance(err)) {
-        const { text: generatedText, cause } = err;
-        if (cause) {
-          throw new Error(`LLM output invalid: ${cause}`);
-        }
-        if (generatedText) {
-          await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
-          continue;
-        }
-      }
-
-      await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
-    }
-  }
-
-  if (lastErr) {
-    throw lastErr;
-  }
-  throw new Error("LLM analysis failed after retries");
+    },
+    retries,
+    LLM_RETRY_BASE_DELAY_MS,
+  );
 }

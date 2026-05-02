@@ -1,8 +1,4 @@
-interface StatusBadgeProps {
-  status?: string | null | undefined;
-}
-
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status }: { status?: string | null | undefined }) {
   if (!status || status === "New") return null;
 
   const color =

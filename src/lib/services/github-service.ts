@@ -8,6 +8,7 @@ import {
   GITHUB_PER_PAGE,
   GITHUB_RETRY_BASE_DELAY_MS,
 } from "@/lib/constants";
+import { withRetry } from "@/lib/retry";
 
 export interface GithubIssue {
   id: number;
@@ -47,26 +48,6 @@ async function fetchPage(
     .map(({ id, title, body, created_at }) => ({ id, title, body, created_at }));
 }
 
-async function fetchWithRetry(
-  repo: string,
-  sinceISO: string,
-  page: number,
-  token?: string,
-): Promise<Array<GithubIssue>> {
-  let lastErr: unknown;
-
-  for (let attempt = 0; attempt < GITHUB_MAX_RETRIES; attempt++) {
-    try {
-      return await fetchPage(repo, sinceISO, page, token);
-    } catch (e) {
-      lastErr = e;
-      await new Promise((r) => setTimeout(r, GITHUB_RETRY_BASE_DELAY_MS * (attempt + 1)));
-    }
-  }
-
-  throw lastErr;
-}
-
 export async function fetchGithubIssues(
   repo: string,
   sinceISO: string,
@@ -76,7 +57,11 @@ export async function fetchGithubIssues(
 
   for (let page = 1; page <= GITHUB_MAX_PAGES; page++) {
     try {
-      const batch = await fetchWithRetry(repo, sinceISO, page, token);
+      const batch = await withRetry(
+        () => fetchPage(repo, sinceISO, page, token),
+        GITHUB_MAX_RETRIES,
+        GITHUB_RETRY_BASE_DELAY_MS,
+      );
       if (batch.length === 0) {
         break;
       }

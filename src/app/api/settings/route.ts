@@ -1,18 +1,13 @@
 import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { userSettings } from "@/db/schema";
-import {
-  isErrorResponse,
-  successResponse,
-  validateBody,
-  withAuthGet,
-  withAuthRequest,
-} from "@/lib/api";
+import { validateBody, withAuth } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
-import type { LLMProvider } from "@/lib/types";
+import { isLLMProvider } from "@/lib/types";
 import { SettingsSchema } from "@/lib/validations";
 
-export const GET = withAuthGet(async (user) => {
+export const GET = withAuth(async (_req, _ctx, user) => {
   const [row] = await db
     .select({
       provider: userSettings.provider,
@@ -23,17 +18,15 @@ export const GET = withAuthGet(async (user) => {
     .where(eq(userSettings.userId, user.id))
     .limit(1);
 
-  return successResponse({
-    provider: (row?.provider as LLMProvider | null) ?? null,
+  return NextResponse.json({
+    provider: row?.provider && isLLMProvider(row.provider) ? row.provider : null,
     model: row?.model ?? null,
     hasKey: Boolean(row?.apiKeyCipher),
   });
 });
 
-export const POST = withAuthRequest(async (req, user) => {
+export const POST = withAuth(async (req, _ctx, user) => {
   const data = await validateBody(req, SettingsSchema);
-  if (isErrorResponse(data)) return data;
-
   const apiKeyCipher = encrypt(data.apiKey);
 
   await db
@@ -44,5 +37,5 @@ export const POST = withAuthRequest(async (req, user) => {
       set: { provider: data.provider, model: data.model, apiKeyCipher },
     });
 
-  return successResponse({ ok: true });
+  return NextResponse.json({ ok: true });
 });

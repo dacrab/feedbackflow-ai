@@ -23,45 +23,31 @@ export default async function InboxPage({
     if (typeof v === "string" && v) sp.set(k, v);
   }
 
-  const allItems = await getFeedbackItems(userId, { limit: 100 });
+  const sentiment = sp.get("sentiment") || undefined;
+  const status = sp.get("status") || undefined;
+  const topic = sp.get("topic") || undefined;
+  const q = sp.get("q") || undefined;
 
-  // Inline filtering
-  const sentiment = sp.get("sentiment");
-  const status = sp.get("status");
-  const topic = sp.get("topic");
-  const q = sp.get("q");
-  const severityMin = Number.parseInt(sp.get("severity_min") || "1", 10);
-  const severityMax = Number.parseInt(sp.get("severity_max") || String(MAX_SEVERITY), 10);
+  const severityMinStr = sp.get("severity_min");
+  const severityMin = severityMinStr ? Number.parseInt(severityMinStr, 10) : 1;
 
-  const items = allItems.filter((item) => {
-    const analysis = item.feedback_analyses;
-    if (sentiment && analysis?.sentiment !== sentiment) return false;
-    if (status && analysis?.status !== status) return false;
-    if (topic && !analysis?.topics?.includes(topic)) return false;
-    if (q) {
-      const query = q.toLowerCase();
-      if (
-        !item.raw_content.toLowerCase().includes(query) &&
-        !analysis?.summary?.toLowerCase().includes(query)
-      )
-        return false;
-    }
-    if ((analysis?.severity_score ?? 0) < severityMin) return false;
-    if ((analysis?.severity_score ?? MAX_SEVERITY) > severityMax) return false;
-    return true;
-  });
+  const severityMaxStr = sp.get("severity_max");
+  const severityMax = severityMaxStr ? Number.parseInt(severityMaxStr, 10) : MAX_SEVERITY;
 
-  const sort = (spObj["sort"] as string) || "created_desc";
-  items.sort((a, b) => {
-    const aA = a.feedback_analyses;
-    const bA = b.feedback_analyses;
-    if (sort === "severity_desc") {
-      return (bA?.severity_score ?? 0) - (aA?.severity_score ?? 0);
-    }
-    if (sort === "severity_asc") {
-      return (aA?.severity_score ?? 0) - (bA?.severity_score ?? 0);
-    }
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  const sort =
+    (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
+
+  const items = await getFeedbackItems(userId, {
+    limit: 100,
+    filters: {
+      ...(sentiment && { sentiment }),
+      ...(status && { status }),
+      ...(topic && { topic }),
+      ...(q && { q }),
+      severityMin,
+      severityMax,
+      sort,
+    },
   });
 
   return (

@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
+import type { GitHubSourceConfig, SourceConfig } from "@/db/schema";
 import {
   feedbackAnalyses,
   feedbackItems,
@@ -22,6 +23,10 @@ import { fetchGithubIssues } from "./github-service";
 type LLMOpts =
   | { provider: "google" | "openai" | "anthropic"; model?: string; apiKey?: string }
   | undefined;
+
+function isGitHubConfig(config: SourceConfig): config is GitHubSourceConfig {
+  return "repo" in config && typeof config.repo === "string";
+}
 
 export async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   const [s] = await db
@@ -53,7 +58,10 @@ export async function getLatestTimestamp(userId: string): Promise<string> {
   return new Date(row.ts).toISOString();
 }
 
-export async function getUnanalyzedItems(userId: string, limit = DEFAULT_ANALYSIS_BATCH_SIZE) {
+export async function getUnanalyzedItems(
+  userId: string,
+  limit = DEFAULT_ANALYSIS_BATCH_SIZE,
+): Promise<Array<{ id: string; rawContent: string }>> {
   return db
     .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
     .from(feedbackItems)
@@ -105,7 +113,11 @@ export async function analyzeAndStore(
   return count;
 }
 
-export async function runIngest() {
+export async function runIngest(): Promise<{
+  fetched: number;
+  inserted: number;
+  analyzed: number;
+}> {
   const sources = await db
     .select({
       id: userSources.id,
@@ -120,9 +132,14 @@ export async function runIngest() {
   const totals = { fetched: 0, inserted: 0, analyzed: 0 };
 
   for (const src of sources) {
-    const repo = (src.config as { repo?: string })?.repo;
-    if (src.type !== "github" || !repo) continue;
+    if (src.type !== "github") continue;
 
+    if (!isGitHubConfig(src.config)) {
+      console.warn(`Invalid GitHub config for source ${src.id}`);
+      continue;
+    }
+
+    const repo = src.config.repo;
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
     const issues = await fetchGithubIssues(repo, await getLatestTimestamp(src.userId), token);
 
