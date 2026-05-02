@@ -1,6 +1,5 @@
 "use client";
 
-import { useId } from "react";
 import {
   Area,
   AreaChart,
@@ -24,12 +23,11 @@ const tooltip = {
 const axis = { fontSize: 12 };
 
 export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
-  const id = useId();
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data}>
         <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="trend-gradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.2} />
             <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
           </linearGradient>
@@ -42,7 +40,7 @@ export function TrendChart({ data }: { data: { name: string; value: number }[] }
           dataKey="value"
           stroke="var(--color-chart-1)"
           strokeWidth={2}
-          fill={`url(#${id})`}
+          fill="url(#trend-gradient)"
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -70,14 +68,7 @@ export function SentimentChart({
             <Cell key={e.name} fill={e.color} />
           ))}
         </Pie>
-        <Tooltip
-          contentStyle={{
-            ...tooltip,
-            backgroundColor: "#1f1f1f",
-            border: "1px solid #333",
-            color: "#fff",
-          }}
-        />
+        <Tooltip contentStyle={tooltip} />
       </PieChart>
     </ResponsiveContainer>
   );

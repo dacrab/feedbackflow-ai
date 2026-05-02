@@ -73,7 +73,7 @@ export function computeMetrics(data: DashboardData): ComputedMetrics {
   const positive = countsBySentiment["positive"] ?? 0;
   const neutral = countsBySentiment["neutral"] ?? 0;
   const negative = countsBySentiment["negative"] ?? 0;
-  const total = positive + neutral + negative;
+  const total = Object.values(countsBySentiment).reduce((a, b) => a + b, 0);
 
   let highSeverity = 0;
   for (let s = HIGH_SEVERITY_THRESHOLD; s <= MAX_SEVERITY; s++) {

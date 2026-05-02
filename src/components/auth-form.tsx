@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,6 @@ import { signIn, signUp } from "@/lib/auth-client";
 type Mode = "login" | "signup";
 
 export function AuthForm({ mode }: { mode: Mode }) {
-  const emailId = useId();
-  const passwordId = useId();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -67,11 +65,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor={emailId} className="text-sm text-muted-foreground">
+          <label htmlFor="email" className="text-sm text-muted-foreground">
             email
           </label>
           <Input
-            id={emailId}
+            id="email"
             type="email"
             placeholder="you@example.com"
             value={email}
@@ -80,11 +78,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor={passwordId} className="text-sm text-muted-foreground">
+          <label htmlFor="password" className="text-sm text-muted-foreground">
             password
           </label>
           <Input
-            id={passwordId}
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

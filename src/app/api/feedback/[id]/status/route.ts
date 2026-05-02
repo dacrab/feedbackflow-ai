@@ -1,20 +1,26 @@
 import { and, eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { feedbackAnalyses } from "@/db/schema";
-import { isErrorResponse, successResponse, validateBody, withAuthParams } from "@/lib/api";
-import type { FeedbackStatus } from "@/lib/types";
+import { validateBody, withAuth } from "@/lib/api";
 import { FeedbackStatusSchema } from "@/lib/validations";
 
-export const PATCH = withAuthParams(async (req, params, user) => {
+export const PATCH = withAuth(async (req, ctx, user) => {
   const data = await validateBody(req, FeedbackStatusSchema);
-  if (isErrorResponse(data)) return data;
+
+  const params = await ctx.params;
+  if (!params) {
+    return Response.json({ error: "Missing params" }, { status: 400 });
+  }
+  const id = params["id"];
+  if (!id) {
+    return Response.json({ error: "Missing id" }, { status: 400 });
+  }
 
   await db
     .update(feedbackAnalyses)
-    .set({ status: data.status as FeedbackStatus })
-    .where(
-      and(eq(feedbackAnalyses.feedbackItemId, params.id), eq(feedbackAnalyses.userId, user.id)),
-    );
+    .set({ status: data.status })
+    .where(and(eq(feedbackAnalyses.feedbackItemId, id), eq(feedbackAnalyses.userId, user.id)));
 
-  return successResponse({ ok: true });
+  return NextResponse.json({ ok: true });
 });

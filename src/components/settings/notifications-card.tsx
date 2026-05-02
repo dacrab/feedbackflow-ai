@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import SettingsItem from "@/components/settings/settings-item";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,10 @@ import type { TransformedNotificationRow } from "@/lib/types";
 
 interface NotificationsCardProps {
   hooks: Array<TransformedNotificationRow>;
-  onRefetch: () => void;
 }
 
-export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) {
+export function NotificationsCard({ hooks }: NotificationsCardProps) {
+  const router = useRouter();
   const [slackUrl, setSlackUrl] = useState("");
 
   const { mutate: createNotification, isLoading } = useApiMutation({
@@ -21,7 +22,7 @@ export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) 
     errorMessage: "failed to add webhook",
     onSuccess: () => {
       setSlackUrl("");
-      onRefetch();
+      router.refresh();
     },
   });
 
@@ -60,13 +61,7 @@ export function NotificationsCard({ hooks, onRefetch }: NotificationsCardProps) 
           <p className="text-xs text-muted-foreground text-center py-4">no webhooks</p>
         ) : (
           hooks.map((h) => (
-            <SettingsItem
-              key={h.id}
-              item={h}
-              apiPath="notifications"
-              onUpdate={onRefetch}
-              label={h.type}
-            />
+            <SettingsItem key={h.id} item={h} apiPath="notifications" label={h.type} />
           ))
         )}
       </div>

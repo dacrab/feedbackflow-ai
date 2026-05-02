@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface BaseItem {
@@ -10,7 +13,6 @@ interface BaseItem {
 interface SettingsItemProps<T extends BaseItem> {
   item: T;
   apiPath: "sources" | "notifications";
-  onUpdate: () => void;
   label: string;
   description?: string;
 }
@@ -18,17 +20,18 @@ interface SettingsItemProps<T extends BaseItem> {
 export default function SettingsItem<T extends BaseItem>({
   item,
   apiPath,
-  onUpdate,
   label,
   description,
 }: SettingsItemProps<T>) {
+  const router = useRouter();
+
   async function handleToggle() {
     const res = await fetch(`/api/${apiPath}/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: !item.enabled }),
     });
-    if (res.ok) onUpdate();
+    if (res.ok) router.refresh();
     else toast.error("failed to update");
   }
 
@@ -36,7 +39,7 @@ export default function SettingsItem<T extends BaseItem>({
     const res = await fetch(`/api/${apiPath}/${item.id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("deleted");
-      onUpdate();
+      router.refresh();
     } else {
       toast.error("failed to delete");
     }

@@ -19,6 +19,19 @@ export const analysisStatusEnum = pgEnum("analysis_status", ["New", "Acknowledge
 export const sourceTypeEnum = pgEnum("source_type", ["github"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["slack"]);
 
+// Config types
+export type GitHubSourceConfig = {
+  repo: string;
+};
+
+export type SourceConfig = GitHubSourceConfig;
+
+export type SlackNotificationConfig = {
+  minSeverity?: number;
+};
+
+export type NotificationConfig = SlackNotificationConfig;
+
 // ============================================================================
 // Better Auth Tables
 // ============================================================================
@@ -175,7 +188,7 @@ export const userSources = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     type: sourceTypeEnum("type").notNull(),
-    config: jsonb("config").$type<Record<string, unknown>>().notNull(),
+    config: jsonb("config").$type<SourceConfig>().notNull(),
     secretCipher: text("secret_cipher"),
     enabled: boolean("enabled").default(true).notNull(),
     lastChecked: timestamp("last_checked", { withTimezone: true }),
@@ -194,7 +207,7 @@ export const userNotifications = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     type: notificationTypeEnum("type").notNull(),
-    config: jsonb("config").$type<Record<string, unknown>>().notNull(),
+    config: jsonb("config").$type<NotificationConfig>().notNull(),
     secretCipher: text("secret_cipher"),
     enabled: boolean("enabled").default(true).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -235,3 +248,22 @@ export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one }) =
     references: [feedbackItems.id],
   }),
 }));
+
+// Inferred types from schema
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
+
+export type FeedbackItem = typeof feedbackItems.$inferSelect;
+export type NewFeedbackItem = typeof feedbackItems.$inferInsert;
+
+export type FeedbackAnalysis = typeof feedbackAnalyses.$inferSelect;
+export type NewFeedbackAnalysis = typeof feedbackAnalyses.$inferInsert;
+
+export type UserSettings = typeof userSettings.$inferSelect;
+export type NewUserSettings = typeof userSettings.$inferInsert;
+
+export type UserSource = typeof userSources.$inferSelect;
+export type NewUserSource = typeof userSources.$inferInsert;
+
+export type UserNotification = typeof userNotifications.$inferSelect;
+export type NewUserNotification = typeof userNotifications.$inferInsert;

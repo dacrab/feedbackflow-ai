@@ -1,8 +1,4 @@
-interface SentimentBadgeProps {
-  sentiment?: string | null | undefined;
-}
-
-export function SentimentBadge({ sentiment }: SentimentBadgeProps) {
+export function SentimentBadge({ sentiment }: { sentiment?: string | null | undefined }) {
   if (!sentiment) return null;
 
   const color =

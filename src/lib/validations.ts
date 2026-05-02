@@ -2,8 +2,8 @@ import { z } from "zod";
 
 export const CreateSourceSchema = z.object({
   type: z.literal("github"),
-  repo: z.string().regex(/^[^/]+\/[^/]+$/, "Invalid repo format. Use owner/repo"),
-  token: z.string().min(1).optional(),
+  repo: z.string().min(3),
+  token: z.string().optional(),
   enabled: z.boolean().optional(),
 });
 
@@ -15,7 +15,7 @@ export const UpdateSourceSchema = z.object({
 
 export const CreateNotificationSchema = z.object({
   type: z.literal("slack"),
-  webhook: z.string().url("Invalid webhook URL"),
+  webhook: z.string().url(),
   enabled: z.boolean().optional(),
 });
 
@@ -26,8 +26,8 @@ export const UpdateNotificationSchema = z.object({
 
 export const SettingsSchema = z.object({
   provider: z.enum(["google", "openai", "anthropic"]),
-  model: z.string().min(1, "Model is required"),
-  apiKey: z.string().min(5, "API key must be at least 5 characters"),
+  model: z.string().min(1),
+  apiKey: z.string().min(5),
 });
 
 export const FeedbackStatusSchema = z.object({

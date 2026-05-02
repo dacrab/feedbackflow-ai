@@ -10,11 +10,11 @@ import { getDateNHoursAgo, notifySlack } from "@/lib/utils";
 export async function GET(req: Request) {
   if (!isValidCronRequest(req)) await requireAuth();
 
-  let ingest = { fetched: 0, inserted: 0, analyzed: 0 };
-  let digest = { total: 0, high: 0, notified: 0 };
+  const ingest = { fetched: 0, inserted: 0, analyzed: 0 };
+  const digest = { total: 0, high: 0, notified: 0 };
 
   try {
-    ingest = await runIngest();
+    Object.assign(ingest, await runIngest());
   } catch (e) {
     console.error("Ingest failed:", e);
   }
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     }
 
     if (total > 0) await notifySlack(`Daily digest: ${total} total, ${high} high severity`);
-    digest = { total, high, notified: userIds.length };
+    Object.assign(digest, { total, high, notified: userIds.length });
   } catch (e) {
     console.error("Digest failed:", e);
   }

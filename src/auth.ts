@@ -5,14 +5,8 @@ import { db } from "@/db/client";
 import * as schema from "@/db/schema";
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema,
-  }),
-  emailAndPassword: {
-    enabled: true,
-    minPasswordLength: 8,
-  },
+  database: drizzleAdapter(db, { provider: "pg", schema }),
+  emailAndPassword: { enabled: true, minPasswordLength: 8 },
   socialProviders: {
     github: {
       clientId: process.env["GITHUB_CLIENT_ID"] || "",
@@ -26,24 +20,18 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // 1 day
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5, // 5 minutes
-      strategy: "compact",
-    },
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+    cookieCache: { enabled: true, maxAge: 60 * 5, strategy: "compact" },
   },
   advanced: {
-    generateId: () => crypto.randomUUID(), // Use crypto.randomUUID for better entropy
-    crossSubDomainCookies: {
-      enabled: false, // Disable cross-subdomain cookies for security
-    },
-    useSecureCookies: process.env.NODE_ENV === "production", // Secure cookies in production
+    generateId: () => crypto.randomUUID(),
+    crossSubDomainCookies: { enabled: false },
+    useSecureCookies: process.env.NODE_ENV === "production",
   },
   trustedOrigins:
     process.env.NODE_ENV === "production"
       ? [process.env["BETTER_AUTH_URL"] || ""]
       : ["http://localhost:3000"],
-  plugins: [nextCookies()], // Must be last - handles cookie setting in server actions
+  plugins: [nextCookies()],
 });

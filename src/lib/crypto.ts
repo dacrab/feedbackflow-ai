@@ -2,13 +2,10 @@ import crypto from "node:crypto";
 
 function getKey() {
   const secret = process.env["ENCRYPTION_KEY"];
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error("ENCRYPTION_KEY is required in production");
+  if (!secret) {
+    throw new Error("ENCRYPTION_KEY is required");
   }
-  return crypto
-    .createHash("sha256")
-    .update(secret ?? "dev-insecure-key-for-local-only")
-    .digest();
+  return crypto.createHash("sha256").update(secret).digest();
 }
 
 export function encrypt(plain: string): string {
