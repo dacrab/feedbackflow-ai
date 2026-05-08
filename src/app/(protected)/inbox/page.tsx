@@ -18,21 +18,17 @@ export default async function InboxPage({
   const userId = session.user.id;
 
   const spObj = await searchParams;
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(spObj)) {
-    if (typeof v === "string" && v) sp.set(k, v);
-  }
+  const sp = new URLSearchParams(
+    Object.entries(spObj).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : []))
+  );
 
   const sentiment = sp.get("sentiment") || undefined;
   const status = sp.get("status") || undefined;
   const topic = sp.get("topic") || undefined;
   const q = sp.get("q") || undefined;
 
-  const severityMinStr = sp.get("severity_min");
-  const severityMin = severityMinStr ? Number.parseInt(severityMinStr, 10) : 1;
-
-  const severityMaxStr = sp.get("severity_max");
-  const severityMax = severityMaxStr ? Number.parseInt(severityMaxStr, 10) : MAX_SEVERITY;
+  const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
+  const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
 
   const sort =
     (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";

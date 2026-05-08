@@ -3,7 +3,7 @@ import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 
 let _db: NeonHttpDatabase | null = null;
 
-function getDb() {
+export function getDb(): NeonHttpDatabase {
   if (!_db) {
     const url = process.env["DATABASE_URL"];
     if (!url) throw new Error("DATABASE_URL required");

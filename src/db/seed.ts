@@ -1,29 +1,16 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import {
-  analysisStatusEnum,
-  feedbackAnalyses,
-  feedbackItems,
-  sentimentEnum,
-  user,
-} from "@/db/schema";
+import { analysisStatusEnum, feedbackAnalyses, feedbackItems, sentimentEnum, user } from "@/db/schema";
 
 async function main() {
   const url = process.env["DATABASE_URL"];
-  if (!url) {
-    throw new Error("DATABASE_URL is required for seeding");
-  }
+  if (!url) throw new Error("DATABASE_URL is required for seeding");
 
-  const sql = neon(url);
-  const db = drizzle(sql);
+  const db = drizzle(neon(url));
 
-  // Simple smoke-test seed: insert one feedback item + analysis if table is empty
   const existing = await db.select().from(feedbackItems).limit(1);
-  if (existing.length > 0) {
-    return;
-  }
+  if (existing.length > 0) return;
 
-  // Get first user or skip seeding if no users exist
   const [existingUser] = await db.select({ id: user.id }).from(user).limit(1);
   if (!existingUser) {
     process.stdout.write("No users found - skipping seed (create a user first)\n");
@@ -41,9 +28,7 @@ async function main() {
     })
     .returning();
 
-  if (!item) {
-    throw new Error("Failed to insert seed feedback item");
-  }
+  if (!item) throw new Error("Failed to insert seed feedback item");
 
   await db.insert(feedbackAnalyses).values({
     userId: item.userId,
@@ -57,7 +42,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`Seed failed: ${msg}\n`);
+  process.stderr.write(`Seed failed: ${err instanceof Error ? err.message : String(err)}\n`);
   process.exit(1);
 });

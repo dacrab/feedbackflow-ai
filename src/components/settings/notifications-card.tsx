@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import SettingsItem from "@/components/settings/settings-item";
+import { SettingsList } from "@/components/settings/settings-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks";
-import type { TransformedNotificationRow } from "@/lib/types";
+import type { TransformedRow } from "@/lib/types";
 
 interface NotificationsCardProps {
-  hooks: Array<TransformedNotificationRow>;
+  hooks: Array<TransformedRow>;
 }
 
 export function NotificationsCard({ hooks }: NotificationsCardProps) {
@@ -57,13 +57,11 @@ export function NotificationsCard({ hooks }: NotificationsCardProps) {
       </form>
 
       <div className="space-y-2 border-t border-border pt-4">
-        {hooks.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">no webhooks</p>
-        ) : (
-          hooks.map((h) => (
-            <SettingsItem key={h.id} item={h} apiPath="notifications" label={h.type} />
-          ))
-        )}
+        <SettingsList
+          items={hooks}
+          apiPath="notifications"
+          getLabel={(h) => h.type}
+        />
       </div>
     </Card>
   );

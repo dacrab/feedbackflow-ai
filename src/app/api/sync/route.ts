@@ -7,23 +7,21 @@ export async function GET() {
   try {
     await requireAuth();
   } catch (err) {
-    return err instanceof Response
-      ? err
-      : new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    return err instanceof Response ? err : new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
+
+  const encoder = new TextEncoder();
+  const send = (stage: string, message: string) =>
+    encoder.encode(`data: ${JSON.stringify({ stage, message })}\n\n`);
 
   const stream = new ReadableStream({
     async start(ctrl) {
-      const encoder = new TextEncoder();
-      const send = (stage: string, message: string) =>
-        ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ stage, message })}\n\n`));
-
       try {
-        send("fetching", "Starting ingest...");
+        ctrl.enqueue(send("fetching", "Starting ingest..."));
         const { fetched, inserted, analyzed } = await runIngest();
-        send("complete", `Done! Fetched: ${fetched}, Inserted: ${inserted}, Analyzed: ${analyzed}`);
+        ctrl.enqueue(send("complete", `Done! Fetched: ${fetched}, Inserted: ${inserted}, Analyzed: ${analyzed}`));
       } catch (err) {
-        send("error", err instanceof Error ? err.message : "Unknown error");
+        ctrl.enqueue(send("error", err instanceof Error ? err.message : "Unknown error"));
       } finally {
         ctrl.close();
       }

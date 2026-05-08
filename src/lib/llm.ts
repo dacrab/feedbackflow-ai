@@ -12,23 +12,11 @@ import {
 import { withRetry } from "./retry";
 
 const AnalysisSchema = z.object({
-  sentiment: z
-    .enum(["positive", "neutral", "negative"])
-    .describe("Overall sentiment of the feedback"),
-  topics: z
-    .array(z.string())
-    .min(1)
-    .max(LLM_MAX_TOPICS)
-    .describe("Topic labels like Bug Report, Feature Request, Pricing, Performance, UX"),
-  severity_score: z
-    .number()
-    .int()
-    .min(1)
-    .max(5)
-    .describe("Priority score from 1 (low) to 5 (critical)"),
-  summary: z.string().min(5).max(500).describe("A concise one-sentence summary"),
+  sentiment: z.enum(["positive", "neutral", "negative"]),
+  topics: z.array(z.string()).min(1).max(LLM_MAX_TOPICS),
+  severity_score: z.number().int().min(1).max(5),
+  summary: z.string().min(5).max(500),
 });
-type Analysis = z.infer<typeof AnalysisSchema>;
 
 const SYSTEM_PROMPT = `You are a feedback analysis expert. Analyze user feedback and classify it accurately.
 Focus on identifying the core issue, sentiment, and business impact.`;
@@ -51,17 +39,13 @@ function getModel(opts?: LLMOptions) {
 
   if (provider === "openai") {
     const apiKey = opts?.apiKey ?? process.env["OPENAI_API_KEY"];
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY missing");
-    }
+    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
     return createOpenAI({ apiKey })(modelName);
   }
 
   if (provider === "anthropic") {
     const apiKey = opts?.apiKey ?? process.env["ANTHROPIC_API_KEY"];
-    if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY missing");
-    }
+    if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
     return createAnthropic({ apiKey })(modelName);
   }
 
@@ -75,15 +59,13 @@ export async function analyzeFeedback(
   text: string,
   retries = LLM_MAX_RETRIES,
   opts?: LLMOptions,
-): Promise<Analysis> {
+): Promise<z.infer<typeof AnalysisSchema>> {
   const model = getModel(opts);
 
   return withRetry(
     async () => {
       const { object } = await generateObject({
         model,
-        schemaName: "FeedbackAnalysis",
-        schemaDescription: "Structured analysis of user feedback for product insights",
         schema: AnalysisSchema,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },

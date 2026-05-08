@@ -7,7 +7,6 @@ import { getServerSession } from "@/lib/session";
 
 type AuthUser = { id: string; email: string | null };
 
-/** Validate request body against schema, throws on failure */
 export async function validateBody<T>(req: Request, schema: z.ZodSchema<T>): Promise<T> {
   const body = await req.json();
   const result = schema.safeParse(body);
@@ -20,34 +19,26 @@ export async function validateBody<T>(req: Request, schema: z.ZodSchema<T>): Pro
   return result.data;
 }
 
-async function getAuthUser(): Promise<AuthUser | null> {
-  const session = await getServerSession();
-  if (!session?.user?.id) return null;
-  return { id: session.user.id, email: session.user.email ?? null };
-}
-
 export async function requireAuth(): Promise<AuthUser> {
-  const user = await getAuthUser();
-  if (!user) {
-    throw NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  return user;
+  const session = await getServerSession();
+  if (!session?.user?.id) throw NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  return { id: session.user.id, email: session.user.email ?? null };
 }
 
 export function withAuth(
   handler: (
     req: Request,
-    ctx: { params?: Promise<Record<string, string>> },
+    ctx: { params?: Promise<{ [key: string]: string }> },
     user: AuthUser,
   ) => Promise<Response>,
 ) {
   return async (
     req: Request,
-    ctx?: { params: Promise<Record<string, string>> },
+    ctx?: { params: Promise<{ [key: string]: string }> },
   ): Promise<Response> => {
     try {
       const user = await requireAuth();
-      const handlerCtx = ctx ? { params: ctx.params } : {};
+      const handlerCtx = ctx ?? {};
       return await handler(req, handlerCtx, user);
     } catch (e) {
       return e instanceof Response ? e : NextResponse.json({ error: String(e) }, { status: 500 });

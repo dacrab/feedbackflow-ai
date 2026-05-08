@@ -27,7 +27,5 @@ export async function notifySlack(text: string, url?: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
-  } catch {
-    // Fire-and-forget: Slack notification failures are non-critical
-  }
+  } catch {}
 }

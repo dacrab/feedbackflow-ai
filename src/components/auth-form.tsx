@@ -22,11 +22,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
       if (isSignup) {
         const { error } = await signUp.email({
-          email: email.trim().toLowerCase(),
+          email: normalizedEmail,
           password,
           name: email.split("@")[0] || "User",
         });
@@ -35,7 +36,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }
 
       const { error } = await signIn.email({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password,
       });
 

@@ -9,15 +9,7 @@ import { UpdateSourceSchema } from "@/lib/validations";
 
 export const PATCH = withAuth(async (req, ctx, user) => {
   const data = await validateBody(req, UpdateSourceSchema);
-
-  const params = await ctx.params;
-  if (!params) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
-  }
-  const id = params["id"];
-  if (!id) {
-    return Response.json({ error: "Missing id" }, { status: 400 });
-  }
+  const id = (await ctx.params!)["id"] as string;
 
   const updates: Partial<NewUserSource> = {};
   if (typeof data.enabled === "boolean") updates.enabled = data.enabled;
@@ -33,15 +25,7 @@ export const PATCH = withAuth(async (req, ctx, user) => {
 });
 
 export const DELETE = withAuth(async (_req, ctx, user) => {
-  const params = await ctx.params;
-  if (!params) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
-  }
-  const id = params["id"];
-  if (!id) {
-    return Response.json({ error: "Missing id" }, { status: 400 });
-  }
-
+  const id = (await ctx.params!)["id"] as string;
   await db.delete(userSources).where(and(eq(userSources.id, id), eq(userSources.userId, user.id)));
   return NextResponse.json({ ok: true });
 });

@@ -20,13 +20,12 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
-    cookieCache: { enabled: true, maxAge: 60 * 5, strategy: "compact" },
+    expiresIn: 604800,
+    updateAge: 86400,
+    cookieCache: { enabled: true, maxAge: 300, strategy: "compact" },
   },
   advanced: {
     generateId: () => crypto.randomUUID(),
-    crossSubDomainCookies: { enabled: false },
     useSecureCookies: process.env.NODE_ENV === "production",
   },
   trustedOrigins:

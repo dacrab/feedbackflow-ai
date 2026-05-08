@@ -7,15 +7,7 @@ import { FeedbackStatusSchema } from "@/lib/validations";
 
 export const PATCH = withAuth(async (req, ctx, user) => {
   const data = await validateBody(req, FeedbackStatusSchema);
-
-  const params = await ctx.params;
-  if (!params) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
-  }
-  const id = params["id"];
-  if (!id) {
-    return Response.json({ error: "Missing id" }, { status: 400 });
-  }
+  const id = (await ctx.params!)["id"] as string;
 
   await db
     .update(feedbackAnalyses)
