@@ -32,37 +32,9 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
     .from(userSettings)
     .where(eq(userSettings.userId, userId))
     .limit(1);
-  if (!s) return undefined;
-  if (!isLLMProvider(s.provider)) return undefined;
+  if (!s || !isLLMProvider(s.provider)) return undefined;
   const apiKey = s.apiKeyCipher ? decrypt(s.apiKeyCipher) : undefined;
-  return {
-    provider: s.provider,
-    ...(s.model && { model: s.model }),
-    ...(apiKey && { apiKey }),
-  };
-}
-
-export async function getLatestTimestamp(userId: string): Promise<string> {
-  const [row] = await db
-    .select({ ts: feedbackItems.originalTimestamp })
-    .from(feedbackItems)
-    .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.source, "github")))
-    .orderBy(desc(feedbackItems.originalTimestamp))
-    .limit(1);
-  if (!row?.ts) return getDateNHoursAgo(24 * INITIAL_FETCH_DAYS);
-  return new Date(row.ts).toISOString();
-}
-
-async function getUnanalyzedItems(
-  userId: string,
-  limit = DEFAULT_ANALYSIS_BATCH_SIZE,
-): Promise<Array<{ id: string; rawContent: string }>> {
-  return db
-    .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
-    .from(feedbackItems)
-    .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
-    .where(and(eq(feedbackItems.userId, userId), isNull(feedbackAnalyses.id)))
-    .limit(limit);
+  return { provider: s.provider, ...(s.model && { model: s.model }), ...(apiKey && { apiKey }) };
 }
 
 export async function analyzeAndStore(
@@ -115,9 +87,20 @@ export async function runIngest(): Promise<{
   for (const src of sources) {
     if (src.type !== "github") continue;
 
-    const repo = src.config.repo;
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
-    const issues = await fetchGithubIssues(repo, await getLatestTimestamp(src.userId), token);
+
+    // inline getLatestTimestamp
+    const [latest] = await db
+      .select({ ts: feedbackItems.originalTimestamp })
+      .from(feedbackItems)
+      .where(and(eq(feedbackItems.userId, src.userId), eq(feedbackItems.source, "github")))
+      .orderBy(desc(feedbackItems.originalTimestamp))
+      .limit(1);
+    const sinceISO = latest?.ts
+      ? new Date(latest.ts).toISOString()
+      : getDateNHoursAgo(24 * INITIAL_FETCH_DAYS);
+
+    const issues = await fetchGithubIssues(src.config.repo, sinceISO, token);
 
     const rows = issues.map((i) => ({
       userId: src.userId,
@@ -142,8 +125,8 @@ export async function runIngest(): Promise<{
             ),
           ),
         );
-      const set = new Set(existing.map((e) => e.externalId));
-      newItems = rows.filter((r) => !set.has(r.externalId));
+      const seen = new Set(existing.map((e) => e.externalId));
+      newItems = rows.filter((r) => !seen.has(r.externalId));
     }
 
     const inserted = newItems.length
@@ -158,7 +141,14 @@ export async function runIngest(): Promise<{
       .values({ userId: src.userId, fetched: issues.length })
       .returning({ id: ingestRuns.id });
 
-    const unanalyzed = await getUnanalyzedItems(src.userId);
+    // inline getUnanalyzedItems
+    const unanalyzed = await db
+      .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+      .from(feedbackItems)
+      .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
+      .where(and(eq(feedbackItems.userId, src.userId), isNull(feedbackAnalyses.id)))
+      .limit(DEFAULT_ANALYSIS_BATCH_SIZE);
+
     const analyzed = await analyzeAndStore(
       [...inserted, ...unanalyzed],
       src.userId,

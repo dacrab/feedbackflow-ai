@@ -6,13 +6,6 @@ import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_DASHBOARD_LIMIT, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import type { Sentiment } from "@/lib/types";
 
-interface DashboardData {
-  countsBySentiment: Partial<Record<Sentiment, number>>;
-  topicCounts: Record<string, number>;
-  severityHist: Record<number, number>;
-  trendByDay: Record<string, number>;
-}
-
 export interface ComputedMetrics {
   total: number;
   positive: number;
@@ -29,7 +22,9 @@ export interface ComputedMetrics {
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-async function getDashboardData(userId: string): Promise<DashboardData> {
+export async function getDashboard(
+  userId: string,
+): Promise<ComputedMetrics & { severityHist: Record<number, number> }> {
   const rows = await db
     .select({
       sentiment: feedbackAnalyses.sentiment,
@@ -54,40 +49,30 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   const trendByDay: Record<string, number> = {};
 
   for (const row of rows) {
-    countsBySentiment[row.sentiment] = (countsBySentiment[row.sentiment] || 0) + 1;
-    for (const topic of row.topics ?? []) {
-      topicCounts[topic] = (topicCounts[topic] || 0) + 1;
-    }
-    severityHist[row.severityScore] = (severityHist[row.severityScore] || 0) + 1;
+    countsBySentiment[row.sentiment] = (countsBySentiment[row.sentiment] ?? 0) + 1;
+    for (const topic of row.topics ?? []) topicCounts[topic] = (topicCounts[topic] ?? 0) + 1;
+    severityHist[row.severityScore] = (severityHist[row.severityScore] ?? 0) + 1;
     const day = row.createdAt.toISOString().slice(0, 10);
-    if (day) trendByDay[day] = (trendByDay[day] || 0) + 1;
+    trendByDay[day] = (trendByDay[day] ?? 0) + 1;
   }
-
-  return { countsBySentiment, topicCounts, severityHist, trendByDay };
-}
-
-function computeMetrics(data: DashboardData): ComputedMetrics {
-  const { countsBySentiment, topicCounts, severityHist, trendByDay } = data;
 
   const positive = countsBySentiment["positive"] ?? 0;
   const neutral = countsBySentiment["neutral"] ?? 0;
   const negative = countsBySentiment["negative"] ?? 0;
-  const total = Object.values(countsBySentiment).reduce((a, b) => a + b, 0);
+  const total = positive + neutral + negative;
 
   let highSeverity = 0;
-  for (let s = HIGH_SEVERITY_THRESHOLD; s <= MAX_SEVERITY; s++) {
+  for (let s = HIGH_SEVERITY_THRESHOLD; s <= MAX_SEVERITY; s++)
     highSeverity += severityHist[s] ?? 0;
-  }
 
   const avgSeverity = total
     ? (
-        Object.entries(severityHist).reduce((acc, [s, v]) => acc + Number(s) * (v || 0), 0) / total
+        Object.entries(severityHist).reduce((acc, [s, v]) => acc + Number(s) * (v ?? 0), 0) / total
       ).toFixed(1)
     : "0.0";
 
   const trendLabels = Object.keys(trendByDay).sort();
   const trendValues = trendLabels.map((d) => trendByDay[d] ?? 0);
-  const trendDelta = (trendValues.at(-1) ?? 0) - (trendValues.at(-2) ?? 0);
 
   const topTopics = Object.entries(topicCounts)
     .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
@@ -104,14 +89,8 @@ function computeMetrics(data: DashboardData): ComputedMetrics {
     avgSeverity,
     trendLabels,
     trendValues,
-    trendDelta,
+    trendDelta: (trendValues.at(-1) ?? 0) - (trendValues.at(-2) ?? 0),
     topTopics,
+    severityHist,
   };
-}
-
-export async function getDashboard(
-  userId: string,
-): Promise<ComputedMetrics & { severityHist: Record<number, number> }> {
-  const data = await getDashboardData(userId);
-  return { ...computeMetrics(data), severityHist: data.severityHist };
 }
