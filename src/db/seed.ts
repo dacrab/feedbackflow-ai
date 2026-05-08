@@ -1,5 +1,4 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { db } from "@/db/client";
 import {
   analysisStatusEnum,
   feedbackAnalyses,
@@ -9,13 +8,7 @@ import {
 } from "@/db/schema";
 
 async function main() {
-  const url = process.env["DATABASE_URL"];
-  if (!url) throw new Error("DATABASE_URL is required for seeding");
-
-  const db = drizzle(neon(url));
-
-  const existing = await db.select().from(feedbackItems).limit(1);
-  if (existing.length > 0) return;
+  if ((await db.select().from(feedbackItems).limit(1)).length > 0) return;
 
   const [existingUser] = await db.select({ id: user.id }).from(user).limit(1);
   if (!existingUser) {

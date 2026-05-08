@@ -23,7 +23,6 @@ export default async function DashboardPage() {
   ];
 
   const topicData = metrics.topTopics;
-
   const severityData = Array.from({ length: MAX_SEVERITY }, (_, i) => ({
     name: String(i + 1),
     value: metrics.severityHist[i + 1] || 0,

@@ -10,9 +10,7 @@ import { Button, Input } from "@/components/ui/ui";
 
 const { signIn, signUp } = createAuthClient();
 
-type Mode = "login" | "signup";
-
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
