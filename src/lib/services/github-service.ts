@@ -1,7 +1,3 @@
-/**
- * GitHub API service for fetching issues
- */
-
 import {
   GITHUB_MAX_PAGES,
   GITHUB_MAX_RETRIES,

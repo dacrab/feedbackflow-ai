@@ -1,7 +1,3 @@
-/**
- * API hooks for data fetching and mutations
- */
-
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -14,11 +10,9 @@ interface MutationOptions<T> {
 
 export function useApiMutation<T = unknown>(options: MutationOptions<T> = {}) {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const mutate = async (url: string, fetchOptions: RequestInit = {}): Promise<T | null> => {
     setIsLoading(true);
-    setError(null);
     try {
       const res = await fetch(url, fetchOptions);
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
@@ -28,7 +22,6 @@ export function useApiMutation<T = unknown>(options: MutationOptions<T> = {}) {
       return data;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
       if (options.errorMessage) toast.error(options.errorMessage);
       options.onError?.(msg);
       return null;
@@ -37,5 +30,5 @@ export function useApiMutation<T = unknown>(options: MutationOptions<T> = {}) {
     }
   };
 
-  return { mutate, isLoading, error };
+  return { mutate, isLoading };
 }

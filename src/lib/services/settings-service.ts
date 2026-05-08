@@ -2,7 +2,7 @@ import "server-only";
 
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import type { NotificationConfig, SourceConfig } from "@/db/schema";
+import type { GitHubSourceConfig, SlackNotificationConfig } from "@/db/schema";
 import { userNotifications, userSettings, userSources } from "@/db/schema";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
 
@@ -28,7 +28,7 @@ export async function getUserSettings(
 
 export async function getUserSources(
   userId: string,
-): Promise<Array<{ id: string; type: string; config: SourceConfig; enabled: boolean }>> {
+): Promise<Array<{ id: string; type: string; config: GitHubSourceConfig; enabled: boolean }>> {
   return db
     .select({
       id: userSources.id,
@@ -43,7 +43,7 @@ export async function getUserSources(
 
 export async function getUserNotifications(
   userId: string,
-): Promise<Array<{ id: string; type: string; config: NotificationConfig; enabled: boolean }>> {
+): Promise<Array<{ id: string; type: string; config: SlackNotificationConfig; enabled: boolean }>> {
   return db
     .select({
       id: userNotifications.id,

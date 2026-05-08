@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import SettingsItem from "@/components/settings/settings-item";
+import { SettingsList } from "@/components/settings/settings-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useApiMutation } from "@/hooks";
-import type { TransformedSourceRow } from "@/lib/types";
+import type { TransformedRow } from "@/lib/types";
 
 interface DataSourcesCardProps {
-  sources: Array<TransformedSourceRow>;
+  sources: Array<TransformedRow>;
 }
 
 export function DataSourcesCard({ sources }: DataSourcesCardProps) {
@@ -66,19 +66,12 @@ export function DataSourcesCard({ sources }: DataSourcesCardProps) {
       </form>
 
       <div className="space-y-2 border-t border-border pt-4">
-        {sources.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">no sources</p>
-        ) : (
-          sources.map((s) => (
-            <SettingsItem
-              key={s.id}
-              item={s}
-              apiPath="sources"
-              label={s.type}
-              description={s.config?.["repo"] ? String(s.config["repo"]) : ""}
-            />
-          ))
-        )}
+        <SettingsList
+          items={sources}
+          apiPath="sources"
+          getLabel={(s) => s.type}
+          getDescription={(s) => s.config?.["repo"] ? String(s.config["repo"]) : ""}
+        />
       </div>
     </Card>
   );

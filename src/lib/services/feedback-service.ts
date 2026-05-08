@@ -1,15 +1,33 @@
-/**
- * Feedback service for direct database queries
- */
-
 import "server-only";
 
 import { and, asc, desc, eq, gte, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT } from "@/lib/constants";
-import { parseStatus, parseTopics } from "@/lib/db-utils";
-import type { FeedbackItem, Sentiment } from "@/lib/types";
+import type { FeedbackItem, FeedbackStatus, Sentiment } from "@/lib/types";
+
+function parseTopics(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((t): t is string => typeof t === "string");
+}
+
+function parseStatus(raw: unknown): FeedbackStatus {
+  if (raw === "New" || raw === "Acknowledged" || raw === "Actioned") return raw;
+  return "New";
+}
+
+const feedbackSelect = {
+  id: feedbackItems.id,
+  source: feedbackItems.source,
+  raw_content: feedbackItems.rawContent,
+  original_timestamp: feedbackItems.originalTimestamp,
+  created_at: feedbackItems.createdAt,
+  sentiment: feedbackAnalyses.sentiment,
+  topics: feedbackAnalyses.topics,
+  severity_score: feedbackAnalyses.severityScore,
+  summary: feedbackAnalyses.summary,
+  status: feedbackAnalyses.status,
+} as const;
 
 type FeedbackFilters = {
   sentiment?: string;
@@ -21,7 +39,7 @@ type FeedbackFilters = {
   sort?: "created_desc" | "severity_desc" | "severity_asc";
 };
 
-type FeedbackRow = {
+function transformFeedbackRow(row: {
   id: string;
   source: string;
   raw_content: string;
@@ -32,9 +50,7 @@ type FeedbackRow = {
   severity_score: number | null;
   summary: string | null;
   status: string | null;
-};
-
-function transformFeedbackRow(row: FeedbackRow): FeedbackItem {
+}): FeedbackItem {
   return {
     id: row.id,
     source: row.source,
@@ -93,18 +109,7 @@ export async function getFeedbackItems(
   }
 
   const rows = await db
-    .select({
-      id: feedbackItems.id,
-      source: feedbackItems.source,
-      raw_content: feedbackItems.rawContent,
-      original_timestamp: feedbackItems.originalTimestamp,
-      created_at: feedbackItems.createdAt,
-      sentiment: feedbackAnalyses.sentiment,
-      topics: feedbackAnalyses.topics,
-      severity_score: feedbackAnalyses.severityScore,
-      summary: feedbackAnalyses.summary,
-      status: feedbackAnalyses.status,
-    })
+    .select(feedbackSelect)
     .from(feedbackItems)
     .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
     .where(and(...conditions))
@@ -117,18 +122,7 @@ export async function getFeedbackItems(
 
 export async function getFeedbackItem(userId: string, itemId: string): Promise<FeedbackItem> {
   const [row] = await db
-    .select({
-      id: feedbackItems.id,
-      source: feedbackItems.source,
-      raw_content: feedbackItems.rawContent,
-      original_timestamp: feedbackItems.originalTimestamp,
-      created_at: feedbackItems.createdAt,
-      sentiment: feedbackAnalyses.sentiment,
-      topics: feedbackAnalyses.topics,
-      severity_score: feedbackAnalyses.severityScore,
-      summary: feedbackAnalyses.summary,
-      status: feedbackAnalyses.status,
-    })
+    .select(feedbackSelect)
     .from(feedbackItems)
     .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
     .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))

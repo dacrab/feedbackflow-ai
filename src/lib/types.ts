@@ -23,14 +23,7 @@ export function isLLMProvider(val: unknown): val is LLMProvider {
   return typeof val === "string" && ["google", "openai", "anthropic"].includes(val);
 }
 
-export interface TransformedSourceRow {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
-  enabled: boolean;
-}
-
-export interface TransformedNotificationRow {
+export interface TransformedRow {
   id: string;
   type: string;
   config: Record<string, unknown>;

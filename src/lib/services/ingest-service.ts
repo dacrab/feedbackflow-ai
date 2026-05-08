@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import type { GitHubSourceConfig, SourceConfig } from "@/db/schema";
+import type { GitHubSourceConfig } from "@/db/schema";
 import {
   feedbackAnalyses,
   feedbackItems,
@@ -24,7 +24,7 @@ type LLMOpts =
   | { provider: "google" | "openai" | "anthropic"; model?: string; apiKey?: string }
   | undefined;
 
-function isGitHubConfig(config: SourceConfig): config is GitHubSourceConfig {
+function isGitHubConfig(config: GitHubSourceConfig): config is GitHubSourceConfig {
   return "repo" in config && typeof config.repo === "string";
 }
 
@@ -82,25 +82,16 @@ export async function analyzeAndStore(
     if (!item) continue;
     try {
       const a = await analyzeFeedback(item.rawContent, 2, llmOpts);
+      const analysisData = {
+        sentiment: a.sentiment,
+        topics: a.topics,
+        severityScore: a.severity_score,
+        summary: a.summary,
+      };
       await db
         .insert(feedbackAnalyses)
-        .values({
-          userId,
-          feedbackItemId: item.id,
-          sentiment: a.sentiment,
-          topics: a.topics,
-          severityScore: a.severity_score,
-          summary: a.summary,
-        })
-        .onConflictDoUpdate({
-          target: feedbackAnalyses.feedbackItemId,
-          set: {
-            sentiment: a.sentiment,
-            topics: a.topics,
-            severityScore: a.severity_score,
-            summary: a.summary,
-          },
-        });
+        .values({ userId, feedbackItemId: item.id, ...analysisData })
+        .onConflictDoUpdate({ target: feedbackAnalyses.feedbackItemId, set: analysisData });
       count++;
       onProgress?.(i + 1, items.length, a.summary);
       if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
@@ -143,7 +134,6 @@ export async function runIngest(): Promise<{
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
     const issues = await fetchGithubIssues(repo, await getLatestTimestamp(src.userId), token);
 
-    // Transform issues to rows
     const rows = issues.map((i) => ({
       userId: src.userId,
       source: "github" as const,
@@ -152,28 +142,25 @@ export async function runIngest(): Promise<{
       originalTimestamp: new Date(i.created_at),
     }));
 
-    // Filter out existing items
-    const newItems = rows.length
-      ? await (async () => {
-          const existing = await db
-            .select({ externalId: feedbackItems.externalId })
-            .from(feedbackItems)
-            .where(
-              and(
-                eq(feedbackItems.userId, src.userId),
-                eq(feedbackItems.source, "github"),
-                inArray(
-                  feedbackItems.externalId,
-                  rows.map((r) => r.externalId),
-                ),
-              ),
-            );
-          const set = new Set(existing.map((e) => e.externalId));
-          return rows.filter((r) => !set.has(r.externalId));
-        })()
-      : [];
+    let newItems: typeof rows = [];
+    if (rows.length) {
+      const existing = await db
+        .select({ externalId: feedbackItems.externalId })
+        .from(feedbackItems)
+        .where(
+          and(
+            eq(feedbackItems.userId, src.userId),
+            eq(feedbackItems.source, "github"),
+            inArray(
+              feedbackItems.externalId,
+              rows.map((r) => r.externalId),
+            ),
+          ),
+        );
+      const set = new Set(existing.map((e) => e.externalId));
+      newItems = rows.filter((r) => !set.has(r.externalId));
+    }
 
-    // Insert new items
     const inserted = newItems.length
       ? await db
           .insert(feedbackItems)

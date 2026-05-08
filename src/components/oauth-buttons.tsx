@@ -19,7 +19,7 @@ export function OAuthButtons() {
         onClick={() => signIn.social({ provider: "google", callbackURL: "/dashboard" })}
         className="h-10 rounded border border-border text-sm transition-colors hover:bg-muted flex items-center justify-center gap-2"
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" role="img" aria-label="Google">
+        <svg className="h-4 w-4" viewBox="0 0 24 24">
           <title>Google</title>
           <path
             fill="currentColor"

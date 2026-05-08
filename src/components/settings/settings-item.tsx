@@ -3,26 +3,14 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-interface BaseItem {
-  id: string;
-  type: string;
-  enabled: boolean;
-  config?: Record<string, unknown> | null;
-}
-
-interface SettingsItemProps<T extends BaseItem> {
-  item: T;
+interface SettingsItemProps {
+  item: { id: string; type: string; enabled: boolean; config?: Record<string, unknown> | null };
   apiPath: "sources" | "notifications";
   label: string;
   description?: string;
 }
 
-export default function SettingsItem<T extends BaseItem>({
-  item,
-  apiPath,
-  label,
-  description,
-}: SettingsItemProps<T>) {
+export default function SettingsItem({ item, apiPath, label, description }: SettingsItemProps) {
   const router = useRouter();
 
   async function handleToggle() {

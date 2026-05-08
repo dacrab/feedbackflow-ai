@@ -9,15 +9,7 @@ import { UpdateNotificationSchema } from "@/lib/validations";
 
 export const PATCH = withAuth(async (req, ctx, user) => {
   const data = await validateBody(req, UpdateNotificationSchema);
-
-  const params = await ctx.params;
-  if (!params) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
-  }
-  const id = params["id"];
-  if (!id) {
-    return Response.json({ error: "Missing id" }, { status: 400 });
-  }
+  const id = (await ctx.params!)["id"] as string;
 
   const updates: Partial<NewUserNotification> = {};
   if (typeof data.enabled === "boolean") updates.enabled = data.enabled;
@@ -32,15 +24,7 @@ export const PATCH = withAuth(async (req, ctx, user) => {
 });
 
 export const DELETE = withAuth(async (_req, ctx, user) => {
-  const params = await ctx.params;
-  if (!params) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
-  }
-  const id = params["id"];
-  if (!id) {
-    return Response.json({ error: "Missing id" }, { status: 400 });
-  }
-
+  const id = (await ctx.params!)["id"] as string;
   await db
     .delete(userNotifications)
     .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, user.id)));

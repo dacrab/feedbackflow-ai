@@ -13,28 +13,18 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-// Enums
 export const sentimentEnum = pgEnum("sentiment_type", ["positive", "neutral", "negative"]);
 export const analysisStatusEnum = pgEnum("analysis_status", ["New", "Acknowledged", "Actioned"]);
 export const sourceTypeEnum = pgEnum("source_type", ["github"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["slack"]);
 
-// Config types
 export type GitHubSourceConfig = {
   repo: string;
 };
 
-export type SourceConfig = GitHubSourceConfig;
-
 export type SlackNotificationConfig = {
   minSeverity?: number;
 };
-
-export type NotificationConfig = SlackNotificationConfig;
-
-// ============================================================================
-// Better Auth Tables
-// ============================================================================
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -94,11 +84,6 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// ============================================================================
-// App Tables (reference Better Auth user table)
-// ============================================================================
-
-// Feedback Items
 export const feedbackItems = pgTable(
   "feedback_items",
   {
@@ -120,7 +105,6 @@ export const feedbackItems = pgTable(
   ],
 );
 
-// Feedback Analyses
 export const feedbackAnalyses = pgTable(
   "feedback_analyses",
   {
@@ -148,7 +132,6 @@ export const feedbackAnalyses = pgTable(
   ],
 );
 
-// Ingest Runs
 export const ingestRuns = pgTable(
   "ingest_runs",
   {
@@ -167,7 +150,6 @@ export const ingestRuns = pgTable(
   (t) => [index("ingest_runs_user_id_idx").on(t.userId)],
 );
 
-// User Settings
 export const userSettings = pgTable("user_settings", {
   userId: text("user_id")
     .primaryKey()
@@ -179,7 +161,6 @@ export const userSettings = pgTable("user_settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// User Sources
 export const userSources = pgTable(
   "user_sources",
   {
@@ -188,7 +169,7 @@ export const userSources = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     type: sourceTypeEnum("type").notNull(),
-    config: jsonb("config").$type<SourceConfig>().notNull(),
+    config: jsonb("config").$type<GitHubSourceConfig>().notNull(),
     secretCipher: text("secret_cipher"),
     enabled: boolean("enabled").default(true).notNull(),
     lastChecked: timestamp("last_checked", { withTimezone: true }),
@@ -198,7 +179,6 @@ export const userSources = pgTable(
   (t) => [index("user_sources_user_id_idx").on(t.userId)],
 );
 
-// User Notifications
 export const userNotifications = pgTable(
   "user_notifications",
   {
@@ -207,7 +187,7 @@ export const userNotifications = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     type: notificationTypeEnum("type").notNull(),
-    config: jsonb("config").$type<NotificationConfig>().notNull(),
+    config: jsonb("config").$type<SlackNotificationConfig>().notNull(),
     secretCipher: text("secret_cipher"),
     enabled: boolean("enabled").default(true).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -216,7 +196,6 @@ export const userNotifications = pgTable(
   (t) => [index("user_notifications_user_id_idx").on(t.userId)],
 );
 
-// Relations
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -249,7 +228,6 @@ export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one }) =
   }),
 }));
 
-// Inferred types from schema
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 

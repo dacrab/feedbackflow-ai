@@ -1,7 +1,3 @@
-/**
- * Consolidated notification service
- */
-
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
@@ -10,47 +6,24 @@ import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysis } from "@/lib/types";
 import { notifySlack } from "@/lib/utils";
 
-async function getUserSlackWebhooks(userId: string): Promise<Array<string>> {
+async function getUserSlackWebhooks(userId: string): Promise<string[]> {
   const hooks = await db
-    .select({
-      type: userNotifications.type,
-      secretCipher: userNotifications.secretCipher,
-    })
+    .select({ secretCipher: userNotifications.secretCipher })
     .from(userNotifications)
     .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
 
-  const urls: Array<string> = [];
-  for (const hook of hooks) {
-    if (hook.type === "slack" && hook.secretCipher) {
-      try {
-        const url = decrypt(hook.secretCipher);
-        if (url) {
-          urls.push(url);
-        }
-      } catch {
-        // Ignore decryption errors
-      }
-    }
-  }
-  return urls;
+  return hooks.flatMap((h) => {
+    if (!h.secretCipher) return [];
+    try { return [decrypt(h.secretCipher)]; } catch { return []; }
+  });
 }
 
-async function notifyAllWebhooks(userId: string, message: string): Promise<void> {
+export async function notifyHighSeverityFeedback(userId: string, analysis: FeedbackAnalysis): Promise<void> {
+  if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) return;
+  const message = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
   const webhooks = await getUserSlackWebhooks(userId);
   for (const url of webhooks) await notifySlack(message, url);
   await notifySlack(message);
-}
-
-export async function notifyHighSeverityFeedback(
-  userId: string,
-  analysis: FeedbackAnalysis,
-): Promise<void> {
-  if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) {
-    return;
-  }
-
-  const message = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
-  await notifyAllWebhooks(userId, message);
 }
 
 export async function sendDailyDigest(

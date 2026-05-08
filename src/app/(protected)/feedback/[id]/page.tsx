@@ -101,14 +101,6 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
             </dl>
           </div>
 
-          <div className="rounded border border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground mb-3">// actions</p>
-            <ul className="space-y-2 text-xs text-muted-foreground">
-              <li>→ update status to track progress</li>
-              <li>→ severity 4+ triggers slack alerts</li>
-              <li>→ review related items in inbox</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>

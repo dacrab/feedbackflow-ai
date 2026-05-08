@@ -6,7 +6,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background font-mono">
-      {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 text-sm">
@@ -28,7 +27,6 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="pt-32 pb-16">
         <div className="mx-auto max-w-5xl px-6">
           <div className="max-w-2xl">
@@ -60,7 +58,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Terminal mockup */}
           <div className="mt-16 rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30">
               <div className="flex gap-1.5">
@@ -107,7 +104,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
       <section className="py-16 border-t border-border">
         <div className="mx-auto max-w-5xl px-6">
           <p className="text-sm text-muted-foreground mb-8">// how it works</p>
@@ -123,7 +119,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="mx-auto max-w-5xl px-6 flex items-center justify-between text-xs text-muted-foreground">
           <span>feedbackflow © 2026</span>

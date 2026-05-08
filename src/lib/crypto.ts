@@ -2,9 +2,7 @@ import crypto from "node:crypto";
 
 function getKey() {
   const secret = process.env["ENCRYPTION_KEY"];
-  if (!secret) {
-    throw new Error("ENCRYPTION_KEY is required");
-  }
+  if (!secret) throw new Error("ENCRYPTION_KEY is required");
   return crypto.createHash("sha256").update(secret).digest();
 }
 
@@ -25,16 +23,13 @@ export function decrypt(b64: string): string {
   const key = getKey();
   const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
   decipher.setAuthTag(tag);
-  const dec = Buffer.concat([decipher.update(data), decipher.final()]);
-  return dec.toString("utf8");
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
 }
 
-/** Timing-safe string comparison to prevent timing attacks */
 export function timingSafeEqual(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
   if (bufA.length !== bufB.length) {
-    // Compare against self to maintain constant time
     crypto.timingSafeEqual(bufA, bufA);
     return false;
   }
