@@ -1,27 +1,51 @@
+import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
 import { SystemHealthCard } from "@/components/settings/system-health-card";
+import { db } from "@/db/client";
+import { userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
-import {
-  getUserNotifications,
-  getUserSettings,
-  getUserSources,
-} from "@/lib/services/settings-service";
+import { isLLMProvider } from "@/lib/types";
 
 export default async function SettingsPage() {
   const session = await getServerSession();
   if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
 
-  const [settingsData, sources, hooks] = await Promise.all([
-    getUserSettings(session.user.id),
-    getUserSources(session.user.id),
-    getUserNotifications(session.user.id),
+  const [settingsRow, sources, hooks] = await Promise.all([
+    db
+      .select({
+        provider: userSettings.provider,
+        model: userSettings.model,
+        apiKeyCipher: userSettings.apiKeyCipher,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId))
+      .limit(1)
+      .then((r) => r[0]),
+    db
+      .select({
+        id: userSources.id,
+        type: userSources.type,
+        config: userSources.config,
+        enabled: userSources.enabled,
+      })
+      .from(userSources)
+      .where(eq(userSources.userId, userId))
+      .orderBy(desc(userSources.createdAt)),
+    db
+      .select({
+        id: userNotifications.id,
+        type: userNotifications.type,
+        config: userNotifications.config,
+        enabled: userNotifications.enabled,
+      })
+      .from(userNotifications)
+      .where(eq(userNotifications.userId, userId))
+      .orderBy(desc(userNotifications.createdAt)),
   ]);
-
-  const enabledSources = sources.filter((s) => s.enabled).length;
-  const enabledHooks = hooks.filter((h) => h.enabled).length;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -33,14 +57,18 @@ export default async function SettingsPage() {
       <div className="grid gap-4">
         <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
           <LLMSettingsCard
-            initialProvider={settingsData.provider}
-            initialModel={settingsData.model}
-            initialHasKey={settingsData.hasKey}
+            initialProvider={
+              settingsRow?.provider && isLLMProvider(settingsRow.provider)
+                ? settingsRow.provider
+                : null
+            }
+            initialModel={settingsRow?.model ?? null}
+            initialHasKey={Boolean(settingsRow?.apiKeyCipher)}
           />
           <SystemHealthCard
-            enabledSources={enabledSources}
+            enabledSources={sources.filter((s) => s.enabled).length}
             totalSources={sources.length}
-            enabledHooks={enabledHooks}
+            enabledHooks={hooks.filter((h) => h.enabled).length}
           />
         </div>
 

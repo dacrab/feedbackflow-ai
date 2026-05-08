@@ -37,7 +37,7 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   return { provider: s.provider, ...(s.model && { model: s.model }), ...(apiKey && { apiKey }) };
 }
 
-export async function analyzeAndStore(
+async function analyzeAndStore(
   items: { id: string; rawContent: string }[],
   userId: string,
   llmOpts: LLMOpts,
