@@ -19,22 +19,11 @@ const navItems = [
   { href: "/settings", label: "settings", icon: IconSettings },
 ];
 
-interface SidebarProps {
-  userEmail: string;
-}
-
-export function Sidebar({ userEmail }: SidebarProps) {
+export function Sidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("sidebar-collapsed") === "true";
-  });
-
-  function toggleCollapsed() {
-    const newValue = !collapsed;
-    setCollapsed(newValue);
-    localStorage.setItem("sidebar-collapsed", String(newValue));
-  }
+  const [collapsed, setCollapsed] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("sidebar-collapsed") === "true",
+  );
 
   return (
     <aside
@@ -104,7 +93,11 @@ export function Sidebar({ userEmail }: SidebarProps) {
 
       <button
         type="button"
-        onClick={toggleCollapsed}
+        onClick={() => {
+          const next = !collapsed;
+          setCollapsed(next);
+          localStorage.setItem("sidebar-collapsed", String(next));
+        }}
         className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         title={collapsed ? "expand" : "collapse"}
       >

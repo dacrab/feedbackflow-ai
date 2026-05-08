@@ -14,5 +14,4 @@ async function handle(req: Request) {
   }
 }
 
-export const POST = handle;
-export const GET = handle;
+export { handle as GET, handle as POST };

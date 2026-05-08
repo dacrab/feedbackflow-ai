@@ -11,25 +11,26 @@ export async function GET(req: Request) {
   if (!isValidCronRequest(req)) await requireAuth();
 
   let ingest = { fetched: 0, inserted: 0, analyzed: 0 };
-  let digest = { total: 0, high: 0, notified: 0 };
-
   try {
     ingest = await runIngest();
   } catch (e) {
     console.error("Ingest failed:", e);
   }
 
+  let total = 0,
+    high = 0;
   try {
     const since = getDateNHoursAgo(24);
-    const rows = await db
-      .select({ userId: userNotifications.userId })
-      .from(userNotifications)
-      .where(eq(userNotifications.enabled, true));
-
-    const userIds = [...new Set(rows.map((u) => u.userId))];
-    let total = 0;
-    let high = 0;
-
+    const userIds = [
+      ...new Set(
+        (
+          await db
+            .select({ userId: userNotifications.userId })
+            .from(userNotifications)
+            .where(eq(userNotifications.enabled, true))
+        ).map((u) => u.userId),
+      ),
+    ];
     for (const userId of userIds) {
       try {
         const r = await sendDailyDigest(userId, since);
@@ -37,12 +38,10 @@ export async function GET(req: Request) {
         high += r.high;
       } catch {}
     }
-
     if (total > 0) await notifySlack(`Daily digest: ${total} total, ${high} high severity`);
-    digest = { total, high, notified: userIds.length };
   } catch (e) {
     console.error("Digest failed:", e);
   }
 
-  return NextResponse.json({ ok: true, ingest, digest });
+  return NextResponse.json({ ok: true, ingest, digest: { total, high } });
 }
