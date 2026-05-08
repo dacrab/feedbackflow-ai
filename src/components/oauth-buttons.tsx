@@ -1,7 +1,8 @@
 "use client";
 
 import { IconBrandGithub } from "@tabler/icons-react";
-import { signIn } from "@/lib/auth-client";
+import { createAuthClient } from "better-auth/react";
+const { signIn } = createAuthClient();
 
 export function OAuthButtons() {
   return (

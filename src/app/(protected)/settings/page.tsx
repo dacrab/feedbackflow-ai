@@ -8,7 +8,7 @@ import {
   getUserSettings,
   getUserSources,
 } from "@/lib/services/settings-service";
-import { getServerSession } from "@/lib/session";
+import { getServerSession } from "@/lib/api";
 
 export default async function SettingsPage() {
   const session = await getServerSession();

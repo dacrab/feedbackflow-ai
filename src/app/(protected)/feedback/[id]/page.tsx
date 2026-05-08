@@ -1,10 +1,10 @@
 import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SentimentBadge } from "@/components/ui/sentiment-badge";
+import { SentimentBadge } from "@/components/ui/badges";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
-import { getServerSession } from "@/lib/session";
+import { getServerSession } from "@/lib/api";
 import { formatDateUTC } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 

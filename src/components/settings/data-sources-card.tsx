@@ -3,10 +3,8 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { useState } from "react";
-import { SettingsList } from "@/components/settings/settings-list";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import SettingsItem from "@/components/settings/settings-item";
+import { Button, Card, Input } from "@/components/ui/ui";
 import { addSource } from "@/lib/actions";
 import type { TransformedRow } from "@/lib/types";
 
@@ -39,7 +37,19 @@ export function DataSourcesCard({ sources }: { sources: TransformedRow[] }) {
         </Button>
       </form>
       <div className="space-y-2 border-t border-border pt-4">
-        <SettingsList items={sources} apiPath="sources" getLabel={(s) => s.type} getDescription={(s) => s.config?.["repo"] ? String(s.config["repo"]) : ""} />
+        {sources.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">no sources</p>
+        ) : (
+          sources.map((s) => (
+            <SettingsItem
+              key={s.id}
+              item={s}
+              apiPath="sources"
+              label={s.type}
+              {...(s.config?.["repo"] ? { description: String(s.config["repo"]) } : {})}
+            />
+          ))
+        )}
       </div>
     </Card>
   );

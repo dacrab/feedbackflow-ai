@@ -1,5 +1,31 @@
 import { IconLoader2 } from "@tabler/icons-react";
 
+type CardProps = {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+};
+
+export function Card({ title, children, className = "" }: CardProps) {
+  return (
+    <div className={`rounded border border-border bg-card p-4 space-y-4 ${className}`}>
+      <p className="text-xs text-muted-foreground">// {title}</p>
+      {children}
+    </div>
+  );
+}
+
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  variant?: "default" | "sm";
+};
+
+export function Input({ className = "", variant = "default", ...props }: InputProps) {
+  const base =
+    "w-full rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors";
+  const size = variant === "sm" ? "h-8 px-2" : "h-10 px-3";
+  return <input className={`${base} ${size} ${className}`} {...props} />;
+}
+
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "outline";
   size?: "default" | "sm";
