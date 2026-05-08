@@ -4,7 +4,6 @@ export const CreateSourceSchema = z.object({
   type: z.literal("github"),
   repo: z.string().min(3),
   token: z.string().optional(),
-  enabled: z.boolean().optional(),
 });
 
 export const UpdateSourceSchema = z.object({
