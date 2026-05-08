@@ -6,29 +6,27 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await requireAuth();
-  } catch (err) {
-    return err instanceof Response
-      ? err
-      : new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  const encoder = new TextEncoder();
-  const send = (stage: string, message: string) =>
-    encoder.encode(`data: ${JSON.stringify({ stage, message })}\n\n`);
+  const enc = new TextEncoder();
+  const sse = (stage: string, message: string) =>
+    enc.encode(`data: ${JSON.stringify({ stage, message })}\n\n`);
 
   const stream = new ReadableStream({
     async start(ctrl) {
       try {
-        ctrl.enqueue(send("fetching", "Starting ingest..."));
+        ctrl.enqueue(sse("fetching", "Starting ingest..."));
         const { fetched, inserted, analyzed } = await runIngest();
         ctrl.enqueue(
-          send(
+          sse(
             "complete",
             `Done! Fetched: ${fetched}, Inserted: ${inserted}, Analyzed: ${analyzed}`,
           ),
         );
       } catch (err) {
-        ctrl.enqueue(send("error", err instanceof Error ? err.message : "Unknown error"));
+        ctrl.enqueue(sse("error", err instanceof Error ? err.message : "Unknown error"));
       } finally {
         ctrl.close();
       }
