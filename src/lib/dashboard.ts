@@ -26,6 +26,8 @@ export interface ComputedMetrics {
   topTopics: Array<{ topic: string; value: number }>;
 }
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
 async function getDashboardData(userId: string): Promise<DashboardData> {
   const rows = await db
     .select({
@@ -39,7 +41,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     .where(
       and(
         eq(feedbackItems.userId, userId),
-        gte(feedbackItems.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+        gte(feedbackItems.createdAt, new Date(Date.now() - THIRTY_DAYS_MS)),
       ),
     )
     .orderBy(desc(feedbackItems.createdAt))
@@ -56,7 +58,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
       topicCounts[topic] = (topicCounts[topic] || 0) + 1;
     }
     severityHist[row.severityScore] = (severityHist[row.severityScore] || 0) + 1;
-    const day = row.createdAt instanceof Date ? row.createdAt.toISOString().slice(0, 10) : "";
+    const day = row.createdAt.toISOString().slice(0, 10);
     if (day) trendByDay[day] = (trendByDay[day] || 0) + 1;
   }
 

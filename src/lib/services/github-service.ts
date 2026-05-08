@@ -18,26 +18,21 @@ async function fetchPage(
   sinceISO: string,
   page: number,
   token?: string,
-): Promise<Array<GithubIssue>> {
+): Promise<GithubIssue[]> {
   const url = `https://api.github.com/repos/${repo}/issues?state=all&since=${encodeURIComponent(sinceISO)}&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
 
-  const headers: Record<string, string> = {
-    "User-Agent": "feedbackflow-ai",
-    Accept: "application/vnd.github+json",
-  };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, { headers, next: { revalidate: 0 } });
-  if (!res.ok) {
-    throw new Error(`GitHub fetch failed: ${res.status}`);
-  }
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "feedbackflow-ai",
+      Accept: "application/vnd.github+json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
 
   const data = await res.json();
-  if (!Array.isArray(data)) {
-    return [];
-  }
+  if (!Array.isArray(data)) return [];
 
   return data
     .filter((i) => !("pull_request" in i))
@@ -48,8 +43,8 @@ export async function fetchGithubIssues(
   repo: string,
   sinceISO: string,
   token?: string,
-): Promise<Array<GithubIssue>> {
-  const results: Array<GithubIssue> = [];
+): Promise<GithubIssue[]> {
+  const results: GithubIssue[] = [];
 
   for (let page = 1; page <= GITHUB_MAX_PAGES; page++) {
     try {
@@ -58,14 +53,10 @@ export async function fetchGithubIssues(
         GITHUB_MAX_RETRIES,
         GITHUB_RETRY_BASE_DELAY_MS,
       );
-      if (batch.length === 0) {
-        break;
-      }
+      if (!batch.length) break;
       results.push(...batch);
     } catch (e) {
-      if (page === 1) {
-        throw e;
-      }
+      if (page === 1) throw e;
       break;
     }
   }

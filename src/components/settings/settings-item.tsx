@@ -13,24 +13,10 @@ interface SettingsItemProps {
 export default function SettingsItem({ item, apiPath, label, description }: SettingsItemProps) {
   const router = useRouter();
 
-  async function handleToggle() {
-    const res = await fetch(`/api/${apiPath}/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: !item.enabled }),
-    });
-    if (res.ok) router.refresh();
+  async function call(init: RequestInit, successMsg?: string) {
+    const res = await fetch(`/api/${apiPath}/${item.id}`, init);
+    if (res.ok) { if (successMsg) toast.success(successMsg); router.refresh(); }
     else toast.error("failed to update");
-  }
-
-  async function handleDelete() {
-    const res = await fetch(`/api/${apiPath}/${item.id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success("deleted");
-      router.refresh();
-    } else {
-      toast.error("failed to delete");
-    }
   }
 
   return (
@@ -45,14 +31,14 @@ export default function SettingsItem({ item, apiPath, label, description }: Sett
       <div className="flex gap-1.5 shrink-0">
         <button
           type="button"
-          onClick={handleToggle}
+          onClick={() => call({ method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !item.enabled }) })}
           className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors"
         >
           {item.enabled ? "disable" : "enable"}
         </button>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => call({ method: "DELETE" }, "deleted")}
           className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           delete

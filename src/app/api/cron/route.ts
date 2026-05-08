@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       .from(userNotifications)
       .where(eq(userNotifications.enabled, true));
 
-    const userIds = [...new Set(rows.map((u) => u.userId as string))];
+    const userIds = [...new Set(rows.map((u) => u.userId))];
     let total = 0;
     let high = 0;
 

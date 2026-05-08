@@ -1,6 +1,5 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import type { GitHubSourceConfig } from "@/db/schema";
 import {
   feedbackAnalyses,
   feedbackItems,
@@ -18,15 +17,10 @@ import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
 import { getDateNHoursAgo } from "@/lib/utils";
+import type { LLMProvider } from "@/lib/types";
 import { fetchGithubIssues } from "./github-service";
 
-type LLMOpts =
-  | { provider: "google" | "openai" | "anthropic"; model?: string; apiKey?: string }
-  | undefined;
-
-function isGitHubConfig(config: GitHubSourceConfig): config is GitHubSourceConfig {
-  return "repo" in config && typeof config.repo === "string";
-}
+type LLMOpts = { provider: LLMProvider; model?: string; apiKey?: string } | undefined;
 
 export async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   const [s] = await db
@@ -41,7 +35,7 @@ export async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   if (!s) return undefined;
   const apiKey = s.apiKeyCipher ? decrypt(s.apiKeyCipher) : undefined;
   return {
-    provider: s.provider as "google" | "openai" | "anthropic",
+    provider: s.provider as LLMProvider,
     ...(s.model && { model: s.model }),
     ...(apiKey && { apiKey }),
   };
@@ -74,12 +68,9 @@ export async function analyzeAndStore(
   items: { id: string; rawContent: string }[],
   userId: string,
   llmOpts: LLMOpts,
-  onProgress?: (current: number, total: number, summary: string) => void,
 ): Promise<number> {
   let count = 0;
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (!item) continue;
+  for (const item of items) {
     try {
       const a = await analyzeFeedback(item.rawContent, 2, llmOpts);
       const analysisData = {
@@ -93,12 +84,10 @@ export async function analyzeAndStore(
         .values({ userId, feedbackItemId: item.id, ...analysisData })
         .onConflictDoUpdate({ target: feedbackAnalyses.feedbackItemId, set: analysisData });
       count++;
-      onProgress?.(i + 1, items.length, a.summary);
       if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
         await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
     } catch (err) {
       console.error(`[Ingest] Failed to analyze ${item.id}:`, String(err));
-      onProgress?.(i + 1, items.length, `Failed: ${String(err)}`);
     }
   }
   return count;
@@ -124,11 +113,6 @@ export async function runIngest(): Promise<{
 
   for (const src of sources) {
     if (src.type !== "github") continue;
-
-    if (!isGitHubConfig(src.config)) {
-      console.warn(`Invalid GitHub config for source ${src.id}`);
-      continue;
-    }
 
     const repo = src.config.repo;
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
