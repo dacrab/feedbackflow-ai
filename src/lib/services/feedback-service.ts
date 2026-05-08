@@ -4,16 +4,11 @@ import { and, asc, desc, eq, gte, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT } from "@/lib/constants";
-import type { FeedbackItem, FeedbackStatus, Sentiment } from "@/lib/types";
+import type { FeedbackItemWithAnalysis, FeedbackStatus, Sentiment } from "@/lib/types";
 
 function parseTopics(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((t): t is string => typeof t === "string");
-}
-
-function parseStatus(raw: unknown): FeedbackStatus {
-  if (raw === "New" || raw === "Acknowledged" || raw === "Actioned") return raw;
-  return "New";
 }
 
 const feedbackSelect = {
@@ -30,8 +25,8 @@ const feedbackSelect = {
 } as const;
 
 type FeedbackFilters = {
-  sentiment?: string;
-  status?: string;
+  sentiment?: Sentiment;
+  status?: FeedbackStatus;
   topic?: string;
   q?: string;
   severityMin?: number;
@@ -39,18 +34,20 @@ type FeedbackFilters = {
   sort?: "created_desc" | "severity_desc" | "severity_asc";
 };
 
-function transformFeedbackRow(row: {
+type FeedbackRow = {
   id: string;
   source: string;
   raw_content: string;
   original_timestamp: Date;
   created_at: Date;
-  sentiment: string | null;
+  sentiment: Sentiment | null;
   topics: unknown;
   severity_score: number | null;
   summary: string | null;
-  status: string | null;
-}): FeedbackItem {
+  status: FeedbackStatus | null;
+};
+
+function transformFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
   return {
     id: row.id,
     source: row.source,
@@ -59,11 +56,11 @@ function transformFeedbackRow(row: {
     created_at: row.created_at.toISOString(),
     feedback_analyses: row.sentiment
       ? {
-          sentiment: row.sentiment as Sentiment,
+          sentiment: row.sentiment,
           topics: parseTopics(row.topics),
           severity_score: row.severity_score ?? 0,
           summary: row.summary ?? "",
-          status: parseStatus(row.status),
+          status: row.status ?? "New",
         }
       : null,
   };
@@ -72,7 +69,7 @@ function transformFeedbackRow(row: {
 export async function getFeedbackItems(
   userId: string,
   options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
-): Promise<Array<FeedbackItem>> {
+): Promise<Array<FeedbackItemWithAnalysis>> {
   const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
 
   const conditions = [eq(feedbackItems.userId, userId)];
@@ -120,7 +117,10 @@ export async function getFeedbackItems(
   return rows.map(transformFeedbackRow);
 }
 
-export async function getFeedbackItem(userId: string, itemId: string): Promise<FeedbackItem> {
+export async function getFeedbackItem(
+  userId: string,
+  itemId: string,
+): Promise<FeedbackItemWithAnalysis> {
   const [row] = await db
     .select(feedbackSelect)
     .from(feedbackItems)

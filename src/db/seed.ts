@@ -1,6 +1,12 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { analysisStatusEnum, feedbackAnalyses, feedbackItems, sentimentEnum, user } from "@/db/schema";
+import {
+  analysisStatusEnum,
+  feedbackAnalyses,
+  feedbackItems,
+  sentimentEnum,
+  user,
+} from "@/db/schema";
 
 async function main() {
   const url = process.env["DATABASE_URL"];

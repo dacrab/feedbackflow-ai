@@ -28,7 +28,7 @@ export async function getUserSettings(
 
 export async function getUserSources(
   userId: string,
-): Promise<Array<{ id: string; type: string; config: GitHubSourceConfig; enabled: boolean }>> {
+): Promise<Array<{ id: string; type: "github"; config: GitHubSourceConfig; enabled: boolean }>> {
   return db
     .select({
       id: userSources.id,
@@ -43,7 +43,9 @@ export async function getUserSources(
 
 export async function getUserNotifications(
   userId: string,
-): Promise<Array<{ id: string; type: string; config: SlackNotificationConfig; enabled: boolean }>> {
+): Promise<
+  Array<{ id: string; type: "slack"; config: SlackNotificationConfig; enabled: boolean }>
+> {
   return db
     .select({
       id: userNotifications.id,

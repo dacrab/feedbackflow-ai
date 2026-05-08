@@ -2,6 +2,7 @@
 
 import { IconBrandGithub } from "@tabler/icons-react";
 import { createAuthClient } from "better-auth/react";
+
 const { signIn } = createAuthClient();
 
 export function OAuthButtons() {

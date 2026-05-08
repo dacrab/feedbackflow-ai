@@ -3,13 +3,13 @@ import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
+import type { LLMProvider } from "@/lib/types";
 import {
   LLM_MAX_RETRIES,
   LLM_MAX_TOPICS,
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "./constants";
-import type { LLMProvider } from "@/lib/types";
 import { withRetry } from "./retry";
 
 const AnalysisSchema = z.object({

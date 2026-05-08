@@ -3,12 +3,12 @@ import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
 import { SystemHealthCard } from "@/components/settings/system-health-card";
+import { getServerSession } from "@/lib/api";
 import {
   getUserNotifications,
   getUserSettings,
   getUserSources,
 } from "@/lib/services/settings-service";
-import { getServerSession } from "@/lib/api";
 
 export default async function SettingsPage() {
   const session = await getServerSession();
