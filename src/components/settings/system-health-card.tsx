@@ -4,17 +4,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/ui/ui";
 
-interface SystemHealthCardProps {
-  enabledSources: number;
-  totalSources: number;
-  enabledHooks: number;
-}
-
 export function SystemHealthCard({
   enabledSources,
   totalSources,
   enabledHooks,
-}: SystemHealthCardProps) {
+}: {
+  enabledSources: number;
+  totalSources: number;
+  enabledHooks: number;
+}) {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
 
