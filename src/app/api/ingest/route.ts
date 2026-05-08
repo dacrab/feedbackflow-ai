@@ -7,7 +7,10 @@ async function handle(req: Request) {
   try {
     return NextResponse.json(await runIngest());
   } catch (e: unknown) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500 },
+    );
   }
 }
 

@@ -16,8 +16,8 @@ import {
 import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
+import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { getDateNHoursAgo } from "@/lib/utils";
-import type { LLMProvider } from "@/lib/types";
 import { fetchGithubIssues } from "./github-service";
 
 type LLMOpts = { provider: LLMProvider; model?: string; apiKey?: string } | undefined;
@@ -33,9 +33,10 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
     .where(eq(userSettings.userId, userId))
     .limit(1);
   if (!s) return undefined;
+  if (!isLLMProvider(s.provider)) return undefined;
   const apiKey = s.apiKeyCipher ? decrypt(s.apiKeyCipher) : undefined;
   return {
-    provider: s.provider as LLMProvider,
+    provider: s.provider,
     ...(s.model && { model: s.model }),
     ...(apiKey && { apiKey }),
   };

@@ -3,7 +3,7 @@ import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
 import { HIGH_SEVERITY_THRESHOLD } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
-import type { FeedbackAnalysis } from "@/lib/types";
+import type { FeedbackAnalysisData } from "@/lib/types";
 import { notifySlack } from "@/lib/utils";
 
 async function getUserSlackWebhooks(userId: string): Promise<string[]> {
@@ -14,11 +14,18 @@ async function getUserSlackWebhooks(userId: string): Promise<string[]> {
 
   return hooks.flatMap((h) => {
     if (!h.secretCipher) return [];
-    try { return [decrypt(h.secretCipher)]; } catch { return []; }
+    try {
+      return [decrypt(h.secretCipher)];
+    } catch {
+      return [];
+    }
   });
 }
 
-export async function notifyHighSeverityFeedback(userId: string, analysis: FeedbackAnalysis): Promise<void> {
+export async function notifyHighSeverityFeedback(
+  userId: string,
+  analysis: FeedbackAnalysisData,
+): Promise<void> {
   if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) return;
   const message = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
   const webhooks = await getUserSlackWebhooks(userId);

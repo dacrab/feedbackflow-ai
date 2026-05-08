@@ -7,7 +7,9 @@ export async function GET() {
   try {
     await requireAuth();
   } catch (err) {
-    return err instanceof Response ? err : new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    return err instanceof Response
+      ? err
+      : new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   const encoder = new TextEncoder();
@@ -19,7 +21,12 @@ export async function GET() {
       try {
         ctrl.enqueue(send("fetching", "Starting ingest..."));
         const { fetched, inserted, analyzed } = await runIngest();
-        ctrl.enqueue(send("complete", `Done! Fetched: ${fetched}, Inserted: ${inserted}, Analyzed: ${analyzed}`));
+        ctrl.enqueue(
+          send(
+            "complete",
+            `Done! Fetched: ${fetched}, Inserted: ${inserted}, Analyzed: ${analyzed}`,
+          ),
+        );
       } catch (err) {
         ctrl.enqueue(send("error", err instanceof Error ? err.message : "Unknown error"));
       } finally {

@@ -7,5 +7,4 @@ async function handle(req: Request) {
   return NextResponse.redirect(new URL("/login", req.url));
 }
 
-export const POST = handle;
-export const GET = handle;
+export { handle as GET, handle as POST };

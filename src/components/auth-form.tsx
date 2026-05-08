@@ -1,12 +1,13 @@
 "use client";
 
+import { createAuthClient } from "better-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
 import { Button, Input } from "@/components/ui/ui";
-import { createAuthClient } from "better-auth/react";
+
 const { signIn, signUp } = createAuthClient();
 
 type Mode = "login" | "signup";

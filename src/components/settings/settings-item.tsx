@@ -19,7 +19,9 @@ export default function SettingsItem({ item, apiPath, label, description }: Sett
       try {
         if (apiPath === "sources") await updateSource(item.id, { enabled: !item.enabled });
         else await updateNotification(item.id, { enabled: !item.enabled });
-      } catch { toast.error("failed to update"); }
+      } catch {
+        toast.error("failed to update");
+      }
     });
   }
 
@@ -29,7 +31,9 @@ export default function SettingsItem({ item, apiPath, label, description }: Sett
         if (apiPath === "sources") await deleteSource(item.id);
         else await deleteNotification(item.id);
         toast.success("deleted");
-      } catch { toast.error("failed to delete"); }
+      } catch {
+        toast.error("failed to delete");
+      }
     });
   }
 
@@ -43,10 +47,20 @@ export default function SettingsItem({ item, apiPath, label, description }: Sett
         </span>
       </div>
       <div className="flex gap-1.5 shrink-0">
-        <button type="button" onClick={toggle} disabled={pending} className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50">
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={pending}
+          className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
+        >
           {item.enabled ? "disable" : "enable"}
         </button>
-        <button type="button" onClick={remove} disabled={pending} className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50">
+        <button
+          type="button"
+          onClick={remove}
+          disabled={pending}
+          className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+        >
           delete
         </button>
       </div>

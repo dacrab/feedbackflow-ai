@@ -59,7 +59,9 @@ export function Button({
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading ? (loadingText ?? <IconLoader2 className="h-4 w-4 animate-spin mx-auto" />) : children}
+      {isLoading
+        ? (loadingText ?? <IconLoader2 className="h-4 w-4 animate-spin mx-auto" />)
+        : children}
     </button>
   );
 }

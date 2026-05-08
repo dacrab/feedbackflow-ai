@@ -1,13 +1,20 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import SettingsItem from "@/components/settings/settings-item";
 import { Button, Card, Input } from "@/components/ui/ui";
+import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification } from "@/lib/actions";
-import type { TransformedRow } from "@/lib/types";
 
-export function NotificationsCard({ hooks }: { hooks: TransformedRow[] }) {
+type NotificationRow = {
+  id: string;
+  type: "slack";
+  config: SlackNotificationConfig;
+  enabled: boolean;
+};
+
+export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -27,8 +34,20 @@ export function NotificationsCard({ hooks }: { hooks: TransformedRow[] }) {
   return (
     <Card title="notifications">
       <form onSubmit={onSubmit} className="space-y-2">
-        <Input variant="sm" placeholder="slack webhook url" value={slackUrl} onChange={(e) => setSlackUrl(e.target.value)} />
-        <Button type="submit" size="sm" isLoading={pending} loadingText="adding..." disabled={!slackUrl} className="w-full">
+        <Input
+          variant="sm"
+          placeholder="slack webhook url"
+          value={slackUrl}
+          onChange={(e) => setSlackUrl(e.target.value)}
+        />
+        <Button
+          type="submit"
+          size="sm"
+          isLoading={pending}
+          loadingText="adding..."
+          disabled={!slackUrl}
+          className="w-full"
+        >
           add webhook
         </Button>
       </form>

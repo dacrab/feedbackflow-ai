@@ -4,11 +4,12 @@ import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_DASHBOARD_LIMIT, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+import type { Sentiment } from "@/lib/types";
 
 interface DashboardData {
-  countsBySentiment: Record<string, number>;
+  countsBySentiment: Partial<Record<Sentiment, number>>;
   topicCounts: Record<string, number>;
-  severityHist: Record<string, number>;
+  severityHist: Record<number, number>;
   trendByDay: Record<string, number>;
 }
 
@@ -47,9 +48,9 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     .orderBy(desc(feedbackItems.createdAt))
     .limit(DEFAULT_DASHBOARD_LIMIT);
 
-  const countsBySentiment: Record<string, number> = {};
+  const countsBySentiment: Partial<Record<Sentiment, number>> = {};
   const topicCounts: Record<string, number> = {};
-  const severityHist: Record<string, number> = {};
+  const severityHist: Record<number, number> = {};
   const trendByDay: Record<string, number> = {};
 
   for (const row of rows) {
@@ -108,7 +109,9 @@ function computeMetrics(data: DashboardData): ComputedMetrics {
   };
 }
 
-export async function getDashboard(userId: string): Promise<ComputedMetrics & { severityHist: Record<string, number> }> {
+export async function getDashboard(
+  userId: string,
+): Promise<ComputedMetrics & { severityHist: Record<number, number> }> {
   const data = await getDashboardData(userId);
   return { ...computeMetrics(data), severityHist: data.severityHist };
 }

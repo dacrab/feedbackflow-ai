@@ -2,9 +2,10 @@ import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
+import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
-import { getServerSession } from "@/lib/api";
+import type { FeedbackStatus, Sentiment } from "@/lib/types";
 import { formatDateUTC } from "@/lib/utils";
 
 export default async function InboxPage({
@@ -18,11 +19,11 @@ export default async function InboxPage({
 
   const spObj = await searchParams;
   const sp = new URLSearchParams(
-    Object.entries(spObj).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : []))
+    Object.entries(spObj).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : [])),
   );
 
-  const sentiment = sp.get("sentiment") || undefined;
-  const status = sp.get("status") || undefined;
+  const sentiment = (sp.get("sentiment") as Sentiment | undefined) || undefined;
+  const status = (sp.get("status") as FeedbackStatus | undefined) || undefined;
   const topic = sp.get("topic") || undefined;
   const q = sp.get("q") || undefined;
 
