@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "@/components/charts";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getDashboard } from "@/lib/dashboard";
-import { getServerSession } from "@/lib/session";
+import { getServerSession } from "@/lib/api";
 
 export default async function DashboardPage() {
   const session = await getServerSession();

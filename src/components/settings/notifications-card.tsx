@@ -2,10 +2,8 @@
 
 import { useTransition, useState } from "react";
 import { toast } from "sonner";
-import { SettingsList } from "@/components/settings/settings-list";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import SettingsItem from "@/components/settings/settings-item";
+import { Button, Card, Input } from "@/components/ui/ui";
 import { addNotification } from "@/lib/actions";
 import type { TransformedRow } from "@/lib/types";
 
@@ -35,7 +33,13 @@ export function NotificationsCard({ hooks }: { hooks: TransformedRow[] }) {
         </Button>
       </form>
       <div className="space-y-2 border-t border-border pt-4">
-        <SettingsList items={hooks} apiPath="notifications" getLabel={(h) => h.type} />
+        {hooks.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">no webhooks</p>
+        ) : (
+          hooks.map((h) => (
+            <SettingsItem key={h.id} item={h} apiPath="notifications" label={h.type} />
+          ))
+        )}
       </div>
     </Card>
   );

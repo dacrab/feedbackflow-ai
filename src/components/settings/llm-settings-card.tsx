@@ -2,8 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button, Input } from "@/components/ui/ui";
 import { saveSettings } from "@/lib/actions";
 import type { LLMProvider } from "@/lib/types";
 

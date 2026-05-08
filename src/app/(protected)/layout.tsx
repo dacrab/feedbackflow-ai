@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { Sidebar } from "@/components/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getServerSession } from "@/lib/session";
+import { getServerSession } from "@/lib/api";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();

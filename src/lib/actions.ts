@@ -7,7 +7,7 @@ import type { NewUserNotification, NewUserSource } from "@/db/schema";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
 import { runIngest } from "@/lib/services/ingest-service";
-import { getServerSession } from "@/lib/session";
+import { getServerSession } from "@/lib/api";
 import type { FeedbackStatus, LLMProvider } from "@/lib/types";
 
 async function getUser() {

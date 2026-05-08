@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { signIn, signUp } from "@/lib/auth-client";
+import { Button, Input } from "@/components/ui/ui";
+import { createAuthClient } from "better-auth/react";
+const { signIn, signUp } = createAuthClient();
 
 type Mode = "login" | "signup";
 

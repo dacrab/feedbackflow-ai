@@ -1,8 +1,12 @@
 import "server-only";
 
+import { headers } from "next/headers";
+import { cache } from "react";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { timingSafeEqual } from "@/lib/crypto";
-import { getServerSession } from "@/lib/session";
+
+export const getServerSession = cache(async () => auth.api.getSession({ headers: await headers() }));
 
 type AuthUser = { id: string; email: string | null };
 
