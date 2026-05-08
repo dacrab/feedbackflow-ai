@@ -1,67 +1,41 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useTransition, useState } from "react";
+import { toast } from "sonner";
 import { SettingsList } from "@/components/settings/settings-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useApiMutation } from "@/hooks";
+import { addNotification } from "@/lib/actions";
 import type { TransformedRow } from "@/lib/types";
 
-interface NotificationsCardProps {
-  hooks: Array<TransformedRow>;
-}
-
-export function NotificationsCard({ hooks }: NotificationsCardProps) {
-  const router = useRouter();
+export function NotificationsCard({ hooks }: { hooks: TransformedRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
+  const [pending, startTransition] = useTransition();
 
-  const { mutate: createNotification, isLoading } = useApiMutation({
-    successMessage: "webhook added",
-    errorMessage: "failed to add webhook",
-    onSuccess: () => {
-      setSlackUrl("");
-      router.refresh();
-    },
-  });
-
-  async function onSubmit(e: React.FormEvent) {
+  function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await createNotification("/api/notifications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "slack", webhook: slackUrl }),
+    startTransition(async () => {
+      try {
+        await addNotification(slackUrl);
+        setSlackUrl("");
+        toast.success("webhook added");
+      } catch {
+        toast.error("failed to add webhook");
+      }
     });
   }
 
   return (
     <Card title="notifications">
       <form onSubmit={onSubmit} className="space-y-2">
-        <Input
-          variant="sm"
-          placeholder="slack webhook url"
-          value={slackUrl}
-          onChange={(e) => setSlackUrl(e.target.value)}
-        />
-        <Button
-          type="submit"
-          size="sm"
-          isLoading={isLoading}
-          loadingText="adding..."
-          disabled={!slackUrl}
-          className="w-full"
-        >
+        <Input variant="sm" placeholder="slack webhook url" value={slackUrl} onChange={(e) => setSlackUrl(e.target.value)} />
+        <Button type="submit" size="sm" isLoading={pending} loadingText="adding..." disabled={!slackUrl} className="w-full">
           add webhook
         </Button>
       </form>
-
       <div className="space-y-2 border-t border-border pt-4">
-        <SettingsList
-          items={hooks}
-          apiPath="notifications"
-          getLabel={(h) => h.type}
-        />
+        <SettingsList items={hooks} apiPath="notifications" getLabel={(h) => h.type} />
       </div>
     </Card>
   );

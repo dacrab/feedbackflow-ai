@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { toast } from "sonner";
+import { deleteNotification, deleteSource, updateNotification, updateSource } from "@/lib/actions";
 
 interface SettingsItemProps {
   item: { id: string; type: string; enabled: boolean; config?: Record<string, unknown> | null };
@@ -11,12 +12,25 @@ interface SettingsItemProps {
 }
 
 export default function SettingsItem({ item, apiPath, label, description }: SettingsItemProps) {
-  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
-  async function call(init: RequestInit, successMsg?: string) {
-    const res = await fetch(`/api/${apiPath}/${item.id}`, init);
-    if (res.ok) { if (successMsg) toast.success(successMsg); router.refresh(); }
-    else toast.error("failed to update");
+  function toggle() {
+    startTransition(async () => {
+      try {
+        if (apiPath === "sources") await updateSource(item.id, { enabled: !item.enabled });
+        else await updateNotification(item.id, { enabled: !item.enabled });
+      } catch { toast.error("failed to update"); }
+    });
+  }
+
+  function remove() {
+    startTransition(async () => {
+      try {
+        if (apiPath === "sources") await deleteSource(item.id);
+        else await deleteNotification(item.id);
+        toast.success("deleted");
+      } catch { toast.error("failed to delete"); }
+    });
   }
 
   return (
@@ -29,18 +43,10 @@ export default function SettingsItem({ item, apiPath, label, description }: Sett
         </span>
       </div>
       <div className="flex gap-1.5 shrink-0">
-        <button
-          type="button"
-          onClick={() => call({ method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !item.enabled }) })}
-          className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors"
-        >
+        <button type="button" onClick={toggle} disabled={pending} className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50">
           {item.enabled ? "disable" : "enable"}
         </button>
-        <button
-          type="button"
-          onClick={() => call({ method: "DELETE" }, "deleted")}
-          className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
+        <button type="button" onClick={remove} disabled={pending} className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50">
           delete
         </button>
       </div>
