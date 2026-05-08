@@ -13,16 +13,14 @@ const { signIn, signUp } = createAuthClient();
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-
   const isSignup = mode === "signup";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
-
     try {
       if (isSignup) {
         const { error } = await signUp.email({
@@ -30,27 +28,24 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           password,
           name: email.split("@")[0] || "User",
         });
-        if (error) throw new Error(error.message || "failed to create account");
+        if (error) {
+          toast.error(error.message || "failed to create account");
+          return;
+        }
         toast.success("account created");
       }
-
-      const { error } = await signIn.email({
-        email: normalizedEmail,
-        password,
-      });
-
+      const { error } = await signIn.email({ email: normalizedEmail, password });
       if (error) {
         toast.error(error.message || "invalid credentials");
         return;
       }
-
       if (!isSignup) toast.success("authenticated");
       router.push("/dashboard");
       router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "something went wrong");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "something went wrong");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }
 
@@ -62,27 +57,20 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </p>
         <h1 className="text-xl font-medium">{mode}</h1>
       </div>
-
       <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="email" className="text-sm text-muted-foreground">
-            email
-          </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm text-muted-foreground">email</span>
           <Input
-            id="email"
             type="email"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="password" className="text-sm text-muted-foreground">
-            password
-          </label>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm text-muted-foreground">password</span>
           <Input
-            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -90,20 +78,18 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             minLength={isSignup ? 8 : undefined}
           />
           {isSignup && <p className="text-xs text-muted-foreground">min 8 chars</p>}
-        </div>
+        </label>
         <Button
           type="submit"
           variant="primary"
-          isLoading={isLoading}
+          isLoading={loading}
           className="w-full flex items-center justify-center"
         >
           {isSignup ? "create account →" : "sign in →"}
         </Button>
       </form>
-
       <AuthDivider />
       <OAuthButtons />
-
       <p className="text-center text-sm text-muted-foreground">
         {isSignup ? "have an account? " : "no account? "}
         <Link href={isSignup ? "/login" : "/signup"} className="text-foreground hover:underline">
