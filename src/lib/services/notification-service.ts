@@ -6,25 +6,28 @@ import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysisData } from "@/lib/types";
 import { notifySlack } from "@/lib/utils";
 
-export async function notifyHighSeverityFeedback(
-  userId: string,
-  analysis: FeedbackAnalysisData,
-): Promise<void> {
-  if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) return;
-  const message = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
-  const hooks = await db
+async function getWebhooks(userId: string): Promise<string[]> {
+  const rows = await db
     .select({ secretCipher: userNotifications.secretCipher })
     .from(userNotifications)
     .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
-  const webhooks = hooks.flatMap((h) => {
+  return rows.flatMap((h) => {
     try {
       return h.secretCipher ? [decrypt(h.secretCipher)] : [];
     } catch {
       return [];
     }
   });
-  for (const url of webhooks) await notifySlack(message, url);
-  await notifySlack(message);
+}
+
+export async function notifyHighSeverityFeedback(
+  userId: string,
+  analysis: FeedbackAnalysisData,
+): Promise<void> {
+  if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) return;
+  const msg = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
+  for (const url of await getWebhooks(userId)) await notifySlack(msg, url);
+  await notifySlack(msg);
 }
 
 export async function sendDailyDigest(
@@ -39,27 +42,14 @@ export async function sendDailyDigest(
     )
     .orderBy(desc(feedbackAnalyses.createdAt));
 
-  const highSeverity = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
-  const summaryMsg = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${highSeverity.length}.`;
+  const high = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
+  const summary = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${high.length}.`;
 
-  const hooks = await db
-    .select({ secretCipher: userNotifications.secretCipher })
-    .from(userNotifications)
-    .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
-  const webhooks = hooks.flatMap((h) => {
-    try {
-      return h.secretCipher ? [decrypt(h.secretCipher)] : [];
-    } catch {
-      return [];
-    }
-  });
-
-  for (const url of webhooks) {
-    await notifySlack(summaryMsg, url);
-    for (const item of highSeverity.slice(0, 10)) {
+  for (const url of await getWebhooks(userId)) {
+    await notifySlack(summary, url);
+    for (const item of high.slice(0, 10))
       await notifySlack(`• [sev ${item.severityScore}] ${item.summary}`, url);
-    }
   }
 
-  return { total: analyses.length, high: highSeverity.length };
+  return { total: analyses.length, high: high.length };
 }

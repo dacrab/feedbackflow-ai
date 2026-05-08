@@ -227,21 +227,3 @@ export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one }) =
     references: [feedbackItems.id],
   }),
 }));
-
-export type User = typeof user.$inferSelect;
-export type NewUser = typeof user.$inferInsert;
-
-export type FeedbackItem = typeof feedbackItems.$inferSelect;
-export type NewFeedbackItem = typeof feedbackItems.$inferInsert;
-
-export type FeedbackAnalysis = typeof feedbackAnalyses.$inferSelect;
-export type NewFeedbackAnalysis = typeof feedbackAnalyses.$inferInsert;
-
-export type UserSettings = typeof userSettings.$inferSelect;
-export type NewUserSettings = typeof userSettings.$inferInsert;
-
-export type UserSource = typeof userSources.$inferSelect;
-export type NewUserSource = typeof userSources.$inferInsert;
-
-export type UserNotification = typeof userNotifications.$inferSelect;
-export type NewUserNotification = typeof userNotifications.$inferInsert;
