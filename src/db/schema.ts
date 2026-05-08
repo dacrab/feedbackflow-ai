@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
@@ -195,35 +195,3 @@ export const userNotifications = pgTable(
   },
   (t) => [index("user_notifications_user_id_idx").on(t.userId)],
 );
-
-export const userRelations = relations(user, ({ many, one }) => ({
-  sessions: many(session),
-  accounts: many(account),
-  feedbackItems: many(feedbackItems),
-  feedbackAnalyses: many(feedbackAnalyses),
-  settings: one(userSettings),
-  sources: many(userSources),
-  notifications: many(userNotifications),
-  ingestRuns: many(ingestRuns),
-}));
-
-export const sessionRelations = relations(session, ({ one }) => ({
-  user: one(user, { fields: [session.userId], references: [user.id] }),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, { fields: [account.userId], references: [user.id] }),
-}));
-
-export const feedbackItemsRelations = relations(feedbackItems, ({ one }) => ({
-  user: one(user, { fields: [feedbackItems.userId], references: [user.id] }),
-  analysis: one(feedbackAnalyses),
-}));
-
-export const feedbackAnalysesRelations = relations(feedbackAnalyses, ({ one }) => ({
-  user: one(user, { fields: [feedbackAnalyses.userId], references: [user.id] }),
-  feedbackItem: one(feedbackItems, {
-    fields: [feedbackAnalyses.feedbackItemId],
-    references: [feedbackItems.id],
-  }),
-}));

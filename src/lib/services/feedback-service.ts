@@ -36,13 +36,13 @@ type FeedbackRow = {
   original_timestamp: Date;
   created_at: Date;
   sentiment: Sentiment | null;
-  topics: unknown;
+  topics: string[] | null;
   severity_score: number | null;
   summary: string | null;
   status: FeedbackStatus | null;
 };
 
-function transformFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
+function transform(row: FeedbackRow): FeedbackItemWithAnalysis {
   return {
     id: row.id,
     source: row.source,
@@ -52,9 +52,7 @@ function transformFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
     feedback_analyses: row.sentiment
       ? {
           sentiment: row.sentiment,
-          topics: Array.isArray(row.topics)
-            ? row.topics.filter((t): t is string => typeof t === "string")
-            : [],
+          topics: row.topics ?? [],
           severity_score: row.severity_score ?? 0,
           summary: row.summary ?? "",
           status: row.status ?? "New",
@@ -63,45 +61,39 @@ function transformFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
   };
 }
 
+function baseQuery(userId: string, filters: FeedbackFilters) {
+  const conditions = [eq(feedbackItems.userId, userId)];
+  if (filters.sentiment) conditions.push(sql`${feedbackAnalyses.sentiment} = ${filters.sentiment}`);
+  if (filters.status) conditions.push(sql`${feedbackAnalyses.status} = ${filters.status}`);
+  if (filters.severityMin !== undefined)
+    conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
+  if (filters.severityMax !== undefined)
+    conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
+  if (filters.q) {
+    const q = `%${filters.q.toLowerCase()}%`;
+    const cond = or(
+      sql`LOWER(${feedbackItems.rawContent}) LIKE ${q}`,
+      sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q}`,
+    );
+    if (cond) conditions.push(cond);
+  }
+  if (filters.topic)
+    conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
+  const orderBy =
+    filters.sort === "severity_desc"
+      ? desc(feedbackAnalyses.severityScore)
+      : filters.sort === "severity_asc"
+        ? asc(feedbackAnalyses.severityScore)
+        : desc(feedbackItems.createdAt);
+  return { conditions, orderBy };
+}
+
 export async function getFeedbackItems(
   userId: string,
   options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
-): Promise<Array<FeedbackItemWithAnalysis>> {
+): Promise<FeedbackItemWithAnalysis[]> {
   const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
-
-  const conditions = [eq(feedbackItems.userId, userId)];
-
-  if (filters.sentiment) {
-    conditions.push(sql`${feedbackAnalyses.sentiment} = ${filters.sentiment}`);
-  }
-  if (filters.status) {
-    conditions.push(sql`${feedbackAnalyses.status} = ${filters.status}`);
-  }
-  if (filters.severityMin !== undefined) {
-    conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
-  }
-  if (filters.severityMax !== undefined) {
-    conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
-  }
-  if (filters.q) {
-    const query = `%${filters.q.toLowerCase()}%`;
-    const searchCondition = or(
-      sql`LOWER(${feedbackItems.rawContent}) LIKE ${query}`,
-      sql`LOWER(${feedbackAnalyses.summary}) LIKE ${query}`,
-    );
-    if (searchCondition) conditions.push(searchCondition);
-  }
-  if (filters.topic) {
-    conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
-  }
-
-  let orderBy = desc(feedbackItems.createdAt);
-  if (filters.sort === "severity_desc") {
-    orderBy = desc(feedbackAnalyses.severityScore);
-  } else if (filters.sort === "severity_asc") {
-    orderBy = asc(feedbackAnalyses.severityScore);
-  }
-
+  const { conditions, orderBy } = baseQuery(userId, filters);
   const rows = await db
     .select(feedbackSelect)
     .from(feedbackItems)
@@ -110,8 +102,7 @@ export async function getFeedbackItems(
     .orderBy(orderBy)
     .limit(limit)
     .offset(offset);
-
-  return rows.map(transformFeedbackRow);
+  return rows.map(transform);
 }
 
 export async function getFeedbackItem(
@@ -124,8 +115,6 @@ export async function getFeedbackItem(
     .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
     .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))
     .limit(1);
-
   if (!row) throw new Error("not found");
-
-  return transformFeedbackRow(row);
+  return transform(row);
 }
