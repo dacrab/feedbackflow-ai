@@ -6,11 +6,6 @@ import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT } from "@/lib/constants";
 import type { FeedbackItemWithAnalysis, FeedbackStatus, Sentiment } from "@/lib/types";
 
-function parseTopics(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter((t): t is string => typeof t === "string");
-}
-
 const feedbackSelect = {
   id: feedbackItems.id,
   source: feedbackItems.source,
@@ -57,7 +52,9 @@ function transformFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
     feedback_analyses: row.sentiment
       ? {
           sentiment: row.sentiment,
-          topics: parseTopics(row.topics),
+          topics: Array.isArray(row.topics)
+            ? row.topics.filter((t): t is string => typeof t === "string")
+            : [],
           severity_score: row.severity_score ?? 0,
           summary: row.summary ?? "",
           status: row.status ?? "New",

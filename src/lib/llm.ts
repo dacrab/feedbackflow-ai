@@ -10,7 +10,6 @@ import {
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "./constants";
-import { withRetry } from "./retry";
 
 const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
@@ -28,31 +27,22 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
   anthropic: "claude-sonnet-4-20250514",
 } as const;
 
-type LLMOptions = {
-  provider?: LLMProvider;
-  model?: string;
-  apiKey?: string;
-};
+type LLMOptions = { provider?: LLMProvider; model?: string; apiKey?: string };
 
 function getModel(opts?: LLMOptions) {
   const provider = opts?.provider ?? "google";
   const modelName = opts?.model ?? DEFAULT_MODELS[provider];
-
   if (provider === "openai") {
     const apiKey = opts?.apiKey ?? process.env["OPENAI_API_KEY"];
     if (!apiKey) throw new Error("OPENAI_API_KEY missing");
     return createOpenAI({ apiKey })(modelName);
   }
-
   if (provider === "anthropic") {
     const apiKey = opts?.apiKey ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
     return createAnthropic({ apiKey })(modelName);
   }
-
-  if (opts?.apiKey) {
-    return createGoogleGenerativeAI({ apiKey: opts.apiKey })(modelName);
-  }
+  if (opts?.apiKey) return createGoogleGenerativeAI({ apiKey: opts.apiKey })(modelName);
   return google(modelName);
 }
 
@@ -62,9 +52,9 @@ export async function analyzeFeedback(
   opts?: LLMOptions,
 ): Promise<z.infer<typeof AnalysisSchema>> {
   const model = getModel(opts);
-
-  return withRetry(
-    async () => {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
       const { object } = await generateObject({
         model,
         schema: AnalysisSchema,
@@ -77,8 +67,11 @@ export async function analyzeFeedback(
         ],
       });
       return object;
-    },
-    retries,
-    LLM_RETRY_BASE_DELAY_MS,
-  );
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries)
+        await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
