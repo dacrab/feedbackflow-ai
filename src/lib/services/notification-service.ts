@@ -34,8 +34,6 @@ export async function sendDailyDigest(
     .select({
       summary: feedbackAnalyses.summary,
       severityScore: feedbackAnalyses.severityScore,
-      sentiment: feedbackAnalyses.sentiment,
-      createdAt: feedbackAnalyses.createdAt,
     })
     .from(feedbackAnalyses)
     .where(
