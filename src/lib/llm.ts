@@ -9,6 +9,7 @@ import {
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "./constants";
+import type { LLMProvider } from "@/lib/types";
 import { withRetry } from "./retry";
 
 const AnalysisSchema = z.object({
@@ -21,14 +22,14 @@ const AnalysisSchema = z.object({
 const SYSTEM_PROMPT = `You are a feedback analysis expert. Analyze user feedback and classify it accurately.
 Focus on identifying the core issue, sentiment, and business impact.`;
 
-const DEFAULT_MODELS = {
+const DEFAULT_MODELS: Record<LLMProvider, string> = {
   google: "gemini-2.5-flash",
   openai: "gpt-4o-mini",
   anthropic: "claude-sonnet-4-20250514",
 } as const;
 
 type LLMOptions = {
-  provider?: "google" | "openai" | "anthropic";
+  provider?: LLMProvider;
   model?: string;
   apiKey?: string;
 };

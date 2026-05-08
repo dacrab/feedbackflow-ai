@@ -22,7 +22,7 @@ import { fetchGithubIssues } from "./github-service";
 
 type LLMOpts = { provider: LLMProvider; model?: string; apiKey?: string } | undefined;
 
-export async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
+async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   const [s] = await db
     .select({
       provider: userSettings.provider,
@@ -52,7 +52,7 @@ export async function getLatestTimestamp(userId: string): Promise<string> {
   return new Date(row.ts).toISOString();
 }
 
-export async function getUnanalyzedItems(
+async function getUnanalyzedItems(
   userId: string,
   limit = DEFAULT_ANALYSIS_BATCH_SIZE,
 ): Promise<Array<{ id: string; rawContent: string }>> {
