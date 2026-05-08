@@ -2,6 +2,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SentimentBadge } from "@/components/ui/badges";
+import { Card } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
@@ -11,13 +12,10 @@ import StatusChanger from "./status-changer";
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession();
   if (!session?.user?.id) redirect("/login");
-  const userId = session.user.id;
   const { id } = await params;
 
-  const item = await getFeedbackItem(userId, id);
-  const analysis = item.feedback_analyses;
-  const topics = analysis?.topics ?? [];
-  const severity = analysis?.severity_score;
+  const item = await getFeedbackItem(session.user.id, id);
+  const a = item.feedback_analyses;
 
   return (
     <div className="space-y-4">
@@ -31,76 +29,67 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded border border-border bg-card p-4">
+          <Card title="summary">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">// summary</p>
-                <h1 className="text-lg font-medium mt-1">{analysis?.summary || "no summary"}</h1>
-              </div>
-              <StatusChanger id={item.id} initial={analysis?.status || "New"} />
+              <h1 className="text-lg font-medium">{a?.summary || "no summary"}</h1>
+              <StatusChanger id={item.id} initial={a?.status ?? "New"} />
             </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="text-muted-foreground" suppressHydrationWarning>
                 {formatDateUTC(item.created_at)}
               </span>
-              <SentimentBadge sentiment={analysis?.sentiment} />
-              {severity && (
+              <SentimentBadge sentiment={a?.sentiment} />
+              {a?.severity_score && (
                 <span
-                  className={`text-xs ${severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground"}`}
+                  className={`text-xs ${a.severity_score >= 4 ? "text-red-500" : a.severity_score >= 3 ? "text-orange-500" : "text-muted-foreground"}`}
                 >
-                  severity: {severity}/{MAX_SEVERITY}
+                  severity: {a.severity_score}/{MAX_SEVERITY}
                 </span>
               )}
             </div>
-
-            {topics.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {topics.map((topic) => (
-                  <span key={topic} className="px-2 py-0.5 rounded bg-muted text-xs">
-                    {topic}
+            {(a?.topics?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {a!.topics.map((t) => (
+                  <span key={t} className="px-2 py-0.5 rounded bg-muted text-xs">
+                    {t}
                   </span>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded border border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground mb-3">// raw content</p>
+          <Card title="raw content">
             <pre className="whitespace-pre-wrap bg-muted rounded p-3 text-sm overflow-auto max-h-80">
               {item.raw_content || "no content"}
             </pre>
-          </div>
+          </Card>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded border border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground mb-3">// analysis</p>
-            <dl className="space-y-3 text-sm">
-              <div>
-                <dt className="text-muted-foreground text-xs">sentiment</dt>
-                <dd className="mt-0.5">
-                  {analysis?.sentiment ? (
-                    <SentimentBadge sentiment={analysis.sentiment} />
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">severity</dt>
-                <dd className="mt-0.5 text-xl font-medium">
-                  {severity ?? "—"}
-                  <span className="text-sm font-normal text-muted-foreground">/{MAX_SEVERITY}</span>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">source</dt>
-                <dd className="mt-0.5">{item.source}</dd>
-              </div>
-            </dl>
-          </div>
-        </div>
+        <Card title="analysis">
+          <dl className="space-y-3 text-sm">
+            <div>
+              <dt className="text-muted-foreground text-xs">sentiment</dt>
+              <dd className="mt-0.5">
+                {a?.sentiment ? (
+                  <SentimentBadge sentiment={a.sentiment} />
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground text-xs">severity</dt>
+              <dd className="mt-0.5 text-xl font-medium">
+                {a?.severity_score ?? "—"}
+                <span className="text-sm font-normal text-muted-foreground">/{MAX_SEVERITY}</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground text-xs">source</dt>
+              <dd className="mt-0.5">{item.source}</dd>
+            </div>
+          </dl>
+        </Card>
       </div>
     </div>
   );

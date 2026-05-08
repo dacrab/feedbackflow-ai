@@ -2,6 +2,8 @@ import { IconArrowRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SentimentBadge } from "@/components/ui/badges";
+import type { Sentiment } from "@/lib/types";
 
 export default function LandingPage() {
   return (
@@ -138,16 +140,10 @@ function AnalysisItem({
 }: {
   id: string;
   title: string;
-  sentiment: "positive" | "neutral" | "negative";
+  sentiment: Sentiment;
   severity: number;
   topics: string[];
 }) {
-  const sentimentColor = {
-    positive: "text-green-500",
-    neutral: "text-muted-foreground",
-    negative: "text-red-500",
-  }[sentiment];
-
   return (
     <div className="space-y-1">
       <div>
@@ -155,7 +151,7 @@ function AnalysisItem({
         <span className="text-foreground">{title}</span>
       </div>
       <div className="flex gap-4 text-xs">
-        <span className={sentimentColor}>{sentiment}</span>
+        <SentimentBadge sentiment={sentiment} />
         <span>severity: {severity}/5</span>
         <span className="text-muted-foreground">[{topics.join(", ")}]</span>
       </div>
