@@ -1,9 +1,9 @@
 import "server-only";
 
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, count, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
-import { DEFAULT_DASHBOARD_LIMIT, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import type { Sentiment } from "@/lib/types";
 
 export interface ComputedMetrics {
@@ -25,59 +25,88 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export async function getDashboard(
   userId: string,
 ): Promise<ComputedMetrics & { severityHist: Record<number, number> }> {
-  const rows = await db
-    .select({
-      sentiment: feedbackAnalyses.sentiment,
-      topics: feedbackAnalyses.topics,
-      severityScore: feedbackAnalyses.severityScore,
-      createdAt: feedbackItems.createdAt,
-    })
-    .from(feedbackItems)
-    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(
-      and(
-        eq(feedbackItems.userId, userId),
-        gte(feedbackItems.createdAt, new Date(Date.now() - THIRTY_DAYS_MS)),
-      ),
-    )
-    .orderBy(desc(feedbackItems.createdAt))
-    .limit(DEFAULT_DASHBOARD_LIMIT);
+  const since = new Date(Date.now() - THIRTY_DAYS_MS);
+  const base = and(eq(feedbackItems.userId, userId), gte(feedbackItems.createdAt, since));
+
+  const [sentimentRows, severityRows, trendRows, topicRows] = await Promise.all([
+    // sentiment counts + high severity + avg severity in one pass
+    db
+      .select({
+        sentiment: feedbackAnalyses.sentiment,
+        cnt: count(),
+        highCnt: sql<number>`COUNT(*) FILTER (WHERE ${feedbackAnalyses.severityScore} >= ${HIGH_SEVERITY_THRESHOLD})`,
+        avgSev: sql<number>`AVG(${feedbackAnalyses.severityScore})`,
+      })
+      .from(feedbackItems)
+      .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(base)
+      .groupBy(feedbackAnalyses.sentiment),
+
+    // severity histogram
+    db
+      .select({
+        score: feedbackAnalyses.severityScore,
+        cnt: count(),
+      })
+      .from(feedbackItems)
+      .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(base)
+      .groupBy(feedbackAnalyses.severityScore),
+
+    // daily trend
+    db
+      .select({
+        day: sql<string>`DATE(${feedbackItems.createdAt})`,
+        cnt: count(),
+      })
+      .from(feedbackItems)
+      .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(base)
+      .groupBy(sql`DATE(${feedbackItems.createdAt})`)
+      .orderBy(sql`DATE(${feedbackItems.createdAt})`),
+
+    // top topics via unnest
+    db.execute(sql`
+      SELECT t.topic, COUNT(*) AS cnt
+      FROM feedback_items fi
+      INNER JOIN feedback_analyses fa ON fa.feedback_item_id = fi.id
+      CROSS JOIN LATERAL jsonb_array_elements_text(fa.topics) AS t(topic)
+      WHERE fi.user_id = ${userId}
+        AND fi.created_at >= ${since}
+      GROUP BY t.topic
+      ORDER BY cnt DESC
+      LIMIT 10
+    `),
+  ]);
 
   const countsBySentiment: Partial<Record<Sentiment, number>> = {};
-  const topicCounts: Record<string, number> = {};
-  const severityHist: Record<number, number> = {};
-  const trendByDay: Record<string, number> = {};
+  let highSeverity = 0;
+  let totalAvgSum = 0;
+  let total = 0;
 
-  for (const row of rows) {
-    countsBySentiment[row.sentiment] = (countsBySentiment[row.sentiment] ?? 0) + 1;
-    for (const topic of row.topics ?? []) topicCounts[topic] = (topicCounts[topic] ?? 0) + 1;
-    severityHist[row.severityScore] = (severityHist[row.severityScore] ?? 0) + 1;
-    const day = row.createdAt.toISOString().slice(0, 10);
-    trendByDay[day] = (trendByDay[day] ?? 0) + 1;
+  for (const r of sentimentRows) {
+    const c = Number(r.cnt);
+    countsBySentiment[r.sentiment as Sentiment] = c;
+    total += c;
+    highSeverity += Number(r.highCnt);
+    totalAvgSum += Number(r.avgSev) * c;
   }
 
   const positive = countsBySentiment["positive"] ?? 0;
   const neutral = countsBySentiment["neutral"] ?? 0;
   const negative = countsBySentiment["negative"] ?? 0;
-  const total = positive + neutral + negative;
 
-  let highSeverity = 0;
-  for (let s = HIGH_SEVERITY_THRESHOLD; s <= MAX_SEVERITY; s++)
-    highSeverity += severityHist[s] ?? 0;
+  const severityHist: Record<number, number> = {};
+  for (let i = 1; i <= MAX_SEVERITY; i++) severityHist[i] = 0;
+  for (const r of severityRows) severityHist[r.score] = Number(r.cnt);
 
-  const avgSeverity = total
-    ? (
-        Object.entries(severityHist).reduce((acc, [s, v]) => acc + Number(s) * (v ?? 0), 0) / total
-      ).toFixed(1)
-    : "0.0";
+  const trendLabels = trendRows.map((r) => r.day);
+  const trendValues = trendRows.map((r) => Number(r.cnt));
 
-  const trendLabels = Object.keys(trendByDay).sort();
-  const trendValues = trendLabels.map((d) => trendByDay[d] ?? 0);
-
-  const topTopics = Object.entries(topicCounts)
-    .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-    .slice(0, 3)
-    .map(([topic, value]) => ({ topic, value }));
+  const topTopics = (topicRows.rows as { topic: string; cnt: string }[]).map((r) => ({
+    topic: r.topic,
+    value: Number(r.cnt),
+  }));
 
   return {
     total,
@@ -86,7 +115,7 @@ export async function getDashboard(
     negative,
     positiveShare: total ? Math.round((positive / total) * 100) : 0,
     highSeverity,
-    avgSeverity,
+    avgSeverity: total ? (totalAvgSum / total).toFixed(1) : "0.0",
     trendLabels,
     trendValues,
     trendDelta: (trendValues.at(-1) ?? 0) - (trendValues.at(-2) ?? 0),

@@ -10,15 +10,36 @@ import { Button, Input } from "@/components/ui/ui";
 
 const { signIn, signUp } = createAuthClient();
 
+function passwordStrength(p: string): { label: string; color: string } {
+  if (p.length < 8) return { label: "too short", color: "text-red-500" };
+  const score = [/[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter((r) => r.test(p)).length;
+  if (score === 0) return { label: "weak", color: "text-orange-500" };
+  if (score === 1) return { label: "fair", color: "text-yellow-500" };
+  if (score === 2) return { label: "good", color: "text-blue-500" };
+  return { label: "strong", color: "text-green-500" };
+}
+
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const isSignup = mode === "signup";
 
+  const strength = isSignup && password ? passwordStrength(password) : null;
+  const mismatch = isSignup && confirm && password !== confirm;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSignup && password !== confirm) {
+      toast.error("passwords do not match");
+      return;
+    }
+    if (isSignup && password.length < 8) {
+      toast.error("password must be at least 8 characters");
+      return;
+    }
     setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
     try {
@@ -65,6 +86,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
           />
         </label>
@@ -74,11 +96,28 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete={isSignup ? "new-password" : "current-password"}
             required
             minLength={isSignup ? 8 : undefined}
           />
-          {isSignup && <p className="text-xs text-muted-foreground">min 8 chars</p>}
+          {strength && (
+            <p className={`text-xs ${strength.color}`}>strength: {strength.label}</p>
+          )}
         </label>
+        {isSignup && (
+          <label className="block space-y-1.5">
+            <span className="text-sm text-muted-foreground">confirm password</span>
+            <Input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              autoComplete="new-password"
+              required
+              className={mismatch ? "border-red-500" : ""}
+            />
+            {mismatch && <p className="text-xs text-red-500">passwords do not match</p>}
+          </label>
+        )}
         <Button
           type="submit"
           variant="primary"

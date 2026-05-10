@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   feedbackAnalyses,
@@ -84,12 +84,17 @@ export async function runIngest(): Promise<{
 
   const totals = { fetched: 0, inserted: 0, analyzed: 0 };
 
+  const llmOptsCache = new Map<string, LLMOpts>();
+
   for (const src of sources) {
     if (src.type !== "github") continue;
 
+    if (!llmOptsCache.has(src.userId))
+      llmOptsCache.set(src.userId, await getUserLLMOpts(src.userId));
+    const llmOpts = llmOptsCache.get(src.userId);
+
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
 
-    // inline getLatestTimestamp
     const [latest] = await db
       .select({ ts: feedbackItems.originalTimestamp })
       .from(feedbackItems)
@@ -110,29 +115,11 @@ export async function runIngest(): Promise<{
       originalTimestamp: new Date(i.created_at),
     }));
 
-    let newItems: typeof rows = [];
-    if (rows.length) {
-      const existing = await db
-        .select({ externalId: feedbackItems.externalId })
-        .from(feedbackItems)
-        .where(
-          and(
-            eq(feedbackItems.userId, src.userId),
-            eq(feedbackItems.source, "github"),
-            inArray(
-              feedbackItems.externalId,
-              rows.map((r) => r.externalId),
-            ),
-          ),
-        );
-      const seen = new Set(existing.map((e) => e.externalId));
-      newItems = rows.filter((r) => !seen.has(r.externalId));
-    }
-
-    const inserted = newItems.length
+    const inserted = rows.length
       ? await db
           .insert(feedbackItems)
-          .values(newItems)
+          .values(rows)
+          .onConflictDoNothing()
           .returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
       : [];
 
@@ -141,7 +128,7 @@ export async function runIngest(): Promise<{
       .values({ userId: src.userId, fetched: issues.length })
       .returning({ id: ingestRuns.id });
 
-    // inline getUnanalyzedItems
+    const insertedIds = new Set(inserted.map((i) => i.id));
     const unanalyzed = await db
       .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
       .from(feedbackItems)
@@ -149,11 +136,12 @@ export async function runIngest(): Promise<{
       .where(and(eq(feedbackItems.userId, src.userId), isNull(feedbackAnalyses.id)))
       .limit(DEFAULT_ANALYSIS_BATCH_SIZE);
 
-    const analyzed = await analyzeAndStore(
-      [...inserted, ...unanalyzed],
-      src.userId,
-      await getUserLLMOpts(src.userId),
-    );
+    const toAnalyze = [
+      ...inserted,
+      ...unanalyzed.filter((u) => !insertedIds.has(u.id)),
+    ].slice(0, DEFAULT_ANALYSIS_BATCH_SIZE);
+
+    const analyzed = await analyzeAndStore(toAnalyze, src.userId, llmOpts);
 
     if (run?.id)
       await db

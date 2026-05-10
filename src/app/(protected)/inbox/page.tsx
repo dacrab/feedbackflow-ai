@@ -2,6 +2,7 @@ import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
+import { Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
@@ -63,27 +64,27 @@ export default async function InboxPage({
           className="flex-1 min-w-[180px] max-w-xs h-8 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
         />
 
-        <select
+        <Select
           name="sentiment"
           defaultValue={sp.get("sentiment") || ""}
-          className="h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
+          size="sm"
         >
           <option value="">all sentiment</option>
           <option value="positive">positive</option>
           <option value="neutral">neutral</option>
           <option value="negative">negative</option>
-        </select>
+        </Select>
 
-        <select
+        <Select
           name="status"
           defaultValue={sp.get("status") || ""}
-          className="h-8 px-2 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground"
+          size="sm"
         >
           <option value="">all status</option>
           <option value="New">new</option>
           <option value="Acknowledged">acknowledged</option>
           <option value="Actioned">actioned</option>
-        </select>
+        </Select>
 
         <button
           type="submit"

@@ -26,7 +26,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           <ThemeToggle />
         </header>
 
-        <div className="p-4 md:p-6 max-w-6xl">{children}</div>
+        <div className="p-4 md:p-6 w-full">{children}</div>
       </main>
     </div>
   );
