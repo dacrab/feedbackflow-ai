@@ -2,7 +2,7 @@ import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
-import { Select } from "@/components/ui/ui";
+import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
@@ -56,12 +56,13 @@ export default async function InboxPage({
       </div>
 
       <form className="flex flex-wrap items-center gap-2">
-        <input
+        <Input
           type="text"
           name="q"
           placeholder="search..."
           defaultValue={sp.get("q") || ""}
-          className="flex-1 min-w-[180px] max-w-xs h-8 px-3 rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors"
+          variant="sm"
+          className="flex-1 min-w-[180px] max-w-xs"
         />
 
         <Select

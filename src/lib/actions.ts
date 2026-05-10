@@ -16,16 +16,22 @@ async function uid() {
   return s.user.id;
 }
 
+function parse<T>(schema: z.ZodType<T>, value: unknown): T {
+  const result = schema.safeParse(value);
+  if (!result.success) throw new Error(result.error.issues[0]?.message ?? "invalid input");
+  return result.data;
+}
+
 const repoSchema = z.string().regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
 const providerSchema = z.enum(["google", "openai", "anthropic"]);
 const modelSchema = z.string().min(1).max(100);
 const apiKeySchema = z.string().min(8).max(512);
-const webhookSchema = z.string().url().startsWith("https://");
+const webhookSchema = z.string().url("must be a valid URL").startsWith("https://", "must start with https://");
 const statusSchema = z.enum(["New", "Acknowledged", "Actioned"]);
 
 export async function addSource(repo: string, token?: string) {
-  repoSchema.parse(repo);
-  if (token) z.string().min(1).max(512).parse(token);
+  parse(repoSchema, repo);
+  if (token) parse(z.string().min(1).max(512), token);
   const userId = await uid();
   await db.insert(userSources).values({
     userId,
@@ -41,9 +47,9 @@ export async function updateSource(
   id: string,
   data: { enabled?: boolean; repo?: string; token?: string },
 ) {
-  z.string().uuid().parse(id);
-  if (data.repo) repoSchema.parse(data.repo);
-  if (data.token) z.string().min(1).max(512).parse(data.token);
+  parse(z.string().uuid(), id);
+  if (data.repo) parse(repoSchema, data.repo);
+  if (data.token) parse(z.string().min(1).max(512), data.token);
   const userId = await uid();
   await db
     .update(userSources)
@@ -57,14 +63,14 @@ export async function updateSource(
 }
 
 export async function deleteSource(id: string) {
-  z.string().uuid().parse(id);
+  parse(z.string().uuid(), id);
   const userId = await uid();
   await db.delete(userSources).where(and(eq(userSources.id, id), eq(userSources.userId, userId)));
   revalidatePath("/settings");
 }
 
 export async function addNotification(webhook: string) {
-  webhookSchema.parse(webhook);
+  parse(webhookSchema, webhook);
   const userId = await uid();
   await db
     .insert(userNotifications)
@@ -76,8 +82,8 @@ export async function updateNotification(
   id: string,
   data: { enabled?: boolean; webhook?: string },
 ) {
-  z.string().uuid().parse(id);
-  if (data.webhook) webhookSchema.parse(data.webhook);
+  parse(z.string().uuid(), id);
+  if (data.webhook) parse(webhookSchema, data.webhook);
   const userId = await uid();
   await db
     .update(userNotifications)
@@ -92,7 +98,7 @@ export async function updateNotification(
 }
 
 export async function deleteNotification(id: string) {
-  z.string().uuid().parse(id);
+  parse(z.string().uuid(), id);
   const userId = await uid();
   await db
     .delete(userNotifications)
@@ -101,9 +107,9 @@ export async function deleteNotification(id: string) {
 }
 
 export async function saveSettings(provider: LLMProvider, model: string, apiKey: string) {
-  providerSchema.parse(provider);
-  modelSchema.parse(model);
-  apiKeySchema.parse(apiKey);
+  parse(providerSchema, provider);
+  parse(modelSchema, model);
+  parse(apiKeySchema, apiKey);
   const userId = await uid();
   const apiKeyCipher = encrypt(apiKey);
   await db
@@ -114,14 +120,14 @@ export async function saveSettings(provider: LLMProvider, model: string, apiKey:
 }
 
 export async function updateSettingsModel(model: string) {
-  modelSchema.parse(model);
+  parse(modelSchema, model);
   const userId = await uid();
   await db.update(userSettings).set({ model }).where(eq(userSettings.userId, userId));
   revalidatePath("/settings");
 }
 
 export async function updateSettingsKey(apiKey: string) {
-  apiKeySchema.parse(apiKey);
+  parse(apiKeySchema, apiKey);
   const userId = await uid();
   const apiKeyCipher = encrypt(apiKey);
   await db.update(userSettings).set({ apiKeyCipher }).where(eq(userSettings.userId, userId));
@@ -135,8 +141,8 @@ export async function deleteSettings() {
 }
 
 export async function updateFeedbackStatus(feedbackItemId: string, status: FeedbackStatus) {
-  z.string().uuid().parse(feedbackItemId);
-  statusSchema.parse(status);
+  parse(z.string().uuid(), feedbackItemId);
+  parse(statusSchema, status);
   const userId = await uid();
   await db
     .update(feedbackAnalyses)
