@@ -4,6 +4,11 @@ import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db/client";
 import * as schema from "@/db/schema";
 
+if (process.env.NODE_ENV === "production") {
+  if (!process.env["BETTER_AUTH_SECRET"]) throw new Error("BETTER_AUTH_SECRET required");
+  if (!process.env["BETTER_AUTH_URL"]) throw new Error("BETTER_AUTH_URL required");
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
@@ -30,7 +35,9 @@ export const auth = betterAuth({
   },
   trustedOrigins:
     process.env.NODE_ENV === "production"
-      ? [process.env["BETTER_AUTH_URL"] ?? ""]
+      ? process.env["BETTER_AUTH_URL"]
+        ? [process.env["BETTER_AUTH_URL"]]
+        : []
       : ["http://localhost:3000"],
   plugins: [nextCookies()],
 });

@@ -44,7 +44,8 @@ export async function sendDailyDigest(
           gte(feedbackAnalyses.createdAt, new Date(sinceISO)),
         ),
       )
-      .orderBy(desc(feedbackAnalyses.createdAt)),
+      .orderBy(desc(feedbackAnalyses.createdAt))
+      .limit(500),
     getWebhooks(userId),
   ]);
 
