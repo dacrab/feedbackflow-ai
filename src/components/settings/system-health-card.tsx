@@ -14,12 +14,13 @@ export function SystemHealthCard({
   enabledHooks: number;
 }) {
   const [syncing, setSyncing] = useState(false);
-  const [logs, setLogs] = useState<{ msg: string; ok?: boolean }[]>([]);
+  const [logs, setLogs] = useState<{ id: number; msg: string; ok?: boolean }[]>([]);
+  const logId = useRef(0);
   const logRef = useRef<HTMLDivElement>(null);
 
   async function runSync() {
     setSyncing(true);
-    setLogs([{ msg: "connecting..." }]);
+    setLogs([{ id: logId.current++, msg: "connecting..." }]);
 
     try {
       const response = await fetch("/api/sync");
@@ -42,7 +43,10 @@ export function SystemHealthCard({
           const data = JSON.parse(line.slice(6));
           const ok: true | false | undefined =
             data.stage === "complete" ? true : data.stage === "error" ? false : undefined;
-          setLogs((prev) => [...prev, { msg: data.message as string, ...(ok !== undefined && { ok }) }]);
+          setLogs((prev) => [
+            ...prev,
+            { id: logId.current++, msg: data.message as string, ...(ok !== undefined && { ok }) },
+          ]);
           setTimeout(() => logRef.current?.scrollTo({ top: 9999, behavior: "smooth" }), 10);
           if (data.stage === "complete") toast.success(data.message);
           else if (data.stage === "error") toast.error(data.message);
@@ -50,7 +54,7 @@ export function SystemHealthCard({
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "sync failed");
-      setLogs((prev) => [...prev, { msg: "sync failed", ok: false }]);
+      setLogs((prev) => [...prev, { id: logId.current++, msg: "sync failed", ok: false }]);
     } finally {
       setSyncing(false);
     }
@@ -88,9 +92,9 @@ export function SystemHealthCard({
           ref={logRef}
           className="max-h-32 overflow-y-auto rounded border border-border bg-muted/20 p-2 space-y-0.5"
         >
-          {logs.map((l, i) => (
+          {logs.map((l) => (
             <p
-              key={i}
+              key={l.id}
               className={`text-xs font-mono ${
                 l.ok === true
                   ? "text-green-500"

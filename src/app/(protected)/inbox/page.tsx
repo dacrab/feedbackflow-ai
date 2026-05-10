@@ -65,22 +65,14 @@ export default async function InboxPage({
           className="flex-1 min-w-[180px] max-w-xs"
         />
 
-        <Select
-          name="sentiment"
-          defaultValue={sp.get("sentiment") || ""}
-          size="sm"
-        >
+        <Select name="sentiment" defaultValue={sp.get("sentiment") || ""} size="sm">
           <option value="">all sentiment</option>
           <option value="positive">positive</option>
           <option value="neutral">neutral</option>
           <option value="negative">negative</option>
         </Select>
 
-        <Select
-          name="status"
-          defaultValue={sp.get("status") || ""}
-          size="sm"
-        >
+        <Select name="status" defaultValue={sp.get("status") || ""} size="sm">
           <option value="">all status</option>
           <option value="New">new</option>
           <option value="Acknowledged">acknowledged</option>

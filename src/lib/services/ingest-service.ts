@@ -136,10 +136,10 @@ export async function runIngest(): Promise<{
       .where(and(eq(feedbackItems.userId, src.userId), isNull(feedbackAnalyses.id)))
       .limit(DEFAULT_ANALYSIS_BATCH_SIZE);
 
-    const toAnalyze = [
-      ...inserted,
-      ...unanalyzed.filter((u) => !insertedIds.has(u.id)),
-    ].slice(0, DEFAULT_ANALYSIS_BATCH_SIZE);
+    const toAnalyze = [...inserted, ...unanalyzed.filter((u) => !insertedIds.has(u.id))].slice(
+      0,
+      DEFAULT_ANALYSIS_BATCH_SIZE,
+    );
 
     const analyzed = await analyzeAndStore(toAnalyze, src.userId, llmOpts);
 

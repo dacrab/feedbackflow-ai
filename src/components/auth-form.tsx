@@ -79,9 +79,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <h1 className="text-xl font-medium">{mode}</h1>
       </div>
       <form onSubmit={onSubmit} className="space-y-4">
-        <label className="block space-y-1.5">
+        <label className="block space-y-1.5" htmlFor="email">
           <span className="text-sm text-muted-foreground">email</span>
           <Input
+            id="email"
             type="email"
             placeholder="you@example.com"
             value={email}
@@ -90,9 +91,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             required
           />
         </label>
-        <label className="block space-y-1.5">
+        <label className="block space-y-1.5" htmlFor="password">
           <span className="text-sm text-muted-foreground">password</span>
           <Input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -100,14 +102,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             required
             minLength={isSignup ? 8 : undefined}
           />
-          {strength && (
-            <p className={`text-xs ${strength.color}`}>strength: {strength.label}</p>
-          )}
+          {strength && <p className={`text-xs ${strength.color}`}>strength: {strength.label}</p>}
         </label>
         {isSignup && (
-          <label className="block space-y-1.5">
+          <label className="block space-y-1.5" htmlFor="confirm">
             <span className="text-sm text-muted-foreground">confirm password</span>
             <Input
+              id="confirm"
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

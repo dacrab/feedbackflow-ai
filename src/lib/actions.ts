@@ -22,11 +22,16 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.data;
 }
 
-const repoSchema = z.string().regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
+const repoSchema = z
+  .string()
+  .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
 const providerSchema = z.enum(["google", "openai", "anthropic"]);
 const modelSchema = z.string().min(1).max(100);
 const apiKeySchema = z.string().min(8).max(512);
-const webhookSchema = z.string().url("must be a valid URL").startsWith("https://", "must start with https://");
+const webhookSchema = z
+  .string()
+  .url("must be a valid URL")
+  .startsWith("https://", "must start with https://");
 const statusSchema = z.enum(["New", "Acknowledged", "Actioned"]);
 
 export async function addSource(repo: string, token?: string) {
