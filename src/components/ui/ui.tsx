@@ -26,6 +26,7 @@ export function Input({
   return (
     <input
       className={`w-full rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors ${size} ${className}`}
+      aria-invalid={props["aria-invalid"] || undefined}
       {...props}
     />
   );
@@ -56,6 +57,7 @@ export function Button({
     <button
       className={`rounded text-sm transition-colors disabled:opacity-50 ${btnVariant[variant]} ${btnSize[size]} ${className}`}
       disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
       {...props}
     >
       {isLoading

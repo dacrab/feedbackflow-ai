@@ -102,6 +102,7 @@ export const feedbackItems = pgTable(
     unique("feedback_items_user_source_external_idx").on(t.userId, t.source, t.externalId),
     index("feedback_items_user_id_idx").on(t.userId),
     index("feedback_items_user_created_idx").on(t.userId, t.createdAt),
+    index("feedback_items_user_source_ts_idx").on(t.userId, t.source, t.originalTimestamp),
   ],
 );
 
@@ -128,6 +129,7 @@ export const feedbackAnalyses = pgTable(
     index("feedback_analyses_user_id_idx").on(t.userId),
     index("feedback_analyses_sentiment_idx").on(t.sentiment),
     index("feedback_analyses_severity_idx").on(t.severityScore),
+    index("feedback_analyses_user_created_idx").on(t.userId, t.createdAt),
     check("severity_score_range", sql`${t.severityScore} >= 1 AND ${t.severityScore} <= 5`),
   ],
 );

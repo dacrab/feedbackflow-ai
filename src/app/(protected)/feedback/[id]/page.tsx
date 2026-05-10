@@ -1,6 +1,6 @@
 import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SentimentBadge } from "@/components/ui/badges";
 import { Card } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
@@ -14,7 +14,8 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
   if (!session?.user?.id) redirect("/login");
   const { id } = await params;
 
-  const item = await getFeedbackItem(session.user.id, id);
+  const item = await getFeedbackItem(session.user.id, id).catch(() => null);
+  if (!item) notFound();
   const a = item.feedback_analyses;
 
   return (

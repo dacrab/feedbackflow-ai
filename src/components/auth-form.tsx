@@ -114,6 +114,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
               required
+              aria-invalid={mismatch || undefined}
               className={mismatch ? "border-red-500" : ""}
             />
             {mismatch && <p className="text-xs text-red-500">passwords do not match</p>}

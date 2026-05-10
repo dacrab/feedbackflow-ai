@@ -24,6 +24,7 @@ export function SystemHealthCard({
 
     try {
       const response = await fetch("/api/sync");
+      if (!response.ok) throw new Error("sync request failed");
       const reader = response.body?.getReader();
       if (!reader) throw new Error("no reader");
 

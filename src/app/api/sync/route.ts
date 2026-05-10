@@ -38,7 +38,8 @@ export async function GET() {
           sse("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`),
         );
       } catch (err) {
-        ctrl.enqueue(sse("error", err instanceof Error ? err.message : "sync failed"));
+        console.error("[Sync]", err);
+        ctrl.enqueue(sse("error", "sync failed"));
       } finally {
         ctrl.close();
       }

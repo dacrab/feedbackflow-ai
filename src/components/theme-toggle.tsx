@@ -17,6 +17,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(next)}
       className="h-7 w-7 rounded border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       title={mounted ? `theme: ${theme}` : "theme"}
+      aria-label={mounted ? `switch to ${next} theme` : "toggle theme"}
       suppressHydrationWarning
     >
       {mounted && theme === "dark" ? (

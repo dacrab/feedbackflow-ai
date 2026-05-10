@@ -52,6 +52,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
+              aria-label={item.label}
               className={cn(
                 "flex items-center rounded text-sm transition-colors mb-1",
                 collapsed ? "justify-center p-2" : "gap-2 px-2 py-1.5",
@@ -83,6 +84,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
           <Link
             href="/logout"
             title="logout"
+            aria-label="logout"
             className={cn(
               "rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
               collapsed ? "p-1.5" : "p-1",
@@ -102,6 +104,8 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         }}
         className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         title={collapsed ? "expand" : "collapse"}
+        aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}
+        aria-expanded={!collapsed}
       >
         <IconChevronLeft
           className={cn("h-3.5 w-3.5 transition-transform duration-200", collapsed && "rotate-180")}
