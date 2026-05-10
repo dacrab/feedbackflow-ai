@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Sliding window rate limiter — per IP, in-memory per edge instance
 const store = new Map<string, { count: number; reset: number }>();
 
 const LIMITS: Record<string, { max: number; windowMs: number }> = {
-  "/api/auth/sign-in":         { max: 10, windowMs: 60_000 },
-  "/api/auth/sign-up":         { max: 5,  windowMs: 60_000 },
-  "/api/auth/forget-password": { max: 5,  windowMs: 60_000 },
+  "/api/auth/sign-in": { max: 10, windowMs: 60_000 },
+  "/api/auth/sign-up": { max: 5, windowMs: 60_000 },
+  "/api/auth/forget-password": { max: 5, windowMs: 60_000 },
 };
 
 function getIp(req: NextRequest): string {

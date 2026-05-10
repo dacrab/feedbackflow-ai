@@ -49,7 +49,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
             </div>
             {(a?.topics?.length ?? 0) > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {a!.topics.map((t) => (
+                {a?.topics.map((t) => (
                   <span key={t} className="px-2 py-0.5 rounded bg-muted text-xs">
                     {t}
                   </span>

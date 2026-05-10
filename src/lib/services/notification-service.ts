@@ -39,7 +39,10 @@ export async function sendDailyDigest(
       .select({ summary: feedbackAnalyses.summary, severityScore: feedbackAnalyses.severityScore })
       .from(feedbackAnalyses)
       .where(
-        and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, new Date(sinceISO))),
+        and(
+          eq(feedbackAnalyses.userId, userId),
+          gte(feedbackAnalyses.createdAt, new Date(sinceISO)),
+        ),
       )
       .orderBy(desc(feedbackAnalyses.createdAt)),
     getWebhooks(userId),

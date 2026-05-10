@@ -72,7 +72,9 @@ export function Select({
   size = "default",
   children,
   ...props
-}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> & { size?: "default" | "sm" | "xs" }) {
+}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
+  size?: "default" | "sm" | "xs";
+}) {
   return (
     <div className={`relative inline-flex items-center ${className}`}>
       <select

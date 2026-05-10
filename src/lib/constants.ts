@@ -3,7 +3,6 @@ export const MAX_LLM_INPUT_LENGTH = 8000;
 
 export const DEFAULT_FEEDBACK_LIMIT = 100;
 export const DEFAULT_ANALYSIS_BATCH_SIZE = 50;
-export const DEFAULT_DASHBOARD_LIMIT = 1000;
 
 export const GITHUB_MAX_PAGES = 10;
 export const GITHUB_PER_PAGE = 100;
