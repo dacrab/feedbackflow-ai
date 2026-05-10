@@ -63,8 +63,8 @@ function transform(row: FeedbackRow): FeedbackItemWithAnalysis {
 
 function baseQuery(userId: string, filters: FeedbackFilters) {
   const conditions = [eq(feedbackItems.userId, userId)];
-  if (filters.sentiment) conditions.push(sql`${feedbackAnalyses.sentiment} = ${filters.sentiment}`);
-  if (filters.status) conditions.push(sql`${feedbackAnalyses.status} = ${filters.status}`);
+  if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
+  if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
   if (filters.severityMin !== undefined)
     conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
   if (filters.severityMax !== undefined)
