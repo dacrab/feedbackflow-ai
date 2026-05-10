@@ -36,7 +36,9 @@ export async function GET(req: Request) {
         const r = await sendDailyDigest(userId, since);
         total += r.total;
         high += r.high;
-      } catch {}
+      } catch (e) {
+        console.error(`Digest failed for user ${userId}:`, e);
+      }
     }
     if (total > 0) await notifySlack(`Daily digest: ${total} total, ${high} high severity`);
   } catch (e) {
