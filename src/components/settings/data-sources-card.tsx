@@ -43,6 +43,7 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
           value={ghToken}
           onChange={(e) => setGhToken(e.target.value)}
           type="password"
+          autoComplete="off"
         />
         <Button
           type="submit"

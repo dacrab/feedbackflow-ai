@@ -1,4 +1,4 @@
-import { IconLoader2 } from "@tabler/icons-react";
+import { IconChevronDown, IconLoader2 } from "@tabler/icons-react";
 
 export function Card({
   title,
@@ -62,5 +62,26 @@ export function Button({
         ? (loadingText ?? <IconLoader2 className="h-4 w-4 animate-spin mx-auto" />)
         : children}
     </button>
+  );
+}
+
+const selectSize = { default: "h-10 px-3", sm: "h-8 px-2", xs: "h-7 px-2 text-xs" };
+
+export function Select({
+  className = "",
+  size = "default",
+  children,
+  ...props
+}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> & { size?: "default" | "sm" | "xs" }) {
+  return (
+    <div className={`relative inline-flex items-center ${className}`}>
+      <select
+        className={`w-full appearance-none rounded border border-border bg-card text-foreground text-sm outline-none focus:border-foreground transition-colors pr-7 disabled:opacity-50 ${selectSize[size]}`}
+        {...props}
+      >
+        {children}
+      </select>
+      <IconChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground" />
+    </div>
   );
 }

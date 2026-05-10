@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/ui/ui";
 
@@ -14,11 +14,12 @@ export function SystemHealthCard({
   enabledHooks: number;
 }) {
   const [syncing, setSyncing] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
+  const [logs, setLogs] = useState<{ msg: string; ok?: boolean }[]>([]);
+  const logRef = useRef<HTMLDivElement>(null);
 
   async function runSync() {
     setSyncing(true);
-    setProgress("starting...");
+    setLogs([{ msg: "connecting..." }]);
 
     try {
       const response = await fetch("/api/sync");
@@ -37,19 +38,21 @@ export function SystemHealthCard({
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
-            setProgress(data.message);
-            if (data.stage === "complete") toast.success(data.message);
-            else if (data.stage === "error") toast.error(data.message);
-          }
+          if (!line.startsWith("data: ")) continue;
+          const data = JSON.parse(line.slice(6));
+          const ok: true | false | undefined =
+            data.stage === "complete" ? true : data.stage === "error" ? false : undefined;
+          setLogs((prev) => [...prev, { msg: data.message as string, ...(ok !== undefined && { ok }) }]);
+          setTimeout(() => logRef.current?.scrollTo({ top: 9999, behavior: "smooth" }), 10);
+          if (data.stage === "complete") toast.success(data.message);
+          else if (data.stage === "error") toast.error(data.message);
         }
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "sync failed");
+      setLogs((prev) => [...prev, { msg: "sync failed", ok: false }]);
     } finally {
       setSyncing(false);
-      setProgress(null);
     }
   }
 
@@ -80,7 +83,31 @@ export function SystemHealthCard({
         sync now
       </Button>
 
-      {progress && <p className="text-xs text-muted-foreground text-center">{progress}</p>}
+      {logs.length > 0 && (
+        <div
+          ref={logRef}
+          className="max-h-32 overflow-y-auto rounded border border-border bg-muted/20 p-2 space-y-0.5"
+        >
+          {logs.map((l, i) => (
+            <p
+              key={i}
+              className={`text-xs font-mono ${
+                l.ok === true
+                  ? "text-green-500"
+                  : l.ok === false
+                    ? "text-red-500"
+                    : "text-muted-foreground"
+              }`}
+            >
+              {l.ok === true ? "✓ " : l.ok === false ? "✗ " : "· "}
+              {l.msg}
+            </p>
+          ))}
+          {syncing && (
+            <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>
+          )}
+        </div>
+      )}
     </Card>
   );
 }

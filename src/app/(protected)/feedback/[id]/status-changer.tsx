@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Select } from "@/components/ui/ui";
 import { updateFeedbackStatus } from "@/lib/actions";
 import type { FeedbackStatus } from "@/lib/types";
 
@@ -25,15 +26,10 @@ export default function StatusChanger({ id, initial }: { id: string; initial: Fe
   }
 
   return (
-    <select
-      value={status}
-      onChange={onChange}
-      disabled={pending}
-      className="h-7 px-2 rounded border border-border bg-muted/30 text-xs outline-none focus:border-foreground disabled:opacity-50"
-    >
+    <Select value={status} onChange={onChange} disabled={pending} size="xs">
       <option value="New">new</option>
       <option value="Acknowledged">acknowledged</option>
       <option value="Actioned">actioned</option>
-    </select>
+    </Select>
   );
 }

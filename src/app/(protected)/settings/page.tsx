@@ -48,7 +48,7 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       <div>
         <p className="text-sm text-muted-foreground">// configuration</p>
         <h1 className="text-xl font-medium">settings</h1>
@@ -63,7 +63,6 @@ export default async function SettingsPage() {
                 : null
             }
             initialModel={settingsRow?.model ?? null}
-            initialHasKey={Boolean(settingsRow?.apiKeyCipher)}
           />
           <SystemHealthCard
             enabledSources={sources.filter((s) => s.enabled).length}

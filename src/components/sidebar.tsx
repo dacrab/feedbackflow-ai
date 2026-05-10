@@ -9,7 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +21,11 @@ const navItems = [
 
 export function Sidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(
-    () => typeof window !== "undefined" && localStorage.getItem("sidebar-collapsed") === "true",
-  );
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("sidebar-collapsed") === "true") setCollapsed(true);
+  }, []);
 
   return (
     <aside

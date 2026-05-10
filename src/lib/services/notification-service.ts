@@ -34,18 +34,21 @@ export async function sendDailyDigest(
   userId: string,
   sinceISO: string,
 ): Promise<{ total: number; high: number }> {
-  const analyses = await db
-    .select({ summary: feedbackAnalyses.summary, severityScore: feedbackAnalyses.severityScore })
-    .from(feedbackAnalyses)
-    .where(
-      and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, new Date(sinceISO))),
-    )
-    .orderBy(desc(feedbackAnalyses.createdAt));
+  const [analyses, webhooks] = await Promise.all([
+    db
+      .select({ summary: feedbackAnalyses.summary, severityScore: feedbackAnalyses.severityScore })
+      .from(feedbackAnalyses)
+      .where(
+        and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, new Date(sinceISO))),
+      )
+      .orderBy(desc(feedbackAnalyses.createdAt)),
+    getWebhooks(userId),
+  ]);
 
   const high = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
   const summary = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${high.length}.`;
 
-  for (const url of await getWebhooks(userId)) {
+  for (const url of webhooks) {
     await notifySlack(summary, url);
     for (const item of high.slice(0, 10))
       await notifySlack(`• [sev ${item.severityScore}] ${item.summary}`, url);
