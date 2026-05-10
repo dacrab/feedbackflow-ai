@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/api";
+import { db } from "@/db/client";
+import { userSources } from "@/db/schema";
 import { runIngest } from "@/lib/services/ingest-service";
 
 export const dynamic = "force-dynamic";
@@ -17,16 +20,18 @@ export async function GET() {
   const stream = new ReadableStream({
     async start(ctrl) {
       try {
-        ctrl.enqueue(sse("fetching", "Starting ingest..."));
+        const sources = await db
+          .select({ config: userSources.config })
+          .from(userSources)
+          .where(eq(userSources.enabled, true));
+
+        ctrl.enqueue(sse("fetching", `fetching from ${sources.length} source${sources.length !== 1 ? "s" : ""}...`));
+
         const { fetched, inserted, analyzed } = await runIngest();
-        ctrl.enqueue(
-          sse(
-            "complete",
-            `Done! Fetched: ${fetched}, Inserted: ${inserted}, Analyzed: ${analyzed}`,
-          ),
-        );
+
+        ctrl.enqueue(sse("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`));
       } catch (err) {
-        ctrl.enqueue(sse("error", err instanceof Error ? err.message : "Unknown error"));
+        ctrl.enqueue(sse("error", err instanceof Error ? err.message : "sync failed"));
       } finally {
         ctrl.close();
       }

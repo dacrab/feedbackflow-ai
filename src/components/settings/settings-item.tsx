@@ -16,15 +16,30 @@ export default function SettingsItem({
   description?: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const noun = apiPath === "sources" ? "source" : "webhook";
 
-  const act = (fn: () => Promise<void>) =>
+  const act = (fn: () => Promise<void>, successMsg?: string) =>
     startTransition(async () => {
       try {
         await fn();
-      } catch {
-        toast.error("failed");
+        if (successMsg) toast.success(successMsg);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : `failed to update ${noun}`);
       }
     });
+
+  function onDelete() {
+    toast(`delete ${description ?? label}?`, {
+      action: {
+        label: "delete",
+        onClick: () =>
+          act(
+            () => (apiPath === "sources" ? deleteSource(item.id) : deleteNotification(item.id)),
+            `${noun} deleted`,
+          ),
+      },
+    });
+  }
 
   return (
     <div className="flex items-center justify-between gap-3 rounded border border-border bg-muted/20 px-3 py-2">
@@ -40,10 +55,12 @@ export default function SettingsItem({
           type="button"
           disabled={pending}
           onClick={() =>
-            act(() =>
-              apiPath === "sources"
-                ? updateSource(item.id, { enabled: !item.enabled })
-                : updateNotification(item.id, { enabled: !item.enabled }),
+            act(
+              () =>
+                apiPath === "sources"
+                  ? updateSource(item.id, { enabled: !item.enabled })
+                  : updateNotification(item.id, { enabled: !item.enabled }),
+              `${noun} ${item.enabled ? "disabled" : "enabled"}`,
             )
           }
           className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
@@ -53,13 +70,7 @@ export default function SettingsItem({
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
-            act(async () => {
-              if (apiPath === "sources") await deleteSource(item.id);
-              else await deleteNotification(item.id);
-              toast.success("deleted");
-            })
-          }
+          onClick={onDelete}
           className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
         >
           delete

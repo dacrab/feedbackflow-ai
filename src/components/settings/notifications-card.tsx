@@ -36,7 +36,7 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
       <form onSubmit={onSubmit} className="space-y-2">
         <Input
           variant="sm"
-          placeholder="slack webhook url"
+          placeholder="https://hooks.slack.com/services/..."
           value={slackUrl}
           onChange={(e) => setSlackUrl(e.target.value)}
         />
