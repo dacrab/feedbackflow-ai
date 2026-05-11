@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "@/components/charts";
 import { getServerSession } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
@@ -53,9 +52,7 @@ function ChartCard({
 
 export default async function DashboardPage() {
   const session = await getServerSession();
-  if (!session?.user?.id) redirect("/login");
-
-  const m = await getDashboard(session.user.id);
+  const m = await getDashboard(session?.user?.id as string);
 
   const trendData = m.trendLabels.map((label, i) => ({
     name: label.slice(5),

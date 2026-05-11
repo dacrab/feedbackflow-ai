@@ -4,7 +4,20 @@ import { feedbackAnalyses, userNotifications } from "@/db/schema";
 import { HIGH_SEVERITY_THRESHOLD } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysisData } from "@/lib/types";
-import { notifySlack } from "@/lib/utils";
+
+async function notifySlack(text: string, url?: string) {
+  const webhook = url || process.env["SLACK_WEBHOOK_URL"];
+  if (!webhook) return;
+  try {
+    await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+  } catch (e) {
+    console.error("[Slack]", e);
+  }
+}
 
 async function getWebhooks(userId: string): Promise<string[]> {
   const rows = await db

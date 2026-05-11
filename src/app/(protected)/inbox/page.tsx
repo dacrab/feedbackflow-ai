@@ -1,6 +1,5 @@
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
 import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
@@ -15,8 +14,7 @@ export default async function InboxPage({
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
   const session = await getServerSession();
-  if (!session?.user?.id) redirect("/login");
-  const userId = session.user.id;
+  const userId = session?.user?.id as string;
 
   const spObj = await searchParams;
   const sp = new URLSearchParams(

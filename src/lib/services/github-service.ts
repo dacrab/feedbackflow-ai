@@ -5,7 +5,7 @@ import {
   GITHUB_RETRY_BASE_DELAY_MS,
 } from "@/lib/constants";
 
-export interface GithubIssue {
+interface GithubIssue {
   id: number;
   title: string;
   body: string | null;

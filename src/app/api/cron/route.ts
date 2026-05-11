@@ -5,7 +5,9 @@ import { userNotifications } from "@/db/schema";
 import { isValidCronRequest, requireAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 import { sendDailyDigest } from "@/lib/services/notification-service";
-import { getDateNHoursAgo, notifySlack } from "@/lib/utils";
+import { getDateNHoursAgo } from "@/lib/utils";
+
+export const maxDuration = 300;
 
 export async function GET(req: Request) {
   if (!isValidCronRequest(req)) await requireAuth();
@@ -21,17 +23,12 @@ export async function GET(req: Request) {
     high = 0;
   try {
     const since = getDateNHoursAgo(24);
-    const userIds = [
-      ...new Set(
-        (
-          await db
-            .select({ userId: userNotifications.userId })
-            .from(userNotifications)
-            .where(eq(userNotifications.enabled, true))
-        ).map((u) => u.userId),
-      ),
-    ];
-    for (const userId of userIds) {
+    const userIds = await db
+      .selectDistinct({ userId: userNotifications.userId })
+      .from(userNotifications)
+      .where(eq(userNotifications.enabled, true));
+
+    for (const { userId } of userIds) {
       try {
         const r = await sendDailyDigest(userId, since);
         total += r.total;
@@ -40,7 +37,6 @@ export async function GET(req: Request) {
         console.error(`Digest failed for user ${userId}:`, e);
       }
     }
-    if (total > 0) await notifySlack(`Daily digest: ${total} total, ${high} high severity`);
   } catch (e) {
     console.error("Digest failed:", e);
   }

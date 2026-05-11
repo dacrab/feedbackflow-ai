@@ -1,6 +1,6 @@
 "use client";
 
-import { IconMoon, IconSun } from "@tabler/icons-react";
+import { IconDeviceDesktop, IconMoon, IconSun } from "@tabler/icons-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -10,6 +10,8 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+  const Icon =
+    !mounted || theme === "system" ? IconDeviceDesktop : theme === "dark" ? IconMoon : IconSun;
 
   return (
     <button
@@ -20,11 +22,7 @@ export function ThemeToggle() {
       aria-label={mounted ? `switch to ${next} theme` : "toggle theme"}
       suppressHydrationWarning
     >
-      {mounted && theme === "dark" ? (
-        <IconMoon className="h-3.5 w-3.5" />
-      ) : (
-        <IconSun className="h-3.5 w-3.5" />
-      )}
+      <Icon className="h-3.5 w-3.5" />
     </button>
   );
 }

@@ -26,7 +26,6 @@ export function Input({
   return (
     <input
       className={`w-full rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors ${size} ${className}`}
-      aria-invalid={props["aria-invalid"] || undefined}
       {...props}
     />
   );
