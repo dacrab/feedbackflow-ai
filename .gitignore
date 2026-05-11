@@ -44,3 +44,4 @@ package-lock.json
 # IDE
 .vscode/
 
+.env*.local
