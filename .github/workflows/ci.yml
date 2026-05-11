@@ -24,3 +24,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - run: bun run typecheck
+      - run: bun run lint
+      - name: Test
+        run: bun run test
+        env:
+          ENCRYPTION_KEY: ci-test-key-0123456789abcdef0123456789abcdef
