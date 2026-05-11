@@ -6,7 +6,7 @@ import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import type { Sentiment } from "@/lib/types";
 
-export interface ComputedMetrics {
+interface ComputedMetrics {
   total: number;
   positive: number;
   neutral: number;

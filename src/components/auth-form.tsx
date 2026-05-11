@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AuthDivider, OAuthButtons } from "@/components/oauth-buttons";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { Button, Input } from "@/components/ui/ui";
 
 const { signIn, signUp } = createAuthClient();
@@ -129,7 +129,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {isSignup ? "create account →" : "sign in →"}
         </Button>
       </form>
-      <AuthDivider />
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-muted-foreground font-mono">or</span>
+        </div>
+      </div>
       <OAuthButtons />
       <p className="text-center text-sm text-muted-foreground">
         {isSignup ? "have an account? " : "no account? "}

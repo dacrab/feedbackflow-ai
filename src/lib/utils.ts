@@ -17,15 +17,3 @@ export const formatDateUTC = (iso: string) =>
 
 export const getDateNHoursAgo = (hours: number) =>
   new Date(Date.now() - hours * 3600000).toISOString();
-
-export async function notifySlack(text: string, url?: string) {
-  const webhook = url || process.env["SLACK_WEBHOOK_URL"];
-  if (!webhook) return;
-  try {
-    await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-  } catch {}
-}

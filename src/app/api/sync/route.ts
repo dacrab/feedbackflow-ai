@@ -1,6 +1,3 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/db/client";
-import { userSources } from "@/db/schema";
 import { requireAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 
@@ -20,20 +17,8 @@ export async function GET() {
   const stream = new ReadableStream({
     async start(ctrl) {
       try {
-        const sources = await db
-          .select({ config: userSources.config })
-          .from(userSources)
-          .where(eq(userSources.enabled, true));
-
-        ctrl.enqueue(
-          sse(
-            "fetching",
-            `fetching from ${sources.length} source${sources.length !== 1 ? "s" : ""}...`,
-          ),
-        );
-
+        ctrl.enqueue(sse("fetching", "fetching from sources..."));
         const { fetched, inserted, analyzed } = await runIngest();
-
         ctrl.enqueue(
           sse("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`),
         );

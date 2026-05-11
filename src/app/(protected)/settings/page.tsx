@@ -1,5 +1,4 @@
 import { desc, eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
@@ -11,8 +10,7 @@ import { isLLMProvider } from "@/lib/types";
 
 export default async function SettingsPage() {
   const session = await getServerSession();
-  if (!session?.user?.id) redirect("/login");
-  const userId = session.user.id;
+  const userId = session?.user?.id as string;
 
   const [settingsRow, sources, hooks] = await Promise.all([
     db

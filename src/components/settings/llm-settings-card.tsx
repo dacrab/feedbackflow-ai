@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Button, Input, Select } from "@/components/ui/ui";
+import { Button, Card, Input, Select } from "@/components/ui/ui";
 import {
   deleteSettings,
   saveSettings,
@@ -12,15 +12,6 @@ import {
 import type { LLMProvider } from "@/lib/types";
 
 type Mode = "view" | "add" | "edit-model" | "update-key";
-
-function Wrap({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded border border-border bg-card p-4 space-y-4">
-      <p className="text-xs text-muted-foreground">// llm provider</p>
-      {children}
-    </div>
-  );
-}
 
 export function LLMSettingsCard({
   initialProvider,
@@ -47,7 +38,7 @@ export function LLMSettingsCard({
 
   if (mode === "view")
     return (
-      <Wrap>
+      <Card title="llm provider">
         <div className="rounded border border-border bg-muted/20 px-3 py-2 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{initialProvider}</span>
@@ -89,12 +80,12 @@ export function LLMSettingsCard({
             remove
           </button>
         </div>
-      </Wrap>
+      </Card>
     );
 
   if (mode === "edit-model")
     return (
-      <Wrap>
+      <Card title="llm provider">
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground">
             model <span className="text-foreground">({initialProvider})</span>
@@ -130,12 +121,12 @@ export function LLMSettingsCard({
             cancel
           </Button>
         </div>
-      </Wrap>
+      </Card>
     );
 
   if (mode === "update-key")
     return (
-      <Wrap>
+      <Card title="llm provider">
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground">
             new api key <span className="text-foreground">({initialProvider})</span>
@@ -173,11 +164,11 @@ export function LLMSettingsCard({
             cancel
           </Button>
         </div>
-      </Wrap>
+      </Card>
     );
 
   return (
-    <Wrap>
+    <Card title="llm provider">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1.5" htmlFor="llm-provider">
           <span className="text-xs text-muted-foreground">provider</span>
@@ -232,6 +223,6 @@ export function LLMSettingsCard({
       >
         save
       </Button>
-    </Wrap>
+    </Card>
   );
 }
