@@ -28,4 +28,4 @@ jobs:
       - name: Test
         run: bun run test
         env:
-          ENCRYPTION_KEY: ci-test-key-0123456789abcdef0123456789abcdef
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
