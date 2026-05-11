@@ -1,6 +1,8 @@
+import { PageSkeleton } from "@/components/page-skeleton";
+
 export default function Loading() {
   return (
-    <div className="space-y-4 animate-pulse">
+    <PageSkeleton>
       <div className="h-6 w-24 rounded bg-muted" />
       <div className="h-8 w-full max-w-xs rounded bg-muted/30" />
       <div className="rounded border border-border divide-y divide-border">
@@ -8,6 +10,6 @@ export default function Loading() {
           <div key={k} className="h-14 bg-muted/20" />
         ))}
       </div>
-    </div>
+    </PageSkeleton>
   );
 }
