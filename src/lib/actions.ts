@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
+import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
 import type { FeedbackStatus, LLMProvider } from "@/lib/types";
 
@@ -38,6 +39,8 @@ export async function addSource(repo: string, token?: string) {
   parse(repoSchema, repo);
   if (token) parse(z.string().min(1).max(512), token);
   const userId = await uid();
+  const { success } = rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!success) throw new Error("Too many requests. Please try again later.");
   await db.insert(userSources).values({
     userId,
     type: "github",
@@ -56,6 +59,8 @@ export async function updateSource(
   if (data.repo) parse(repoSchema, data.repo);
   if (data.token) parse(z.string().min(1).max(512), data.token);
   const userId = await uid();
+  const { success } = rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!success) throw new Error("Too many requests. Please try again later.");
   await db
     .update(userSources)
     .set({
@@ -70,6 +75,8 @@ export async function updateSource(
 export async function deleteSource(id: string) {
   parse(z.string().uuid(), id);
   const userId = await uid();
+  const { success } = rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!success) throw new Error("Too many requests. Please try again later.");
   await db.delete(userSources).where(and(eq(userSources.id, id), eq(userSources.userId, userId)));
   revalidatePath("/settings");
 }
@@ -157,4 +164,15 @@ export async function updateFeedbackStatus(feedbackItemId: string, status: Feedb
     );
   revalidatePath("/inbox");
   revalidatePath(`/feedback/${feedbackItemId}`);
+}
+
+export async function bulkUpdateStatus(ids: string[], status: string) {
+  parse(z.array(z.string().uuid()).min(1).max(200), ids);
+  parse(statusSchema, status);
+  const userId = await uid();
+  await db
+    .update(feedbackAnalyses)
+    .set({ status: status as FeedbackStatus })
+    .where(and(eq(feedbackAnalyses.userId, userId), inArray(feedbackAnalyses.feedbackItemId, ids)));
+  revalidatePath("/inbox");
 }

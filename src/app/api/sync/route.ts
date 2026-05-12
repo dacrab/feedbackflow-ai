@@ -1,13 +1,24 @@
 import { requireAuth } from "@/lib/api";
+import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  let userId: string;
   try {
-    await requireAuth();
+    const user = await requireAuth();
+    userId = user.id;
   } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
+  const { success } = rateLimit(`sync:${userId}`, { maxRequests: 5, windowMs: 60_000 });
+  if (!success) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: { "Retry-After": "60" },
+    });
   }
 
   const enc = new TextEncoder();
