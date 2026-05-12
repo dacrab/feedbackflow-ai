@@ -13,7 +13,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     <div className="flex min-h-screen font-mono">
       <Sidebar userEmail={email} />
 
-      <main className="flex-1 overflow-auto">
+      <main id="main-content" className="flex-1 overflow-auto">
         <header className="md:hidden flex h-14 items-center justify-between px-4 border-b border-border bg-background">
           <div className="flex items-center gap-2 text-sm">
             <Logo />

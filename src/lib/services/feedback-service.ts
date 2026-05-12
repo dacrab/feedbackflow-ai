@@ -92,6 +92,19 @@ export async function getFeedbackItems(
   return rows.map(transform);
 }
 
+export async function getFeedbackCount(
+  userId: string,
+  filters: FeedbackFilters = {},
+): Promise<number> {
+  const { conditions } = baseQuery(userId, filters);
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(feedbackItems)
+    .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+    .where(and(...conditions));
+  return Number(row?.count ?? 0);
+}
+
 export async function getFeedbackItem(
   userId: string,
   itemId: string,

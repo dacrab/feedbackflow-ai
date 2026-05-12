@@ -1,12 +1,13 @@
-import { IconChevronRight } from "@tabler/icons-react";
+import { IconDownload } from "@tabler/icons-react";
 import Link from "next/link";
-import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
 import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
-import { getFeedbackItems } from "@/lib/services/feedback-service";
+import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
-import { formatDateUTC } from "@/lib/utils";
+import { InboxBulkActions } from "./bulk-actions";
+
+const DEFAULT_PAGE_SIZE = 20;
 
 export default async function InboxPage({
   searchParams,
@@ -32,29 +33,67 @@ export default async function InboxPage({
   const sort =
     (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
 
-  const items = await getFeedbackItems(userId, {
-    limit: 100,
-    filters: {
-      ...(sentiment && { sentiment }),
-      ...(status && { status }),
-      ...(topic && { topic }),
-      ...(q && { q }),
-      severityMin,
-      severityMax,
-      sort,
-    },
-  });
+  const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)),
+  );
+  const offset = (page - 1) * pageSize;
+
+  const filters = {
+    ...(sentiment && { sentiment }),
+    ...(status && { status }),
+    ...(topic && { topic }),
+    ...(q && { q }),
+    severityMin,
+    severityMax,
+    sort,
+  };
+
+  const [items, totalCount] = await Promise.all([
+    getFeedbackItems(userId, { limit: pageSize, offset, filters }),
+    getFeedbackCount(userId, filters),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  function pageUrl(p: number) {
+    const params = new URLSearchParams(sp);
+    params.set("page", String(p));
+    params.set("pageSize", String(pageSize));
+    return `/inbox?${params.toString()}`;
+  }
+
+  // Build export URL with current filters
+  const exportParams = new URLSearchParams(sp);
+  exportParams.delete("page");
+  exportParams.delete("pageSize");
+  const exportUrl = `/api/export?${exportParams.toString()}`;
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm text-muted-foreground">// feedback items</p>
-        <h1 className="text-xl font-medium">inbox</h1>
-        <p className="text-sm text-muted-foreground mt-1">{items.length} items</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">// feedback items</p>
+          <h1 className="text-xl font-medium">inbox</h1>
+          <p className="text-sm text-muted-foreground mt-1">{totalCount} items</p>
+        </div>
+        <a
+          href={exportUrl}
+          className="h-8 px-3 rounded bg-muted text-sm hover:bg-muted/80 transition-colors inline-flex items-center gap-1.5"
+          aria-label="Export filtered feedback as CSV"
+        >
+          <IconDownload className="h-3.5 w-3.5" />
+          Export CSV
+        </a>
       </div>
 
       <form className="flex flex-wrap items-center gap-2">
+        <label htmlFor="inbox-search" className="sr-only">
+          Search feedback
+        </label>
         <Input
+          id="inbox-search"
           type="text"
           name="q"
           placeholder="search..."
@@ -63,14 +102,25 @@ export default async function InboxPage({
           className="flex-1 min-w-[180px] max-w-xs"
         />
 
-        <Select name="sentiment" defaultValue={sp.get("sentiment") || ""} size="sm">
+        <label htmlFor="inbox-sentiment" className="sr-only">
+          Filter by sentiment
+        </label>
+        <Select
+          id="inbox-sentiment"
+          name="sentiment"
+          defaultValue={sp.get("sentiment") || ""}
+          size="sm"
+        >
           <option value="">all sentiment</option>
           <option value="positive">positive</option>
           <option value="neutral">neutral</option>
           <option value="negative">negative</option>
         </Select>
 
-        <Select name="status" defaultValue={sp.get("status") || ""} size="sm">
+        <label htmlFor="inbox-status" className="sr-only">
+          Filter by status
+        </label>
+        <Select id="inbox-status" name="status" defaultValue={sp.get("status") || ""} size="sm">
           <option value="">all status</option>
           <option value="New">new</option>
           <option value="Acknowledged">acknowledged</option>
@@ -85,59 +135,41 @@ export default async function InboxPage({
         </button>
       </form>
 
-      <div className="rounded border border-border bg-card divide-y divide-border">
-        {items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            <p>no items found</p>
-            <p className="mt-1">add a data source in settings to get started</p>
+      <InboxBulkActions items={items} />
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm">
+          <div className="text-muted-foreground">
+            page {page} of {totalPages}
           </div>
-        ) : (
-          items.map((item) => {
-            const analysis = item.feedback_analyses;
-            const severity = analysis?.severity_score ?? 0;
-
-            return (
+          <div className="flex gap-2">
+            {page > 1 ? (
               <Link
-                key={item.id}
-                href={`/feedback/${item.id}`}
-                className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors group"
+                href={pageUrl(page - 1)}
+                className="h-8 px-3 rounded bg-muted hover:bg-muted/80 transition-colors inline-flex items-center"
               >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    severity >= 4
-                      ? "bg-red-500"
-                      : severity >= 3
-                        ? "bg-orange-500"
-                        : "bg-muted-foreground/30"
-                  }`}
-                />
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="truncate">{analysis?.summary || "no summary"}</span>
-                    <SentimentBadge sentiment={analysis?.sentiment} />
-                    <StatusBadge status={analysis?.status} />
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                    <span className="truncate max-w-[200px]">{item.raw_content}</span>
-                    {analysis?.topics?.[0] && (
-                      <>
-                        <span>·</span>
-                        <span>[{analysis.topics[0]}]</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-                  <span suppressHydrationWarning>{formatDateUTC(item.created_at)}</span>
-                  <IconChevronRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
-                </div>
+                previous
               </Link>
-            );
-          })
-        )}
-      </div>
+            ) : (
+              <span className="h-8 px-3 rounded bg-muted/50 text-muted-foreground inline-flex items-center cursor-not-allowed">
+                previous
+              </span>
+            )}
+            {page < totalPages ? (
+              <Link
+                href={pageUrl(page + 1)}
+                className="h-8 px-3 rounded bg-muted hover:bg-muted/80 transition-colors inline-flex items-center"
+              >
+                next
+              </Link>
+            ) : (
+              <span className="h-8 px-3 rounded bg-muted/50 text-muted-foreground inline-flex items-center cursor-not-allowed">
+                next
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
