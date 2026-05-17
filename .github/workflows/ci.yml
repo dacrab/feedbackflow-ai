@@ -17,10 +17,11 @@ jobs:
   ci:
     uses: dacrab/.github-workflows/.github/workflows/bun-ci.yml@v1
     with:
-      check-cmd: 'bun run check'
+      check-cmd: 'bun run typecheck && bun run lint'
       test-cmd: 'bun run test'
-      build-cmd: 'bun run build'
-      build-env: '{"DATABASE_URL":"postgresql://dummy:dummy@localhost:5432/dummy"}'
+      build-cmd: ''
+    secrets:
+      env_vars: '{"ENCRYPTION_KEY":"${{ secrets.ENCRYPTION_KEY }}"}'
 
   auto-merge:
     needs: ci
