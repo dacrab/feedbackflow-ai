@@ -3,6 +3,10 @@
     {
       "path": "/api/cron",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/digest",
+      "schedule": "0 8 * * *"
     }
   ],
   "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_AUTHOR_LOGIN\" = \"dependabot[bot]\" ] && exit 0 || exit 1"

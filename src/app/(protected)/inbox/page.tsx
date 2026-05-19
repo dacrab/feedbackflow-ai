@@ -1,4 +1,3 @@
-import { IconDownload } from "@tabler/icons-react";
 import Link from "next/link";
 import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
@@ -64,28 +63,14 @@ export default async function InboxPage({
     return `/inbox?${params.toString()}`;
   }
 
-  // Build export URL with current filters
-  const exportParams = new URLSearchParams(sp);
-  exportParams.delete("page");
-  exportParams.delete("pageSize");
-  const exportUrl = `/api/export?${exportParams.toString()}`;
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <div>
           <p className="text-sm text-muted-foreground">// feedback items</p>
           <h1 className="text-xl font-medium">inbox</h1>
           <p className="text-sm text-muted-foreground mt-1">{totalCount} items</p>
         </div>
-        <a
-          href={exportUrl}
-          className="h-8 px-3 rounded bg-muted text-sm hover:bg-muted/80 transition-colors inline-flex items-center gap-1.5"
-          aria-label="Export filtered feedback as CSV"
-        >
-          <IconDownload className="h-3.5 w-3.5" />
-          Export CSV
-        </a>
       </div>
 
       <form className="flex flex-wrap items-center gap-2">
