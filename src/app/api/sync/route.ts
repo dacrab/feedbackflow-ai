@@ -4,7 +4,7 @@ import { runIngest } from "@/lib/services/ingest-service";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   let userId: string;
   try {
     const user = await requireAuth();
@@ -22,20 +22,32 @@ export async function GET() {
   }
 
   const enc = new TextEncoder();
-  const sse = (stage: string, message: string) =>
-    enc.encode(`data: ${JSON.stringify({ stage, message })}\n\n`);
+  const abortCtrl = new AbortController();
+
+  req.signal.addEventListener("abort", () => abortCtrl.abort());
 
   const stream = new ReadableStream({
     async start(ctrl) {
+      const send = (stage: string, message: string) => {
+        try {
+          ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ stage, message })}\n\n`));
+        } catch {
+          /* stream closed */
+        }
+      };
+
       try {
-        ctrl.enqueue(sse("fetching", "fetching from sources..."));
-        const { fetched, inserted, analyzed } = await runIngest();
-        ctrl.enqueue(
-          sse("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`),
+        send("fetching", "connecting...");
+        const { fetched, inserted, analyzed } = await runIngest(
+          (event) => send(event.stage, event.message),
+          abortCtrl.signal,
         );
+        if (!abortCtrl.signal.aborted) {
+          send("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`);
+        }
       } catch (err) {
         console.error("[Sync]", err);
-        ctrl.enqueue(sse("error", "sync failed"));
+        send("error", err instanceof Error ? err.message : "sync failed");
       } finally {
         ctrl.close();
       }

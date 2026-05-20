@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -10,6 +11,7 @@ import {
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "./constants";
+import { rateLimit } from "./rate-limit";
 
 const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
@@ -23,8 +25,8 @@ Focus on identifying the core issue, sentiment, and business impact.`;
 
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   google: "gemini-2.5-flash",
-  openai: "gpt-4o-mini",
-  anthropic: "claude-sonnet-4-20250514",
+  openai: "gpt-5.4-nano",
+  anthropic: "claude-haiku-4-5",
 } as const;
 
 type LLMOptions = { provider?: LLMProvider; model?: string; apiKey?: string };
@@ -46,26 +48,52 @@ function getModel(opts?: LLMOptions) {
   return google(modelName);
 }
 
+// In-memory LRU cache for analysis results (keyed by content hash)
+const analysisCache = new Map<string, { result: z.infer<typeof AnalysisSchema>; ts: number }>();
+const CACHE_MAX = 500;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+function getCached(text: string) {
+  const key = crypto.createHash("sha256").update(text).digest("hex").slice(0, 16);
+  const entry = analysisCache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL_MS) return entry.result;
+  if (entry) analysisCache.delete(key);
+  return null;
+}
+
+function setCache(text: string, result: z.infer<typeof AnalysisSchema>) {
+  const key = crypto.createHash("sha256").update(text).digest("hex").slice(0, 16);
+  if (analysisCache.size >= CACHE_MAX) {
+    const oldest = analysisCache.keys().next().value;
+    if (oldest) analysisCache.delete(oldest);
+  }
+  analysisCache.set(key, { result, ts: Date.now() });
+}
+
 export async function analyzeFeedback(
   text: string,
   retries = LLM_MAX_RETRIES,
   opts?: LLMOptions,
 ): Promise<z.infer<typeof AnalysisSchema>> {
+  const trimmed = text.slice(0, MAX_LLM_INPUT_LENGTH);
+  const cached = getCached(trimmed);
+  if (cached) return cached;
+
+  const provider = opts?.provider ?? "google";
+  const { success } = rateLimit(`llm:${provider}`, { maxRequests: 15, windowMs: 60_000 });
+  if (!success) throw new Error(`LLM rate limit exceeded for ${provider}. Try again later.`);
+
   const model = getModel(opts);
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const { object } = await generateObject({
         model,
+        system: SYSTEM_PROMPT,
         schema: AnalysisSchema,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          {
-            role: "user",
-            content: `Analyze this feedback:\n\n${text.slice(0, MAX_LLM_INPUT_LENGTH)}`,
-          },
-        ],
+        prompt: `Analyze this feedback:\n\n${trimmed}`,
       });
+      setCache(trimmed, object);
       return object;
     } catch (err) {
       lastErr = err;

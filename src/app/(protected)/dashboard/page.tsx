@@ -44,7 +44,7 @@ function ChartCard({
   return (
     <div className="rounded border border-border bg-card p-4 min-w-0 overflow-hidden">
       <p className="text-sm text-muted-foreground mb-3">// {label}</p>
-      <div className="h-52 min-w-0">{children}</div>
+      <div className="h-52 w-full min-w-0">{children}</div>
       {footer}
     </div>
   );
