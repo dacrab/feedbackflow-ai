@@ -25,7 +25,7 @@ describe("LLMSettingsCard", () => {
   it("renders in add mode when no initialProvider/initialModel", () => {
     render(<LLMSettingsCard initialProvider={null} initialModel={null} />);
     expect(screen.getByText("provider")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("sk-...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("paste your api key...")).toBeInTheDocument();
   });
 
   it("renders in view mode when initialProvider and initialModel provided", () => {
@@ -40,33 +40,32 @@ describe("LLMSettingsCard", () => {
     expect(screen.getByText("gemini-2.5-pro")).toBeInTheDocument();
   });
 
-  it("clicking edit model switches to edit-model mode", () => {
+  it("clicking change model switches to edit-model mode", () => {
     render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-4o" />);
-    fireEvent.click(screen.getByRole("button", { name: "edit model" }));
-    expect(screen.getByPlaceholderText("e.g. gpt-4o, gemini-2.5-pro")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "change model" }));
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "cancel" })).toBeInTheDocument();
   });
 
   it("clicking update key switches to update-key mode", () => {
     render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-4o" />);
     fireEvent.click(screen.getByRole("button", { name: "update key" }));
-    expect(screen.getByPlaceholderText("sk-...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("paste your api key...")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "cancel" })).toBeInTheDocument();
   });
 
-  it("in add mode, save button is disabled when model or apiKey empty", () => {
+  it("in add mode, save button is disabled when apiKey empty", () => {
     render(<LLMSettingsCard initialProvider={null} initialModel={null} />);
     expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
   });
 
-  it("in add mode, filling fields and clicking save calls saveSettings", async () => {
+  it("in add mode, filling api key and clicking save calls saveSettings with default model", async () => {
     const user = userEvent.setup();
     render(<LLMSettingsCard initialProvider={null} initialModel={null} />);
 
-    await user.type(screen.getByPlaceholderText("e.g. gpt-4o, gemini-2.5-pro"), "gpt-4o");
-    await user.type(screen.getByPlaceholderText("sk-..."), "sk-test-key");
+    await user.type(screen.getByPlaceholderText("paste your api key..."), "sk-test-key");
     await user.click(screen.getByRole("button", { name: "save" }));
 
-    expect(saveSettings).toHaveBeenCalledWith("google", "gpt-4o", "sk-test-key");
+    expect(saveSettings).toHaveBeenCalledWith("google", "gemini-2.5-flash", btoa("sk-test-key"));
   });
 });

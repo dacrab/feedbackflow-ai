@@ -11,6 +11,12 @@ import {
 } from "@/lib/actions";
 import type { LLMProvider } from "@/lib/types";
 
+const MODEL_OPTIONS: Record<LLMProvider, [string, ...string[]]> = {
+  google: ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
+  openai: ["gpt-5.4-nano", "gpt-5.4-mini", "gpt-5-mini", "gpt-4.1-mini", "gpt-4.1"],
+  anthropic: ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-7"],
+};
+
 type Mode = "view" | "add" | "edit-model" | "update-key";
 
 export function LLMSettingsCard({
@@ -22,7 +28,7 @@ export function LLMSettingsCard({
 }) {
   const [mode, setMode] = useState<Mode>(initialProvider && initialModel ? "view" : "add");
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "google");
-  const [model, setModel] = useState(initialModel ?? "");
+  const [model, setModel] = useState(initialModel ?? MODEL_OPTIONS["google"][0]);
   const [apiKey, setApiKey] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -35,6 +41,11 @@ export function LLMSettingsCard({
         toast.error("failed");
       }
     });
+
+  function changeProvider(p: LLMProvider) {
+    setProvider(p);
+    setModel(MODEL_OPTIONS[p][0]);
+  }
 
   if (mode === "view")
     return (
@@ -50,11 +61,12 @@ export function LLMSettingsCard({
           <Button
             size="sm"
             onClick={() => {
-              setModel(initialModel ?? "");
+              setProvider(initialProvider ?? "google");
+              setModel(initialModel ?? MODEL_OPTIONS[initialProvider ?? "google"][0]);
               setMode("edit-model");
             }}
           >
-            edit model
+            change model
           </Button>
           <Button
             size="sm"
@@ -71,7 +83,7 @@ export function LLMSettingsCard({
             onClick={() =>
               act(deleteSettings, () => {
                 setMode("add");
-                setModel("");
+                setModel(MODEL_OPTIONS["google"][0]);
                 setApiKey("");
               })
             }
@@ -87,16 +99,19 @@ export function LLMSettingsCard({
     return (
       <Card title="llm provider">
         <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground">
-            model <span className="text-foreground">({initialProvider})</span>
-          </p>
-          <Input
-            variant="sm"
+          <p className="text-xs text-muted-foreground">model</p>
+          <Select
+            size="sm"
+            className="w-full"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="e.g. gpt-4o, gemini-2.5-pro"
-            autoFocus
-          />
+          >
+            {MODEL_OPTIONS[initialProvider ?? "google"].map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="flex gap-2">
           <Button
@@ -113,7 +128,6 @@ export function LLMSettingsCard({
                 },
               )
             }
-            disabled={!model}
           >
             save
           </Button>
@@ -137,7 +151,7 @@ export function LLMSettingsCard({
             autoComplete="off"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-..."
+            placeholder="paste your api key..."
             autoFocus
           />
         </div>
@@ -149,7 +163,7 @@ export function LLMSettingsCard({
             loadingText="saving..."
             onClick={() =>
               act(
-                () => updateSettingsKey(apiKey),
+                () => updateSettingsKey(btoa(apiKey)),
                 () => {
                   toast.success("key updated");
                   setMode("view");
@@ -169,6 +183,9 @@ export function LLMSettingsCard({
 
   return (
     <Card title="llm provider">
+      <p className="text-xs text-muted-foreground">
+        select your provider, model, and paste your api key to enable AI analysis.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1.5" htmlFor="llm-provider">
           <span className="text-xs text-muted-foreground">provider</span>
@@ -177,22 +194,29 @@ export function LLMSettingsCard({
             className="w-full"
             size="sm"
             value={provider}
-            onChange={(e) => setProvider(e.target.value as LLMProvider)}
+            onChange={(e) => changeProvider(e.target.value as LLMProvider)}
           >
             <option value="google">google (gemini)</option>
             <option value="openai">openai</option>
             <option value="anthropic">anthropic</option>
           </Select>
         </label>
-        <div className="space-y-1.5">
-          <div className="text-xs text-muted-foreground">model</div>
-          <Input
-            variant="sm"
+        <label className="space-y-1.5" htmlFor="llm-model">
+          <span className="text-xs text-muted-foreground">model</span>
+          <Select
+            id="llm-model"
+            className="w-full"
+            size="sm"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="e.g. gpt-4o, gemini-2.5-pro"
-          />
-        </div>
+          >
+            {MODEL_OPTIONS[provider].map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </Select>
+        </label>
       </div>
       <div className="space-y-1.5">
         <div className="text-xs text-muted-foreground">api key</div>
@@ -202,7 +226,7 @@ export function LLMSettingsCard({
           autoComplete="off"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-..."
+          placeholder="paste your api key..."
         />
       </div>
       <Button
@@ -210,10 +234,10 @@ export function LLMSettingsCard({
         size="sm"
         isLoading={pending}
         loadingText="saving..."
-        disabled={!model || !apiKey}
+        disabled={!apiKey}
         onClick={() =>
           act(
-            () => saveSettings(provider, model, apiKey),
+            () => saveSettings(provider, model, btoa(apiKey)),
             () => {
               toast.success("saved");
               setMode("view");

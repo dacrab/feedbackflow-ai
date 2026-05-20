@@ -118,9 +118,11 @@ export async function deleteNotification(id: string) {
   revalidatePath("/settings");
 }
 
-export async function saveSettings(provider: LLMProvider, model: string, apiKey: string) {
+export async function saveSettings(provider: LLMProvider, model: string, encryptedPayload: string) {
   parse(providerSchema, provider);
   parse(modelSchema, model);
+  // Key arrives base64-encoded from client to avoid plain-text logging in dev traces
+  const apiKey = Buffer.from(encryptedPayload, "base64").toString("utf8");
   parse(apiKeySchema, apiKey);
   const userId = await uid();
   const apiKeyCipher = encrypt(apiKey);
@@ -138,7 +140,8 @@ export async function updateSettingsModel(model: string) {
   revalidatePath("/settings");
 }
 
-export async function updateSettingsKey(apiKey: string) {
+export async function updateSettingsKey(encryptedPayload: string) {
+  const apiKey = Buffer.from(encryptedPayload, "base64").toString("utf8");
   parse(apiKeySchema, apiKey);
   const userId = await uid();
   const apiKeyCipher = encrypt(apiKey);

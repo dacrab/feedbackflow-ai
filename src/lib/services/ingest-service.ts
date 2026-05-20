@@ -22,6 +22,16 @@ import { fetchGithubIssues } from "./github-service";
 
 type LLMOpts = { provider: LLMProvider; model?: string; apiKey?: string } | undefined;
 
+export type IngestEvent =
+  | { stage: "fetching"; message: string }
+  | { stage: "analyzing"; message: string }
+  | { stage: "analysis_ok"; message: string }
+  | { stage: "analysis_error"; message: string }
+  | { stage: "complete"; message: string }
+  | { stage: "error"; message: string };
+
+type OnProgress = (event: IngestEvent) => void;
+
 async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   const [s] = await db
     .select({
@@ -37,13 +47,22 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
   return { provider: s.provider, ...(s.model && { model: s.model }), ...(apiKey && { apiKey }) };
 }
 
+const LLM_THROTTLE_MS = 3500;
+
 async function analyzeAndStore(
   items: { id: string; rawContent: string }[],
   userId: string,
   llmOpts: LLMOpts,
+  onProgress?: OnProgress,
+  signal?: AbortSignal,
 ): Promise<number> {
   let count = 0;
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    if (signal?.aborted) break;
+    if (count > 0) await new Promise((r) => setTimeout(r, LLM_THROTTLE_MS));
+    const item = items[i];
+    if (!item) continue;
+    onProgress?.({ stage: "analyzing", message: `analyzing ${i + 1}/${items.length}...` });
     try {
       const a = await analyzeFeedback(item.rawContent, 2, llmOpts);
       const analysisData = {
@@ -57,20 +76,24 @@ async function analyzeAndStore(
         .values({ userId, feedbackItemId: item.id, ...analysisData })
         .onConflictDoUpdate({ target: feedbackAnalyses.feedbackItemId, set: analysisData });
       count++;
+      onProgress?.({ stage: "analysis_ok", message: `analyzed ${count}/${items.length}` });
       if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
         await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
     } catch (err) {
-      console.error(`[Ingest] Failed to analyze ${item.id}:`, String(err));
+      const msg = String(err)
+        .replace(/^Error:\s*/, "")
+        .slice(0, 200);
+      console.error(`[Ingest] Failed to analyze ${item.id}:`, msg);
+      onProgress?.({ stage: "analysis_error", message: `failed: ${msg}` });
     }
   }
   return count;
 }
 
-export async function runIngest(): Promise<{
-  fetched: number;
-  inserted: number;
-  analyzed: number;
-}> {
+export async function runIngest(
+  onProgress?: OnProgress,
+  signal?: AbortSignal,
+): Promise<{ fetched: number; inserted: number; analyzed: number }> {
   const sources = await db
     .select({
       id: userSources.id,
@@ -83,10 +106,10 @@ export async function runIngest(): Promise<{
     .where(eq(userSources.enabled, true));
 
   const totals = { fetched: 0, inserted: 0, analyzed: 0 };
-
   const llmOptsCache = new Map<string, LLMOpts>();
 
   for (const src of sources) {
+    if (signal?.aborted) break;
     if (src.type !== "github") continue;
 
     if (!llmOptsCache.has(src.userId))
@@ -94,6 +117,8 @@ export async function runIngest(): Promise<{
     const llmOpts = llmOptsCache.get(src.userId);
 
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
+
+    onProgress?.({ stage: "fetching", message: `fetching from ${src.config.repo}...` });
 
     const [latest] = await db
       .select({ ts: feedbackItems.originalTimestamp })
@@ -106,6 +131,8 @@ export async function runIngest(): Promise<{
       : getDateNHoursAgo(24 * INITIAL_FETCH_DAYS);
 
     const issues = await fetchGithubIssues(src.config.repo, sinceISO, token);
+
+    onProgress?.({ stage: "fetching", message: `fetched ${issues.length} items` });
 
     const rows = issues.map((i) => ({
       userId: src.userId,
@@ -141,7 +168,11 @@ export async function runIngest(): Promise<{
       DEFAULT_ANALYSIS_BATCH_SIZE,
     );
 
-    const analyzed = await analyzeAndStore(toAnalyze, src.userId, llmOpts);
+    if (toAnalyze.length > 0) {
+      onProgress?.({ stage: "analyzing", message: `analyzing ${toAnalyze.length} items...` });
+    }
+
+    const analyzed = await analyzeAndStore(toAnalyze, src.userId, llmOpts, onProgress, signal);
 
     if (run?.id)
       await db
