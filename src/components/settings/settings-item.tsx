@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
 import { toast } from "sonner";
 import { deleteNotification, deleteSource, updateNotification, updateSource } from "@/lib/actions";
+import { useAction } from "@/lib/use-action";
 
 export default function SettingsItem({
   item,
@@ -15,28 +15,17 @@ export default function SettingsItem({
   label: string;
   description?: string;
 }) {
-  const [pending, startTransition] = useTransition();
+  const { act, pending } = useAction();
   const noun = apiPath === "sources" ? "source" : "webhook";
-
-  const act = (fn: () => Promise<void>, successMsg?: string) =>
-    startTransition(async () => {
-      try {
-        await fn();
-        if (successMsg) toast.success(successMsg);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : `failed to update ${noun}`);
-      }
-    });
 
   function onDelete() {
     toast(`delete ${description ?? label}?`, {
       action: {
         label: "delete",
-        onClick: () =>
-          act(
-            () => (apiPath === "sources" ? deleteSource(item.id) : deleteNotification(item.id)),
-            `${noun} deleted`,
-          ),
+        onClick: () => act(
+          () => (apiPath === "sources" ? deleteSource(item.id) : deleteNotification(item.id)),
+          `${noun} deleted`,
+        ),
       },
     });
   }
@@ -54,15 +43,12 @@ export default function SettingsItem({
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
-            act(
-              () =>
-                apiPath === "sources"
-                  ? updateSource(item.id, { enabled: !item.enabled })
-                  : updateNotification(item.id, { enabled: !item.enabled }),
-              `${noun} ${item.enabled ? "disabled" : "enabled"}`,
-            )
-          }
+          onClick={() => act(
+            () => apiPath === "sources"
+              ? updateSource(item.id, { enabled: !item.enabled })
+              : updateNotification(item.id, { enabled: !item.enabled }),
+            `${noun} ${item.enabled ? "disabled" : "enabled"}`,
+          )}
           className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
         >
           {item.enabled ? "disable" : "enable"}

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
+import { useAction } from "@/lib/use-action";
 import type { LLMProvider } from "@/lib/types";
 
 const PROVIDERS: { value: LLMProvider; label: string }[] = [
@@ -54,22 +54,7 @@ export function LLMSettingsCard({
   const [model, setModel] = useState<string>(initialModel ?? MODEL_OPTIONS["openrouter"][0]!);
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
-  const [pending, startTransition] = useTransition();
-
-  function changeProvider(p: LLMProvider) {
-    setProvider(p);
-    setModel(MODEL_OPTIONS[p][0]!);
-  }
-
-  const act = (fn: () => Promise<void>, msg: string) =>
-    startTransition(async () => {
-      try {
-        await fn();
-        toast.success(msg);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "failed");
-      }
-    });
+  const { act, pending } = useAction();
 
   function handleSave() {
     if (!configured || editingKey) {
@@ -83,8 +68,9 @@ export function LLMSettingsCard({
   }
 
   function handleProviderChange(p: LLMProvider) {
-    changeProvider(p);
-    if (configured) setEditingKey(true); // need new key when switching provider
+    setProvider(p);
+    setModel(MODEL_OPTIONS[p][0]!);
+    if (configured) setEditingKey(true);
   }
 
   return (

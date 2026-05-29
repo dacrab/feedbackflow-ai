@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/ui/ui";
 import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
+import { useAction } from "@/lib/use-action";
 
 type SourceRow = {
   id: string;
@@ -24,13 +25,7 @@ function timeAgo(date: Date): string {
 }
 
 function SourceItem({ source }: { source: SourceRow }) {
-  const [pending, startTransition] = useTransition();
-
-  const act = (fn: () => Promise<void>, msg: string) =>
-    startTransition(async () => {
-      try { await fn(); toast.success(msg); }
-      catch (e) { toast.error(e instanceof Error ? e.message : "failed"); }
-    });
+  const { act, pending } = useAction();
 
   function onDelete() {
     toast(`delete ${source.config.repo}?`, {
@@ -54,20 +49,10 @@ function SourceItem({ source }: { source: SourceRow }) {
           </div>
         </div>
         <div className="flex gap-1.5 shrink-0">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => act(() => updateSource(source.id, { enabled: !source.enabled }), source.enabled ? "disabled" : "enabled")}
-            className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
-          >
+          <button type="button" disabled={pending} onClick={() => act(() => updateSource(source.id, { enabled: !source.enabled }), source.enabled ? "disabled" : "enabled")} className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50">
             {source.enabled ? "disable" : "enable"}
           </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onDelete}
-            className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-          >
+          <button type="button" disabled={pending} onClick={onDelete} className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50">
             delete
           </button>
         </div>
@@ -80,21 +65,14 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
   const [repo, setRepo] = useState("");
   const [ghToken, setGhToken] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { act, pending } = useAction();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    startTransition(async () => {
-      try {
-        await addSource(repo, ghToken || undefined);
-        setRepo("");
-        setGhToken("");
-        setShowToken(false);
-        toast.success("source added");
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "failed to add source");
-      }
-    });
+    act(async () => {
+      await addSource(repo, ghToken || undefined);
+      setRepo(""); setGhToken(""); setShowToken(false);
+    }, "source added");
   }
 
   return (
@@ -102,38 +80,21 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
       <form onSubmit={onSubmit} className="space-y-2">
         <Input variant="sm" placeholder="owner/repo" value={repo} onChange={(e) => setRepo(e.target.value)} />
         {showToken ? (
-          <Input
-            variant="sm"
-            placeholder="github token (optional, for private repos)"
-            value={ghToken}
-            onChange={(e) => setGhToken(e.target.value)}
-            type="password"
-            autoComplete="off"
-            autoFocus
-          />
+          <Input variant="sm" placeholder="github token (optional, for private repos)" value={ghToken} onChange={(e) => setGhToken(e.target.value)} type="password" autoComplete="off" autoFocus />
         ) : (
-          <button
-            type="button"
-            onClick={() => setShowToken(true)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <button type="button" onClick={() => setShowToken(true)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             + add github token (optional)
           </button>
         )}
-        <Button type="submit" size="sm" isLoading={pending} loadingText="adding..." disabled={!repo} className="w-full">
-          add source
-        </Button>
+        <Button type="submit" size="sm" isLoading={pending} loadingText="adding..." disabled={!repo} className="w-full">add source</Button>
       </form>
-
       <div className="space-y-2 border-t border-border pt-3">
         {sources.length === 0 ? (
           <div className="text-center py-6 space-y-1">
             <p className="text-sm text-muted-foreground">no sources configured</p>
             <p className="text-xs text-muted-foreground">add a github repo above to start ingesting feedback</p>
           </div>
-        ) : (
-          sources.map((s) => <SourceItem key={s.id} source={s} />)
-        )}
+        ) : sources.map((s) => <SourceItem key={s.id} source={s} />)}
       </div>
     </Card>
   );
