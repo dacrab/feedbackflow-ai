@@ -6,6 +6,7 @@ describe("isLLMProvider", () => {
     expect(isLLMProvider("google")).toBe(true);
     expect(isLLMProvider("openai")).toBe(true);
     expect(isLLMProvider("anthropic")).toBe(true);
+    expect(isLLMProvider("openrouter")).toBe(true);
   });
 
   it("returns false for invalid values", () => {

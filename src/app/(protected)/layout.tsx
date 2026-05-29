@@ -14,18 +14,13 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       <Sidebar userEmail={email} />
 
       <main id="main-content" className="flex-1 overflow-auto">
-        <header className="md:hidden flex h-14 items-center justify-between px-4 border-b border-border bg-background">
-          <div className="flex items-center gap-2 text-sm">
+        <header className="flex h-12 items-center justify-between md:justify-end px-4 border-b border-border bg-background">
+          <div className="flex items-center gap-2 text-sm md:hidden">
             <Logo />
             <span>feedbackflow</span>
           </div>
           <ThemeToggle />
         </header>
-
-        <header className="hidden md:flex h-12 items-center justify-end px-4 border-b border-border">
-          <ThemeToggle />
-        </header>
-
         <div className="p-4 md:p-6 w-full">{children}</div>
       </main>
     </div>

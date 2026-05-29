@@ -10,10 +10,10 @@ export const getServerSession = cache(async () =>
   auth.api.getSession({ headers: await headers() }),
 );
 
-export async function requireAuth(): Promise<{ id: string; email: string | null }> {
+export async function requireAuth(): Promise<string> {
   const session = await getServerSession();
   if (!session?.user?.id) throw NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  return { id: session.user.id, email: session.user.email ?? null };
+  return session.user.id;
 }
 
 export function isValidCronRequest(req: Request): boolean {

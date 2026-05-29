@@ -1,11 +1,5 @@
 import { db } from "@/db/client";
-import {
-  analysisStatusEnum,
-  feedbackAnalyses,
-  feedbackItems,
-  sentimentEnum,
-  user,
-} from "@/db/schema";
+import { feedbackAnalyses, feedbackItems, user } from "@/db/schema";
 
 async function main() {
   if ((await db.select().from(feedbackItems).limit(1)).length > 0) return;
@@ -32,11 +26,11 @@ async function main() {
   await db.insert(feedbackAnalyses).values({
     userId: item.userId,
     feedbackItemId: item.id,
-    sentiment: sentimentEnum.enumValues[0],
+    sentiment: "positive",
     topics: ["Seed"],
     severityScore: 3,
     summary: "Seeded feedback item for testing.",
-    status: analysisStatusEnum.enumValues[0],
+    status: "New",
   });
 }
 
