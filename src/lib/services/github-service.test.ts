@@ -20,8 +20,7 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers());
 
-const ok = (data: unknown[]) =>
-  Promise.resolve({ ok: true, json: () => Promise.resolve(data) });
+const ok = (data: unknown[]) => Promise.resolve({ ok: true, json: () => Promise.resolve(data) });
 const fail = (status = 500) =>
   Promise.resolve({ ok: false, status, json: () => Promise.resolve({}) });
 
