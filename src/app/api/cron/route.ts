@@ -32,8 +32,8 @@ export async function GET(req: Request) {
     console.error("Ingest failed:", e);
   }
 
-  let total = 0,
-    high = 0;
+  let total = 0;
+  let high = 0;
   try {
     const since = getDateNHoursAgo(24);
     const userIds = await db

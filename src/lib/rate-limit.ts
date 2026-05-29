@@ -3,15 +3,14 @@ const store = new Map<string, number[]>();
 export function rateLimit(
   identifier: string,
   { maxRequests, windowMs }: { maxRequests: number; windowMs: number },
-): { success: boolean; remaining: number } {
+): { success: boolean } {
   const now = Date.now();
-  const key = identifier;
-  const timestamps = (store.get(key) ?? []).filter((t) => t > now - windowMs);
+  const timestamps = (store.get(identifier) ?? []).filter((t) => t > now - windowMs);
   if (timestamps.length >= maxRequests) {
-    store.set(key, timestamps);
-    return { success: false, remaining: 0 };
+    store.set(identifier, timestamps);
+    return { success: false };
   }
   timestamps.push(now);
-  store.set(key, timestamps);
-  return { success: true, remaining: maxRequests - timestamps.length };
+  store.set(identifier, timestamps);
+  return { success: true };
 }
