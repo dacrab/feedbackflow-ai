@@ -24,7 +24,7 @@ const axisTick = { fontSize: 12 };
 
 export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <AreaChart data={data}>
         <defs>
           <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
@@ -53,7 +53,7 @@ export function SentimentChart({
   data: { name: string; value: number; color: string }[];
 }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <PieChart>
         <Pie
           data={data}
@@ -76,7 +76,7 @@ export function SentimentChart({
 
 export function TopicsChart({ data }: { data: { topic: string; value: number }[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <BarChart data={data} layout="vertical" margin={{ left: 0 }}>
         <XAxis type="number" tick={axisTick} tickLine={false} axisLine={false} />
         <YAxis
@@ -96,7 +96,7 @@ export function TopicsChart({ data }: { data: { topic: string; value: number }[]
 
 export function SeverityChart({ data }: { data: { name: string; value: number }[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <BarChart data={data}>
         <XAxis dataKey="name" tick={axisTick} tickLine={false} axisLine={false} />
         <YAxis tick={axisTick} tickLine={false} axisLine={false} width={30} />

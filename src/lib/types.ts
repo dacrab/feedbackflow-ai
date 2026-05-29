@@ -1,6 +1,6 @@
 export type Sentiment = "positive" | "neutral" | "negative";
 export type FeedbackStatus = "New" | "Acknowledged" | "Actioned";
-export type LLMProvider = "google" | "openai" | "anthropic";
+export type LLMProvider = "google" | "openai" | "anthropic" | "openrouter";
 
 export interface FeedbackAnalysisData {
   sentiment: Sentiment;
@@ -20,5 +20,5 @@ export interface FeedbackItemWithAnalysis {
 }
 
 export function isLLMProvider(val: unknown): val is LLMProvider {
-  return typeof val === "string" && ["google", "openai", "anthropic"].includes(val);
+  return typeof val === "string" && ["google", "openai", "anthropic", "openrouter"].includes(val);
 }

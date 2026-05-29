@@ -26,7 +26,7 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 const repoSchema = z
   .string()
   .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
-const providerSchema = z.enum(["google", "openai", "anthropic"]);
+const providerSchema = z.enum(["google", "openai", "anthropic", "openrouter"]);
 const modelSchema = z.string().min(1).max(100);
 const apiKeySchema = z.string().min(8).max(512);
 const webhookSchema = z
@@ -92,10 +92,11 @@ export async function addNotification(webhook: string) {
 
 export async function updateNotification(
   id: string,
-  data: { enabled?: boolean; webhook?: string },
+  data: { enabled?: boolean; webhook?: string; minSeverity?: number },
 ) {
   parse(z.string().uuid(), id);
   if (data.webhook) parse(webhookSchema, data.webhook);
+  if (data.minSeverity !== undefined) parse(z.number().int().min(1).max(5), data.minSeverity);
   const userId = await uid();
   await db
     .update(userNotifications)
@@ -104,6 +105,7 @@ export async function updateNotification(
       ...(data.webhook !== undefined && {
         secretCipher: data.webhook ? encrypt(data.webhook) : null,
       }),
+      ...(data.minSeverity !== undefined && { config: { minSeverity: data.minSeverity } }),
     })
     .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
   revalidatePath("/settings");

@@ -25,18 +25,11 @@ export default async function InboxPage({
   const status = (sp.get("status") as FeedbackStatus | undefined) || undefined;
   const topic = sp.get("topic") || undefined;
   const q = sp.get("q") || undefined;
-
   const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
   const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
-
-  const sort =
-    (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
-
+  const sort = (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
   const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
-  const pageSize = Math.min(
-    100,
-    Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)),
-  );
+  const pageSize = Math.min(100, Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)));
   const offset = (page - 1) * pageSize;
 
   const filters = {
@@ -63,20 +56,23 @@ export default async function InboxPage({
     return `/inbox?${params.toString()}`;
   }
 
+  const hasFilters = !!(q || sentiment || status || topic);
+
   return (
     <div className="space-y-4">
-      <div>
+      {/* Header */}
+      <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">// feedback items</p>
+          <p className="text-xs text-muted-foreground">// feedback items</p>
           <h1 className="text-xl font-medium">inbox</h1>
-          <p className="text-sm text-muted-foreground mt-1">{totalCount} items</p>
         </div>
+        <p className="text-sm text-muted-foreground">
+          {totalCount} {hasFilters ? "filtered" : "total"}
+        </p>
       </div>
 
-      <form className="flex flex-wrap items-center gap-2">
-        <label htmlFor="inbox-search" className="sr-only">
-          Search feedback
-        </label>
+      {/* Filter bar */}
+      <form className="grid gap-2 grid-cols-2 sm:flex sm:flex-wrap sm:items-center">
         <Input
           id="inbox-search"
           type="text"
@@ -84,73 +80,51 @@ export default async function InboxPage({
           placeholder="search..."
           defaultValue={sp.get("q") || ""}
           variant="sm"
-          className="flex-1 min-w-[180px] max-w-xs"
+          className="col-span-2 sm:flex-1 sm:min-w-[160px] sm:max-w-xs"
         />
-
-        <label htmlFor="inbox-sentiment" className="sr-only">
-          Filter by sentiment
-        </label>
-        <Select
-          id="inbox-sentiment"
-          name="sentiment"
-          defaultValue={sp.get("sentiment") || ""}
-          size="sm"
-        >
+        <Select name="sentiment" defaultValue={sp.get("sentiment") || ""} size="sm">
           <option value="">all sentiment</option>
           <option value="positive">positive</option>
           <option value="neutral">neutral</option>
           <option value="negative">negative</option>
         </Select>
-
-        <label htmlFor="inbox-status" className="sr-only">
-          Filter by status
-        </label>
-        <Select id="inbox-status" name="status" defaultValue={sp.get("status") || ""} size="sm">
+        <Select name="status" defaultValue={sp.get("status") || ""} size="sm">
           <option value="">all status</option>
           <option value="New">new</option>
           <option value="Acknowledged">acknowledged</option>
           <option value="Actioned">actioned</option>
         </Select>
-
-        <button
-          type="submit"
-          className="h-8 px-3 rounded bg-muted text-sm hover:bg-muted/80 transition-colors"
-        >
-          filter
+        <Select name="sort" defaultValue={sp.get("sort") || "created_desc"} size="sm">
+          <option value="created_desc">newest</option>
+          <option value="severity_desc">severity ↓</option>
+          <option value="severity_asc">severity ↑</option>
+        </Select>
+        <button type="submit" className="h-8 px-3 rounded border border-border text-xs hover:bg-muted transition-colors">
+          apply
         </button>
+        {hasFilters && (
+          <Link href="/inbox" className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors inline-flex items-center">
+            clear
+          </Link>
+        )}
       </form>
 
       <InboxBulkActions items={items} />
 
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <div className="text-muted-foreground">
-            page {page} of {totalPages}
-          </div>
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>page {page} / {totalPages}</span>
+          <div className="flex gap-1">
             {page > 1 ? (
-              <Link
-                href={pageUrl(page - 1)}
-                className="h-8 px-3 rounded bg-muted hover:bg-muted/80 transition-colors inline-flex items-center"
-              >
-                previous
-              </Link>
+              <Link href={pageUrl(page - 1)} className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center">← prev</Link>
             ) : (
-              <span className="h-8 px-3 rounded bg-muted/50 text-muted-foreground inline-flex items-center cursor-not-allowed">
-                previous
-              </span>
+              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">← prev</span>
             )}
             {page < totalPages ? (
-              <Link
-                href={pageUrl(page + 1)}
-                className="h-8 px-3 rounded bg-muted hover:bg-muted/80 transition-colors inline-flex items-center"
-              >
-                next
-              </Link>
+              <Link href={pageUrl(page + 1)} className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center">next →</Link>
             ) : (
-              <span className="h-8 px-3 rounded bg-muted/50 text-muted-foreground inline-flex items-center cursor-not-allowed">
-                next
-              </span>
+              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">next →</span>
             )}
           </div>
         </div>

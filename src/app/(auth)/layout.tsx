@@ -12,25 +12,27 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
 
         <div className="flex-1 flex items-center">
-          <div className="w-full">
-            <p className="text-background/50 text-sm mb-4">$ feedbackflow --info</p>
-            <div className="space-y-6 text-sm">
-              <div>
-                <span className="text-green-400">→</span> ingest feedback from github, slack, or
-                manual input
+          <div className="w-full space-y-6">
+            <div>
+              <p className="text-background/50 text-xs mb-4">// what you get</p>
+              <div className="space-y-4 text-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">→</span>
+                  <span>ingest GitHub issues automatically, deduplicated daily</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">→</span>
+                  <span>AI extracts sentiment, severity (1–5), and topic tags</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">→</span>
+                  <span>filter and triage your inbox by what actually matters</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">→</span>
+                  <span>Slack alerts for critical feedback, free via OpenRouter</span>
+                </div>
               </div>
-              <div>
-                <span className="text-green-400">→</span> llm extracts sentiment, topics, severity
-              </div>
-              <div>
-                <span className="text-green-400">→</span> filter, sort, and act on what matters
-              </div>
-              <div>
-                <span className="text-green-400">→</span> get slack alerts for critical issues
-              </div>
-            </div>
-            <div className="mt-8 text-background/50 text-sm">
-              <span className="animate-pulse">_</span>
             </div>
           </div>
         </div>
