@@ -3,6 +3,7 @@ export const MAX_LLM_INPUT_LENGTH = 8000;
 
 export const DEFAULT_FEEDBACK_LIMIT = 100;
 export const DEFAULT_ANALYSIS_BATCH_SIZE = 15;
+export const OPENROUTER_ANALYSIS_BATCH_SIZE = 10;
 
 export const GITHUB_MAX_PAGES = 10;
 export const GITHUB_PER_PAGE = 100;

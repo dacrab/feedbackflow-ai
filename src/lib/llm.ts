@@ -27,6 +27,7 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
   google: "gemini-2.5-flash",
   openai: "gpt-5.4-nano",
   anthropic: "claude-haiku-4-5",
+  openrouter: "openrouter/auto",
 } as const;
 
 type LLMOptions = { provider?: LLMProvider; model?: string; apiKey?: string };
@@ -43,6 +44,11 @@ function getModel(opts?: LLMOptions) {
     const apiKey = opts?.apiKey ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
     return createAnthropic({ apiKey })(modelName);
+  }
+  if (provider === "openrouter") {
+    const apiKey = opts?.apiKey ?? process.env["OPENROUTER_API_KEY"];
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY missing");
+    return createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(modelName);
   }
   if (opts?.apiKey) return createGoogleGenerativeAI({ apiKey: opts.apiKey })(modelName);
   return google(modelName);
@@ -97,6 +103,10 @@ export async function analyzeFeedback(
       return object;
     } catch (err) {
       lastErr = err;
+      const msg = String(err);
+      // Don't retry rate-limit or quota errors — they won't resolve on retry
+      if (msg.includes("rate-limit") || msg.includes("Rate limit") || msg.includes("per-day") || msg.includes("quota"))
+        break;
       if (attempt < retries)
         await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
     }

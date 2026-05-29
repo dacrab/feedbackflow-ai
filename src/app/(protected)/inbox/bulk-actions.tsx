@@ -102,16 +102,13 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                   />
 
                   <div
-                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                      severity >= 4
-                        ? "bg-red-500"
-                        : severity >= 3
-                          ? "bg-orange-500"
-                          : "bg-muted-foreground/30"
+                    className={`text-xs font-mono font-medium w-5 text-center shrink-0 ${
+                      severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground/50"
                     }`}
                     title={severityLabel}
+                    aria-label={severityLabel}
                   >
-                    <span className="sr-only">{severityLabel}</span>
+                    {severity || "·"}
                   </div>
 
                   <Link href={`/feedback/${item.id}`} className="flex-1 min-w-0">
