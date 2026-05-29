@@ -22,10 +22,11 @@ export default function SettingsItem({
     toast(`delete ${description ?? label}?`, {
       action: {
         label: "delete",
-        onClick: () => act(
-          () => (apiPath === "sources" ? deleteSource(item.id) : deleteNotification(item.id)),
-          `${noun} deleted`,
-        ),
+        onClick: () =>
+          act(
+            () => (apiPath === "sources" ? deleteSource(item.id) : deleteNotification(item.id)),
+            `${noun} deleted`,
+          ),
       },
     });
   }
@@ -43,12 +44,15 @@ export default function SettingsItem({
         <button
           type="button"
           disabled={pending}
-          onClick={() => act(
-            () => apiPath === "sources"
-              ? updateSource(item.id, { enabled: !item.enabled })
-              : updateNotification(item.id, { enabled: !item.enabled }),
-            `${noun} ${item.enabled ? "disabled" : "enabled"}`,
-          )}
+          onClick={() =>
+            act(
+              () =>
+                apiPath === "sources"
+                  ? updateSource(item.id, { enabled: !item.enabled })
+                  : updateNotification(item.id, { enabled: !item.enabled }),
+              `${noun} ${item.enabled ? "disabled" : "enabled"}`,
+            )
+          }
           className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
         >
           {item.enabled ? "disable" : "enable"}

@@ -20,8 +20,11 @@ function MetricCard({
       <div className="flex items-end justify-between gap-2">
         <p className="text-2xl font-medium leading-none">{value}</p>
         {delta !== undefined && (
-          <span className={`text-xs font-mono mb-0.5 ${delta >= 0 ? "text-green-500" : "text-red-500"}`}>
-            {delta >= 0 ? "↑" : "↓"}{Math.abs(delta)}
+          <span
+            className={`text-xs font-mono mb-0.5 ${delta >= 0 ? "text-green-500" : "text-red-500"}`}
+          >
+            {delta >= 0 ? "↑" : "↓"}
+            {Math.abs(delta)}
           </span>
         )}
       </div>
@@ -76,7 +79,11 @@ export default async function DashboardPage() {
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         <MetricCard label="total" value={m.total} delta={m.trendDelta} />
         <MetricCard label="positive" value={`${m.positiveShare}%`} />
-        <MetricCard label="critical" value={m.highSeverity} note={`severity ${HIGH_SEVERITY_THRESHOLD}+`} />
+        <MetricCard
+          label="critical"
+          value={m.highSeverity}
+          note={`severity ${HIGH_SEVERITY_THRESHOLD}+`}
+        />
         <MetricCard label="avg severity" value={m.avgSeverity} note={`of ${MAX_SEVERITY}`} />
       </div>
 

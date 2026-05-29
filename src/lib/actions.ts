@@ -31,32 +31,48 @@ async function authedUid() {
 }
 
 const uuidSchema = z.string().uuid();
-const repoSchema = z.string().regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
+const repoSchema = z
+  .string()
+  .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
 const providerSchema = z.enum(["google", "openai", "anthropic", "openrouter"]);
 const modelSchema = z.string().min(1).max(100);
 const apiKeySchema = z.string().min(8).max(512);
-const webhookSchema = z.string().url("must be a valid URL").startsWith("https://", "must start with https://");
+const webhookSchema = z
+  .string()
+  .url("must be a valid URL")
+  .startsWith("https://", "must start with https://");
 const statusSchema = z.enum(["New", "Acknowledged", "Actioned"]);
 
 export async function addSource(repo: string, token?: string) {
   parse(repoSchema, repo);
   if (token) parse(z.string().min(1).max(512), token);
   const userId = await authedUid();
-  await db.insert(userSources).values({ userId, type: "github", config: { repo }, secretCipher: token ? encrypt(token) : null });
+  await db.insert(userSources).values({
+    userId,
+    type: "github",
+    config: { repo },
+    secretCipher: token ? encrypt(token) : null,
+  });
   runIngest().catch(console.error);
   revalidatePath("/settings");
 }
 
-export async function updateSource(id: string, data: { enabled?: boolean; repo?: string; token?: string }) {
+export async function updateSource(
+  id: string,
+  data: { enabled?: boolean; repo?: string; token?: string },
+) {
   parse(uuidSchema, id);
   if (data.repo) parse(repoSchema, data.repo);
   if (data.token) parse(z.string().min(1).max(512), data.token);
   const userId = await authedUid();
-  await db.update(userSources).set({
-    ...(data.enabled !== undefined && { enabled: data.enabled }),
-    ...(data.repo !== undefined && { config: { repo: data.repo } }),
-    ...(data.token !== undefined && { secretCipher: data.token ? encrypt(data.token) : null }),
-  }).where(and(eq(userSources.id, id), eq(userSources.userId, userId)));
+  await db
+    .update(userSources)
+    .set({
+      ...(data.enabled !== undefined && { enabled: data.enabled }),
+      ...(data.repo !== undefined && { config: { repo: data.repo } }),
+      ...(data.token !== undefined && { secretCipher: data.token ? encrypt(data.token) : null }),
+    })
+    .where(and(eq(userSources.id, id), eq(userSources.userId, userId)));
   revalidatePath("/settings");
 }
 
@@ -70,27 +86,39 @@ export async function deleteSource(id: string) {
 export async function addNotification(webhook: string) {
   parse(webhookSchema, webhook);
   const userId = await uid();
-  await db.insert(userNotifications).values({ userId, type: "slack", config: {}, secretCipher: encrypt(webhook) });
+  await db
+    .insert(userNotifications)
+    .values({ userId, type: "slack", config: {}, secretCipher: encrypt(webhook) });
   revalidatePath("/settings");
 }
 
-export async function updateNotification(id: string, data: { enabled?: boolean; webhook?: string; minSeverity?: number }) {
+export async function updateNotification(
+  id: string,
+  data: { enabled?: boolean; webhook?: string; minSeverity?: number },
+) {
   parse(uuidSchema, id);
   if (data.webhook) parse(webhookSchema, data.webhook);
   if (data.minSeverity !== undefined) parse(z.number().int().min(1).max(5), data.minSeverity);
   const userId = await uid();
-  await db.update(userNotifications).set({
-    ...(data.enabled !== undefined && { enabled: data.enabled }),
-    ...(data.webhook !== undefined && { secretCipher: data.webhook ? encrypt(data.webhook) : null }),
-    ...(data.minSeverity !== undefined && { config: { minSeverity: data.minSeverity } }),
-  }).where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
+  await db
+    .update(userNotifications)
+    .set({
+      ...(data.enabled !== undefined && { enabled: data.enabled }),
+      ...(data.webhook !== undefined && {
+        secretCipher: data.webhook ? encrypt(data.webhook) : null,
+      }),
+      ...(data.minSeverity !== undefined && { config: { minSeverity: data.minSeverity } }),
+    })
+    .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
   revalidatePath("/settings");
 }
 
 export async function deleteNotification(id: string) {
   parse(uuidSchema, id);
   const userId = await uid();
-  await db.delete(userNotifications).where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
+  await db
+    .delete(userNotifications)
+    .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
   revalidatePath("/settings");
 }
 
@@ -101,7 +129,9 @@ export async function saveSettings(provider: LLMProvider, model: string, encrypt
   parse(apiKeySchema, apiKey);
   const userId = await uid();
   const apiKeyCipher = encrypt(apiKey);
-  await db.insert(userSettings).values({ userId, provider, model, apiKeyCipher })
+  await db
+    .insert(userSettings)
+    .values({ userId, provider, model, apiKeyCipher })
     .onConflictDoUpdate({ target: userSettings.userId, set: { provider, model, apiKeyCipher } });
   revalidatePath("/settings");
 }
@@ -117,7 +147,10 @@ export async function updateSettingsKey(encryptedPayload: string) {
   const apiKey = Buffer.from(encryptedPayload, "base64").toString("utf8");
   parse(apiKeySchema, apiKey);
   const userId = await uid();
-  await db.update(userSettings).set({ apiKeyCipher: encrypt(apiKey) }).where(eq(userSettings.userId, userId));
+  await db
+    .update(userSettings)
+    .set({ apiKeyCipher: encrypt(apiKey) })
+    .where(eq(userSettings.userId, userId));
   revalidatePath("/settings");
 }
 
@@ -131,8 +164,12 @@ export async function updateFeedbackStatus(feedbackItemId: string, status: Feedb
   parse(uuidSchema, feedbackItemId);
   parse(statusSchema, status);
   const userId = await uid();
-  await db.update(feedbackAnalyses).set({ status })
-    .where(and(eq(feedbackAnalyses.feedbackItemId, feedbackItemId), eq(feedbackAnalyses.userId, userId)));
+  await db
+    .update(feedbackAnalyses)
+    .set({ status })
+    .where(
+      and(eq(feedbackAnalyses.feedbackItemId, feedbackItemId), eq(feedbackAnalyses.userId, userId)),
+    );
   revalidatePath("/inbox");
   revalidatePath(`/feedback/${feedbackItemId}`);
 }
@@ -141,7 +178,9 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
   parse(z.array(uuidSchema).min(1).max(200), ids);
   parse(statusSchema, status);
   const userId = await uid();
-  await db.update(feedbackAnalyses).set({ status: status as FeedbackStatus })
+  await db
+    .update(feedbackAnalyses)
+    .set({ status: status as FeedbackStatus })
     .where(and(eq(feedbackAnalyses.userId, userId), inArray(feedbackAnalyses.feedbackItemId, ids)));
   revalidatePath("/inbox");
 }

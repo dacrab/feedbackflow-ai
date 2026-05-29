@@ -15,23 +15,46 @@ export default async function SettingsPage() {
 
   const [settingsRow, sources, hooks, lastRun] = await Promise.all([
     db
-      .select({ provider: userSettings.provider, model: userSettings.model, apiKeyCipher: userSettings.apiKeyCipher })
+      .select({
+        provider: userSettings.provider,
+        model: userSettings.model,
+        apiKeyCipher: userSettings.apiKeyCipher,
+      })
       .from(userSettings)
       .where(eq(userSettings.userId, userId))
       .limit(1)
       .then((r) => r[0]),
     db
-      .select({ id: userSources.id, type: userSources.type, config: userSources.config, enabled: userSources.enabled, lastChecked: userSources.lastChecked, createdAt: userSources.createdAt })
+      .select({
+        id: userSources.id,
+        type: userSources.type,
+        config: userSources.config,
+        enabled: userSources.enabled,
+        lastChecked: userSources.lastChecked,
+        createdAt: userSources.createdAt,
+      })
       .from(userSources)
       .where(eq(userSources.userId, userId))
       .orderBy(desc(userSources.createdAt)),
     db
-      .select({ id: userNotifications.id, type: userNotifications.type, config: userNotifications.config, enabled: userNotifications.enabled })
+      .select({
+        id: userNotifications.id,
+        type: userNotifications.type,
+        config: userNotifications.config,
+        enabled: userNotifications.enabled,
+      })
       .from(userNotifications)
       .where(eq(userNotifications.userId, userId))
       .orderBy(desc(userNotifications.createdAt)),
     db
-      .select({ startedAt: ingestRuns.startedAt, finishedAt: ingestRuns.finishedAt, ok: ingestRuns.ok, fetched: ingestRuns.fetched, inserted: ingestRuns.inserted, analyzed: ingestRuns.analyzed })
+      .select({
+        startedAt: ingestRuns.startedAt,
+        finishedAt: ingestRuns.finishedAt,
+        ok: ingestRuns.ok,
+        fetched: ingestRuns.fetched,
+        inserted: ingestRuns.inserted,
+        analyzed: ingestRuns.analyzed,
+      })
       .from(ingestRuns)
       .where(eq(ingestRuns.userId, userId))
       .orderBy(desc(ingestRuns.startedAt))
@@ -39,7 +62,8 @@ export default async function SettingsPage() {
       .then((r) => r[0] ?? null),
   ]);
 
-  const provider = settingsRow?.provider && isLLMProvider(settingsRow.provider) ? settingsRow.provider : null;
+  const provider =
+    settingsRow?.provider && isLLMProvider(settingsRow.provider) ? settingsRow.provider : null;
 
   return (
     <div className="space-y-6">
