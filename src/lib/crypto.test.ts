@@ -33,7 +33,9 @@ describe("encrypt/decrypt", () => {
 
 describe("timingSafeEqual", () => {
   it("returns true for equal strings", () => expect(timingSafeEqual("abc", "abc")).toBe(true));
-  it("returns false for different strings", () => expect(timingSafeEqual("abc", "abd")).toBe(false));
-  it("returns false for different lengths", () => expect(timingSafeEqual("abc", "abcd")).toBe(false));
+  it("returns false for different strings", () =>
+    expect(timingSafeEqual("abc", "abd")).toBe(false));
+  it("returns false for different lengths", () =>
+    expect(timingSafeEqual("abc", "abcd")).toBe(false));
   it("returns false for empty vs non-empty", () => expect(timingSafeEqual("", "a")).toBe(false));
 });

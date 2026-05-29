@@ -42,7 +42,9 @@ describe("LLMSettingsCard", () => {
   });
 
   it("shows active config in status row", () => {
-    render(<LLMSettingsCard initialProvider="google" initialModel="gemini-2.5-flash" hasKey={true} />);
+    render(
+      <LLMSettingsCard initialProvider="google" initialModel="gemini-2.5-flash" hasKey={true} />,
+    );
     expect(screen.getAllByText(/gemini-2\.5-flash/).length).toBeGreaterThan(0);
   });
 
