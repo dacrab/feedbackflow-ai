@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
+import { useAction } from "@/lib/use-action";
 
 type NotificationRow = {
   id: string;
@@ -16,13 +17,7 @@ type NotificationRow = {
 function WebhookItem({ hook }: { hook: NotificationRow }) {
   const [editingSeverity, setEditingSeverity] = useState(false);
   const [minSeverity, setMinSeverity] = useState(hook.config.minSeverity ?? 4);
-  const [pending, startTransition] = useTransition();
-
-  const act = (fn: () => Promise<void>, msg: string) =>
-    startTransition(async () => {
-      try { await fn(); toast.success(msg); }
-      catch (e) { toast.error(e instanceof Error ? e.message : "failed"); }
-    });
+  const { act, pending } = useAction();
 
   function onDelete() {
     toast("delete this webhook?", {
@@ -106,19 +101,11 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
 
 export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
-  const [pending, startTransition] = useTransition();
+  const { act, pending } = useAction();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    startTransition(async () => {
-      try {
-        await addNotification(slackUrl);
-        setSlackUrl("");
-        toast.success("webhook added");
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "failed to add webhook");
-      }
-    });
+    act(async () => { await addNotification(slackUrl); setSlackUrl(""); }, "webhook added");
   }
 
   return (
