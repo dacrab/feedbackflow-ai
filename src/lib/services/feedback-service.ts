@@ -29,7 +29,7 @@ type FeedbackFilters = {
   sort?: "created_desc" | "severity_desc" | "severity_asc";
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Drizzle row shape is not statically typed here
 function transform(row: any): FeedbackItemWithAnalysis {
   return {
     id: row.id,
