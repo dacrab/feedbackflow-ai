@@ -35,6 +35,25 @@ async function fetchPage(
     .map(({ id, title, body, created_at }) => ({ id, title, body, created_at }));
 }
 
+async function fetchPageWithRetry(
+  repo: string,
+  sinceISO: string,
+  page: number,
+  token?: string,
+): Promise<GithubIssue[]> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= GITHUB_MAX_RETRIES; attempt++) {
+    try {
+      return await fetchPage(repo, sinceISO, page, token);
+    } catch (err) {
+      lastErr = err;
+      if (attempt < GITHUB_MAX_RETRIES)
+        await new Promise((r) => setTimeout(r, GITHUB_RETRY_BASE_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 export async function fetchGithubIssues(
   repo: string,
   sinceISO: string,
@@ -43,19 +62,7 @@ export async function fetchGithubIssues(
   const results: GithubIssue[] = [];
   for (let page = 1; page <= GITHUB_MAX_PAGES; page++) {
     try {
-      let lastErr: unknown;
-      let batch: GithubIssue[] = [];
-      for (let attempt = 0; attempt <= GITHUB_MAX_RETRIES; attempt++) {
-        try {
-          batch = await fetchPage(repo, sinceISO, page, token);
-          break;
-        } catch (err) {
-          lastErr = err;
-          if (attempt < GITHUB_MAX_RETRIES)
-            await new Promise((r) => setTimeout(r, GITHUB_RETRY_BASE_DELAY_MS * (attempt + 1)));
-        }
-      }
-      if (batch.length === 0 && lastErr) throw lastErr;
+      const batch = await fetchPageWithRetry(repo, sinceISO, page, token);
       if (!batch.length) break;
       results.push(...batch);
     } catch (e) {
