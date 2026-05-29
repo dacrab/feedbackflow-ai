@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
-import { useAction } from "@/lib/use-action";
 import type { LLMProvider } from "@/lib/types";
+import { useAction } from "@/lib/use-action";
 
 const PROVIDERS: { value: LLMProvider; label: string }[] = [
   { value: "openrouter", label: "OpenRouter (free)" },
@@ -51,7 +51,9 @@ export function LLMSettingsCard({
 }) {
   const configured = !!(initialProvider && initialModel);
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "openrouter");
-  const [model, setModel] = useState<string>(initialModel ?? MODEL_OPTIONS["openrouter"][0]!);
+  const [model, setModel] = useState<string>(
+    initialModel ?? MODEL_OPTIONS["openrouter"][0] ?? "openrouter/auto",
+  );
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
   const { act, pending } = useAction();
@@ -69,7 +71,7 @@ export function LLMSettingsCard({
 
   function handleProviderChange(p: LLMProvider) {
     setProvider(p);
-    setModel(MODEL_OPTIONS[p][0]!);
+    setModel(MODEL_OPTIONS[p][0] ?? "openrouter/auto");
     if (configured) setEditingKey(true);
   }
 
@@ -77,21 +79,37 @@ export function LLMSettingsCard({
     <Card title="llm provider" className={className ?? ""}>
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Provider */}
-        <label className="space-y-1.5">
+        <label className="space-y-1.5" htmlFor="llm-provider">
           <span className="text-xs text-muted-foreground">provider</span>
-          <Select className="w-full" size="sm" value={provider} onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}>
+          <Select
+            id="llm-provider"
+            className="w-full"
+            size="sm"
+            value={provider}
+            onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
+          >
             {PROVIDERS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
             ))}
           </Select>
         </label>
 
         {/* Model */}
-        <label className="space-y-1.5 sm:col-span-2">
+        <label className="space-y-1.5 sm:col-span-2" htmlFor="llm-model">
           <span className="text-xs text-muted-foreground">model</span>
-          <Select className="w-full" size="sm" value={model} onChange={(e) => setModel(e.target.value)}>
+          <Select
+            id="llm-model"
+            className="w-full"
+            size="sm"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
             {MODEL_OPTIONS[provider].map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </Select>
         </label>
@@ -149,7 +167,13 @@ export function LLMSettingsCard({
             {configured && !editingKey ? "update model" : "save"}
           </Button>
           {editingKey && configured && (
-            <Button size="sm" onClick={() => { setEditingKey(false); setApiKey(""); }}>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingKey(false);
+                setApiKey("");
+              }}
+            >
               cancel
             </Button>
           )}
@@ -158,7 +182,11 @@ export function LLMSettingsCard({
               type="button"
               disabled={pending}
               onClick={() =>
-                act(async () => { await deleteSettings(); setEditingKey(true); setApiKey(""); }, "removed")
+                act(async () => {
+                  await deleteSettings();
+                  setEditingKey(true);
+                  setApiKey("");
+                }, "removed")
               }
               className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >

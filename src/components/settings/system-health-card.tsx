@@ -73,13 +73,16 @@ export function SystemHealthCard({
           const data = JSON.parse(line.slice(6));
           const stage = data.stage as string;
           const ok =
-            stage === "complete" || stage === "analysis_ok" ? true
-            : stage === "error" || stage === "analysis_error" ? false
-            : undefined;
+            stage === "complete" || stage === "analysis_ok"
+              ? true
+              : stage === "error" || stage === "analysis_error"
+                ? false
+                : undefined;
           const msg = data.message as string;
 
           // Progress stages (analyzing/ok/error per item) replace the last line in-place
-          const isProgress = stage === "analyzing" || stage === "analysis_ok" || stage === "analysis_error";
+          const isProgress =
+            stage === "analyzing" || stage === "analysis_ok" || stage === "analysis_error";
           setLogs((prev) => {
             const last = prev[prev.length - 1];
             if (isProgress && last) {
@@ -90,7 +93,12 @@ export function SystemHealthCard({
 
           logRef.current?.scrollTo({ top: 9999, behavior: "smooth" });
           if (stage === "complete") toast.success(msg);
-          if (stage === "error") { toast.error(msg); setSyncing(false); abortRef.current = null; return; }
+          if (stage === "error") {
+            toast.error(msg);
+            setSyncing(false);
+            abortRef.current = null;
+            return;
+          }
         }
       }
     } catch (err) {
@@ -126,15 +134,26 @@ export function SystemHealthCard({
           <div className="rounded border border-border bg-muted/20 px-3 py-2 space-y-1.5">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">last run</p>
-              <span className={`text-xs ${lastRun.ok ? "text-green-500" : lastRun.ok === false ? "text-red-500" : "text-muted-foreground"}`}>
+              <span
+                className={`text-xs ${lastRun.ok ? "text-green-500" : lastRun.ok === false ? "text-red-500" : "text-muted-foreground"}`}
+              >
                 {lastRun.ok ? "● ok" : lastRun.ok === false ? "● failed" : "● running"}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">{timeAgo(lastRun.startedAt)}</p>
             <div className="flex gap-3 text-xs">
-              <span><span className="text-foreground font-medium">{lastRun.fetched ?? 0}</span> <span className="text-muted-foreground">fetched</span></span>
-              <span><span className="text-foreground font-medium">{lastRun.inserted ?? 0}</span> <span className="text-muted-foreground">new</span></span>
-              <span><span className="text-foreground font-medium">{lastRun.analyzed ?? 0}</span> <span className="text-muted-foreground">analyzed</span></span>
+              <span>
+                <span className="text-foreground font-medium">{lastRun.fetched ?? 0}</span>{" "}
+                <span className="text-muted-foreground">fetched</span>
+              </span>
+              <span>
+                <span className="text-foreground font-medium">{lastRun.inserted ?? 0}</span>{" "}
+                <span className="text-muted-foreground">new</span>
+              </span>
+              <span>
+                <span className="text-foreground font-medium">{lastRun.analyzed ?? 0}</span>{" "}
+                <span className="text-muted-foreground">analyzed</span>
+              </span>
             </div>
           </div>
         ) : (
@@ -143,9 +162,17 @@ export function SystemHealthCard({
 
         {/* Sync button */}
         {syncing ? (
-          <Button size="sm" onClick={cancel} className="w-full">cancel sync</Button>
+          <Button size="sm" onClick={cancel} className="w-full">
+            cancel sync
+          </Button>
         ) : (
-          <Button size="sm" variant="primary" disabled={enabledSources === 0} onClick={runSync} className="w-full">
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={enabledSources === 0}
+            onClick={runSync}
+            className="w-full"
+          >
             sync now
           </Button>
         )}
@@ -158,11 +185,17 @@ export function SystemHealthCard({
           className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 space-y-0.5 shadow-lg"
         >
           {logs.map((l) => (
-            <p key={l.id} className={`text-xs font-mono ${l.ok === true ? "text-green-500" : l.ok === false ? "text-red-500" : "text-muted-foreground"}`}>
-              {l.ok === true ? "✓ " : l.ok === false ? "✗ " : "· "}{l.msg}
+            <p
+              key={l.id}
+              className={`text-xs font-mono ${l.ok === true ? "text-green-500" : l.ok === false ? "text-red-500" : "text-muted-foreground"}`}
+            >
+              {l.ok === true ? "✓ " : l.ok === false ? "✗ " : "· "}
+              {l.msg}
             </p>
           ))}
-          {syncing && <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>}
+          {syncing && (
+            <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>
+          )}
         </div>
       )}
     </div>

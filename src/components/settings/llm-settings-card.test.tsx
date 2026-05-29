@@ -38,8 +38,10 @@ describe("LLMSettingsCard", () => {
   });
 
   it("shows current config status row when configured", () => {
-    render(<LLMSettingsCard initialProvider="google" initialModel="gemini-2.5-flash" hasKey={true} />);
-    expect(screen.getByText(/gemini-2\.5-flash/)).toBeInTheDocument();
+    render(
+      <LLMSettingsCard initialProvider="google" initialModel="gemini-2.5-flash" hasKey={true} />,
+    );
+    expect(screen.getAllByText(/gemini-2\.5-flash/).length).toBeGreaterThan(0);
   });
 
   it("save button enabled after typing api key", async () => {

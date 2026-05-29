@@ -27,9 +27,13 @@ export default async function InboxPage({
   const q = sp.get("q") || undefined;
   const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
   const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
-  const sort = (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
+  const sort =
+    (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
   const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
-  const pageSize = Math.min(100, Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)),
+  );
   const offset = (page - 1) * pageSize;
 
   const filters = {
@@ -99,11 +103,17 @@ export default async function InboxPage({
           <option value="severity_desc">severity ↓</option>
           <option value="severity_asc">severity ↑</option>
         </Select>
-        <button type="submit" className="h-8 px-3 rounded border border-border text-xs hover:bg-muted transition-colors">
+        <button
+          type="submit"
+          className="h-8 px-3 rounded border border-border text-xs hover:bg-muted transition-colors"
+        >
           apply
         </button>
         {hasFilters && (
-          <Link href="/inbox" className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors inline-flex items-center">
+          <Link
+            href="/inbox"
+            className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors inline-flex items-center"
+          >
             clear
           </Link>
         )}
@@ -114,17 +124,33 @@ export default async function InboxPage({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>page {page} / {totalPages}</span>
+          <span>
+            page {page} / {totalPages}
+          </span>
           <div className="flex gap-1">
             {page > 1 ? (
-              <Link href={pageUrl(page - 1)} className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center">← prev</Link>
+              <Link
+                href={pageUrl(page - 1)}
+                className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center"
+              >
+                ← prev
+              </Link>
             ) : (
-              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">← prev</span>
+              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">
+                ← prev
+              </span>
             )}
             {page < totalPages ? (
-              <Link href={pageUrl(page + 1)} className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center">next →</Link>
+              <Link
+                href={pageUrl(page + 1)}
+                className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center"
+              >
+                next →
+              </Link>
             ) : (
-              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">next →</span>
+              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">
+                next →
+              </span>
             )}
           </div>
         </div>

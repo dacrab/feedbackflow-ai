@@ -18,9 +18,11 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
   const a = item.feedback_analyses;
 
   const severityColor =
-    (a?.severity_score ?? 0) >= 4 ? "text-red-500"
-    : (a?.severity_score ?? 0) >= 3 ? "text-orange-500"
-    : "text-muted-foreground";
+    (a?.severity_score ?? 0) >= 4
+      ? "text-red-500"
+      : (a?.severity_score ?? 0) >= 3
+        ? "text-orange-500"
+        : "text-muted-foreground";
 
   return (
     <div className="space-y-4">
@@ -47,13 +49,18 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
               <span>{item.source}</span>
               <SentimentBadge sentiment={a?.sentiment} />
               {a?.severity_score && (
-                <span className={severityColor}>severity {a.severity_score}/{MAX_SEVERITY}</span>
+                <span className={severityColor}>
+                  severity {a.severity_score}/{MAX_SEVERITY}
+                </span>
               )}
             </div>
             {(a?.topics?.length ?? 0) > 0 && (
               <div className="flex flex-wrap gap-1">
                 {a?.topics.map((t) => (
-                  <span key={t} className="px-2 py-0.5 rounded border border-border bg-muted/30 text-xs">
+                  <span
+                    key={t}
+                    className="px-2 py-0.5 rounded border border-border bg-muted/30 text-xs"
+                  >
                     {t}
                   </span>
                 ))}
@@ -78,13 +85,17 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
               <dl className="space-y-3">
                 <div>
                   <dt className="text-xs text-muted-foreground">sentiment</dt>
-                  <dd className="mt-0.5"><SentimentBadge sentiment={a.sentiment} /></dd>
+                  <dd className="mt-0.5">
+                    <SentimentBadge sentiment={a.sentiment} />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">severity</dt>
                   <dd className={`mt-0.5 text-2xl font-medium leading-none ${severityColor}`}>
                     {a.severity_score}
-                    <span className="text-sm font-normal text-muted-foreground">/{MAX_SEVERITY}</span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      /{MAX_SEVERITY}
+                    </span>
                   </dd>
                 </div>
                 <div>
@@ -100,7 +111,10 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
                     <dt className="text-xs text-muted-foreground">topics</dt>
                     <dd className="mt-1 flex flex-wrap gap-1">
                       {a.topics.map((t) => (
-                        <span key={t} className="px-1.5 py-0.5 rounded border border-border bg-muted/30 text-xs">
+                        <span
+                          key={t}
+                          className="px-1.5 py-0.5 rounded border border-border bg-muted/30 text-xs"
+                        >
                           {t}
                         </span>
                       ))}
@@ -115,7 +129,12 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
             <dl className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">id</dt>
-                <dd className="font-mono text-muted-foreground truncate max-w-[120px]" title={item.id}>{item.id.slice(0, 8)}…</dd>
+                <dd
+                  className="font-mono text-muted-foreground truncate max-w-[120px]"
+                  title={item.id}
+                >
+                  {item.id.slice(0, 8)}…
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">created</dt>

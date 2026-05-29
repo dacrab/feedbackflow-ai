@@ -21,7 +21,10 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
 
   function onDelete() {
     toast("delete this webhook?", {
-      action: { label: "delete", onClick: () => act(() => deleteNotification(hook.id), "webhook deleted") },
+      action: {
+        label: "delete",
+        onClick: () => act(() => deleteNotification(hook.id), "webhook deleted"),
+      },
     });
   }
 
@@ -38,7 +41,12 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
           <button
             type="button"
             disabled={pending}
-            onClick={() => act(() => updateNotification(hook.id, { enabled: !hook.enabled }), hook.enabled ? "disabled" : "enabled")}
+            onClick={() =>
+              act(
+                () => updateNotification(hook.id, { enabled: !hook.enabled }),
+                hook.enabled ? "disabled" : "enabled",
+              )
+            }
             className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
           >
             {hook.enabled ? "disable" : "enable"}
@@ -66,7 +74,9 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
               className="w-16"
             >
               {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>{n}</option>
+                <option key={n} value={n}>
+                  {n}
+                </option>
               ))}
             </Select>
             <button
@@ -80,7 +90,11 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
             >
               save
             </button>
-            <button type="button" onClick={() => setEditingSeverity(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              type="button"
+              onClick={() => setEditingSeverity(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
               cancel
             </button>
           </>
@@ -105,7 +119,10 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    act(async () => { await addNotification(slackUrl); setSlackUrl(""); }, "webhook added");
+    act(async () => {
+      await addNotification(slackUrl);
+      setSlackUrl("");
+    }, "webhook added");
   }
 
   return (
@@ -120,11 +137,23 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
         />
         <p className="text-xs text-muted-foreground">
           alerts sent when feedback severity meets the threshold.{" "}
-          <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          <a
+            href="https://api.slack.com/messaging/webhooks"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-foreground transition-colors"
+          >
             get webhook ↗
           </a>
         </p>
-        <Button type="submit" size="sm" isLoading={pending} loadingText="adding..." disabled={!slackUrl} className="w-full">
+        <Button
+          type="submit"
+          size="sm"
+          isLoading={pending}
+          loadingText="adding..."
+          disabled={!slackUrl}
+          className="w-full"
+        >
           add webhook
         </Button>
       </form>
@@ -133,7 +162,9 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
         {hooks.length === 0 ? (
           <div className="text-center py-6 space-y-1">
             <p className="text-sm text-muted-foreground">no webhooks configured</p>
-            <p className="text-xs text-muted-foreground">add a slack webhook to get notified on high-severity feedback</p>
+            <p className="text-xs text-muted-foreground">
+              add a slack webhook to get notified on high-severity feedback
+            </p>
           </div>
         ) : (
           hooks.map((h) => <WebhookItem key={h.id} hook={h} />)

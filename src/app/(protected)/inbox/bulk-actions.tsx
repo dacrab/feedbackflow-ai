@@ -103,9 +103,14 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
 
                   <div
                     className={`text-xs font-mono font-medium w-5 text-center shrink-0 ${
-                      severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground/50"
+                      severity >= 4
+                        ? "text-red-500"
+                        : severity >= 3
+                          ? "text-orange-500"
+                          : "text-muted-foreground/50"
                     }`}
                     title={severityLabel}
+                    role="img"
                     aria-label={severityLabel}
                   >
                     {severity || "·"}

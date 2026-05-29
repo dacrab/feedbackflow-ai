@@ -81,7 +81,9 @@ async function analyzeAndStore(
       if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
         await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
     } catch (err) {
-      const msg = String(err).replace(/^Error:\s*/, "").slice(0, 200);
+      const msg = String(err)
+        .replace(/^Error:\s*/, "")
+        .slice(0, 200);
       console.error(`[Ingest] Failed to analyze ${item.id}:`, msg);
       onProgress?.({ stage: "analysis_error", message: `failed: ${msg}` });
       // Abort the whole batch on unrecoverable errors (quota, credits, auth)
@@ -158,7 +160,10 @@ export async function runIngest(
       .returning({ id: ingestRuns.id });
 
     const insertedIds = new Set(inserted.map((i) => i.id));
-    const batchSize = llmOpts?.provider === "openrouter" ? OPENROUTER_ANALYSIS_BATCH_SIZE : DEFAULT_ANALYSIS_BATCH_SIZE;
+    const batchSize =
+      llmOpts?.provider === "openrouter"
+        ? OPENROUTER_ANALYSIS_BATCH_SIZE
+        : DEFAULT_ANALYSIS_BATCH_SIZE;
     const unanalyzed = await db
       .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
       .from(feedbackItems)

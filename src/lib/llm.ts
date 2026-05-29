@@ -105,7 +105,12 @@ export async function analyzeFeedback(
       lastErr = err;
       const msg = String(err);
       // Don't retry rate-limit or quota errors — they won't resolve on retry
-      if (msg.includes("rate-limit") || msg.includes("Rate limit") || msg.includes("per-day") || msg.includes("quota"))
+      if (
+        msg.includes("rate-limit") ||
+        msg.includes("Rate limit") ||
+        msg.includes("per-day") ||
+        msg.includes("quota")
+      )
         break;
       if (attempt < retries)
         await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
