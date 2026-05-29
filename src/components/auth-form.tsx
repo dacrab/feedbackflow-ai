@@ -129,13 +129,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {isSignup ? "create account →" : "sign in →"}
         </Button>
       </form>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-2 text-muted-foreground font-mono">or</span>
-        </div>
+      <div className="relative flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex-1 border-t border-border" />
+        <span>or</span>
+        <div className="flex-1 border-t border-border" />
       </div>
       <OAuthButtons />
       <p className="text-center text-sm text-muted-foreground">

@@ -29,6 +29,7 @@ type FeedbackFilters = {
   sort?: "created_desc" | "severity_desc" | "severity_asc";
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transform(row: any): FeedbackItemWithAnalysis {
   return {
     id: row.id,
