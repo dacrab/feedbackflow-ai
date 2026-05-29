@@ -2,7 +2,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 
 export default function Loading() {
   return (
-    <PageSkeleton gap="6">
+    <PageSkeleton gap={24}>
       <div className="h-6 w-32 rounded bg-muted" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {["a", "b", "c", "d"].map((k) => (

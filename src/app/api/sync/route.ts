@@ -7,8 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   let userId: string;
   try {
-    const user = await requireAuth();
-    userId = user.id;
+    userId = await requireAuth();
   } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }

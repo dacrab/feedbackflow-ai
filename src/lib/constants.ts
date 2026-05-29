@@ -10,9 +10,9 @@ export const GITHUB_PER_PAGE = 100;
 
 export const INITIAL_FETCH_DAYS = 30;
 
-export const LLM_MAX_RETRIES = 3;
+export const LLM_MAX_RETRIES = 2;
 export const LLM_MAX_TOPICS = 10;
-export const LLM_RETRY_BASE_DELAY_MS = 5000;
+export const LLM_RETRY_BASE_DELAY_MS = 1000;
 
 export const HIGH_SEVERITY_THRESHOLD = 4;
 export const MAX_SEVERITY = 5;
