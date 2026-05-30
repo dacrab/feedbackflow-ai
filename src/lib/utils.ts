@@ -1,8 +1,7 @@
-import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function cn(...inputs: (string | undefined | null | false | 0)[]) {
+  return twMerge(...inputs.filter(Boolean).map(String));
 }
 
 export const formatDateUTC = (iso: string) =>
