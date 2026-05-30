@@ -51,7 +51,8 @@ async function analyzeAndStore(
   let count = 0;
   for (let i = 0; i < items.length; i++) {
     if (signal?.aborted) break;
-    const item = items[i]!;
+    const item = items[i];
+    if (!item) continue;
     onProgress?.({ stage: "analyzing", message: `analyzing ${i + 1}/${items.length}...` });
     try {
       const a = await analyzeFeedback(item.rawContent, LLM_MAX_RETRIES, llmOpts);
@@ -173,10 +174,12 @@ export async function runIngest(
     // Update lastChecked timestamp for this source
     await db.update(userSources).set({ lastChecked: new Date() }).where(eq(userSources.id, src.id));
 
-    await db
-      .update(ingestRuns)
-      .set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed })
-      .where(eq(ingestRuns.id, run!.id));
+    if (run) {
+      await db
+        .update(ingestRuns)
+        .set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed })
+        .where(eq(ingestRuns.id, run.id));
+    }
 
     totals.fetched += issues.length;
     totals.inserted += inserted.length;
