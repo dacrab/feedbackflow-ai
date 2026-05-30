@@ -1,45 +1,22 @@
 # FeedbackFlow AI
 
-Micro-SaaS that ingests GitHub issues, runs LLM analysis, and gives you an actionable feedback inbox with sentiment, severity, and topic tagging.
+Turn GitHub issues into an actionable feedback inbox. Connect a repo, and AI automatically tags each issue with sentiment, severity, and topics — so you can focus on what actually matters.
 
-## Features
+## What it does
 
-- **Auth** — email/password + OAuth (GitHub, Google) via better-auth. All data is per-user scoped.
-- **Ingest** — connects to GitHub repos, fetches issues on a schedule, deduplicates by `external_id`.
-- **LLM analysis** — sentiment (positive/neutral/negative), severity (1–5), topics, and a one-line summary per item. Supports OpenRouter (free), Google Gemini, OpenAI, and Anthropic.
-- **Inbox** — filter and sort by sentiment, topic, severity, or status. Bulk triage actions.
-- **Dashboard** — sentiment trends, topic distribution, severity histogram.
-- **Notifications** — Slack webhooks for feedback with severity ≥ threshold (configurable per webhook).
-- **Triage statuses** — New → Acknowledged → Actioned.
-
-## Tech stack
-
-- **Framework**: Next.js 16 (App Router, TypeScript)
-- **Database**: Neon Postgres + Drizzle ORM
-- **Auth**: better-auth
-- **LLM**: Vercel AI SDK — OpenRouter / Google / OpenAI / Anthropic
-- **Styling**: Tailwind CSS v4
-- **Charts**: Recharts
-- **Cron**: Vercel Cron Jobs
-
-## Architecture
-
-```
-Next.js App Router
-  ├─ better-auth (credentials + OAuth)
-  ├─ /api/ingest  → fetch GitHub issues → LLM analysis → Neon Postgres
-  ├─ /api/sync    → SSE stream for live sync progress
-  ├─ /api/digest  → daily Slack digest
-  └─ /api/cron    → Vercel Cron entry point
-```
+- **Inbox** — all your GitHub issues in one place, filtered by sentiment, topic, severity, or triage status
+- **AI analysis** — each issue gets a sentiment score, severity rating (1–5), topic tags, and a one-line summary
+- **Dashboard** — sentiment trends, topic breakdown, and severity distribution over time
+- **Slack alerts** — get notified when high-severity feedback lands
+- **Triage** — mark issues as New → Acknowledged → Actioned, individually or in bulk
 
 ## Getting started
 
 ### Prerequisites
 
-- Node.js 18+ / Bun
-- [Neon](https://neon.tech) Postgres project
-- LLM key — get a free one at [openrouter.ai/keys](https://openrouter.ai/keys)
+- [Bun](https://bun.sh) (or Node.js 18+)
+- [Neon](https://neon.tech) Postgres database (free tier works)
+- An LLM API key — [OpenRouter](https://openrouter.ai/keys) has a free tier, no credit card needed
 
 ### 1. Clone and install
 
@@ -51,73 +28,47 @@ bun install
 
 ### 2. Environment variables
 
-Copy `.env.example` to `.env.local` and fill in:
+Copy `.env.example` to `.env.local` and fill in the required values:
 
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | ✅ | Neon Postgres connection string |
-| `BETTER_AUTH_URL` | ✅ | App base URL (e.g. `http://localhost:3000`) |
-| `BETTER_AUTH_SECRET` | ✅ | Random secret (`openssl rand -base64 32`) |
-| `ENCRYPTION_KEY` | ✅ | Key for encrypting stored API keys (`openssl rand -base64 32`) |
-| `OPENROUTER_API_KEY` | — | Free LLM tier via [openrouter.ai](https://openrouter.ai/keys) |
-| `OPENAI_API_KEY` | — | OpenAI fallback |
-| `ANTHROPIC_API_KEY` | — | Anthropic fallback |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | — | Google Gemini fallback |
-| `GITHUB_CLIENT_ID/SECRET` | — | OAuth (optional) |
-| `GOOGLE_CLIENT_ID/SECRET` | — | OAuth (optional) |
-| `CRON_SECRET` | — | Vercel Cron auth token |
-| `SLACK_WEBHOOK_URL` | — | Global Slack webhook for alerts |
+| `BETTER_AUTH_URL` | ✅ | Your app's base URL (e.g. `http://localhost:3000`) |
+| `BETTER_AUTH_SECRET` | ✅ | Random secret — run `openssl rand -base64 32` |
+| `ENCRYPTION_KEY` | ✅ | Used to encrypt stored API keys — run `openssl rand -base64 32` |
+| `OPENROUTER_API_KEY` | — | Recommended free LLM option |
+| `OPENAI_API_KEY` | — | OpenAI alternative |
+| `ANTHROPIC_API_KEY` | — | Anthropic alternative |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | — | Google Gemini alternative |
+| `GITHUB_CLIENT_ID/SECRET` | — | For GitHub OAuth login (optional) |
+| `GOOGLE_CLIENT_ID/SECRET` | — | For Google OAuth login (optional) |
+| `CRON_SECRET` | — | Secures the cron endpoint on Vercel |
+| `SLACK_WEBHOOK_URL` | — | For Slack alert notifications |
 
-### 3. Database
+### 3. Set up the database
 
 ```bash
-bun db:generate   # generate migrations from schema
-bun db:migrate    # apply to Neon
-bun db:seed       # optional: seed sample data
+bun db:migrate    # apply schema to your Neon database
+bun db:seed       # optional: add sample data
 ```
 
-### 4. Run
+### 4. Run locally
 
 ```bash
 bun dev
-# http://localhost:3000
+# open http://localhost:3000
 ```
 
-## Cron endpoints
+## Deploying to Vercel
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/ingest` | POST | Fetch new GitHub issues + run LLM analysis |
-| `/api/digest` | GET | Send daily Slack digest for high-severity items |
-| `/api/cron` | GET | Vercel Cron entry point (calls ingest + digest) |
+1. Push to GitHub and import the repo in [Vercel](https://vercel.com).
+2. Add all required environment variables in the project settings.
+3. Add a Cron Job pointing to `/api/cron` (daily schedule recommended).
 
-All require `x-cron-token: $CRON_TOKEN` or Vercel's `CRON_SECRET` header.
+## Tech stack
 
-## Deployment (Vercel)
-
-1. Push to GitHub and import into Vercel.
-2. Set all required env vars in Vercel project settings.
-3. Add Cron Jobs in `vercel.json` or the Vercel dashboard pointing to `/api/cron`.
-
-## Data model
-
-| Table | Purpose |
-|---|---|
-| `user` | better-auth users |
-| `feedback_items` | raw ingested content, deduplicated by `(user_id, source, external_id)` |
-| `feedback_analyses` | LLM output: sentiment, topics, severity, summary, status |
-| `user_sources` | per-user GitHub repo connections |
-| `user_settings` | per-user LLM provider/model/key |
-| `user_notifications` | per-user Slack webhooks |
-| `ingest_runs` | audit log of ingest jobs |
-
-## Security
-
-- All DB queries are scoped by `user_id`.
-- API keys stored encrypted (AES-256-GCM) via `ENCRYPTION_KEY`.
-- Security headers (CSP, HSTS, X-Frame-Options) applied globally.
-- Secrets loaded from env only — never exposed to the browser.
+Next.js 16 · Neon Postgres · Drizzle ORM · better-auth · Vercel AI SDK · Tailwind CSS v4 · Recharts
 
 ## Contributing
 
-PRs and issues welcome. Include a description and screenshots where relevant.
+PRs and issues welcome. Please include a description and screenshots where relevant.
