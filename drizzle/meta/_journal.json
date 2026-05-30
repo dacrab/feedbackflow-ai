@@ -15,6 +15,13 @@
       "when": 1768243846310,
       "tag": "0001_nebulous_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780155444239,
+      "tag": "0002_tiresome_garia",
+      "breakpoints": true
     }
   ]
 }
