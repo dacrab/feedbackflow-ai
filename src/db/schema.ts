@@ -96,7 +96,6 @@ export const feedbackItems = pgTable(
     rawContent: text("raw_content").notNull(),
     originalTimestamp: timestamp("original_timestamp", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (t) => [
     unique("feedback_items_user_source_external_idx").on(t.userId, t.source, t.externalId),
@@ -123,7 +122,6 @@ export const feedbackAnalyses = pgTable(
     summary: text("summary").notNull(),
     status: analysisStatusEnum("status").notNull().default("New"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (t) => [
     index("feedback_analyses_user_id_idx").on(t.userId),
@@ -147,7 +145,6 @@ export const ingestRuns = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     ok: boolean("ok"),
-    error: text("error"),
     fetched: integer("fetched"),
     inserted: integer("inserted"),
     analyzed: integer("analyzed"),
