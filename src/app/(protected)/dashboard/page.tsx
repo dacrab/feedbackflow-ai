@@ -53,7 +53,9 @@ function ChartCard({
 
 export default async function DashboardPage() {
   const session = await getServerSession();
-  const m = await getDashboard(session?.user?.id as string);
+  const userId = session?.user?.id;
+  if (!userId) return null;
+  const m = await getDashboard(userId);
 
   const trendData = m.trendLabels.map((label, i) => ({
     name: label.slice(5),
@@ -76,7 +78,7 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-medium">dashboard</h1>
       </div>
 
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 stagger-children">
         <MetricCard label="total" value={m.total} delta={m.trendDelta} />
         <MetricCard label="positive" value={`${m.positiveShare}%`} />
         <MetricCard
@@ -87,7 +89,7 @@ export default async function DashboardPage() {
         <MetricCard label="avg severity" value={m.avgSeverity} note={`of ${MAX_SEVERITY}`} />
       </div>
 
-      <div className="grid gap-2 lg:grid-cols-2">
+      <div className="grid gap-2 lg:grid-cols-2 stagger-children">
         <ChartCard label="trend">
           <TrendChart data={trendData} />
         </ChartCard>

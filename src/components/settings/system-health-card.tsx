@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/ui/ui";
+import { timeAgo } from "@/lib/utils";
 
 type LastRun = {
   startedAt: Date;
@@ -12,14 +13,6 @@ type LastRun = {
   inserted: number | null;
   analyzed: number | null;
 } | null;
-
-function timeAgo(date: Date): string {
-  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
 
 export function SystemHealthCard({
   enabledSources,
@@ -182,7 +175,7 @@ export function SystemHealthCard({
       {logs.length > 0 && (
         <div
           ref={logRef}
-          className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 space-y-0.5 shadow-lg"
+          className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 space-y-0.5 shadow-lg animate-slide-down"
         >
           {logs.map((l) => (
             <p

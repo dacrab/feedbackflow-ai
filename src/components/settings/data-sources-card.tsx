@@ -6,6 +6,7 @@ import { Button, Card, Input } from "@/components/ui/ui";
 import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
 import { useAction } from "@/lib/use-action";
+import { timeAgo } from "@/lib/utils";
 
 type SourceRow = {
   id: string;
@@ -15,14 +16,6 @@ type SourceRow = {
   lastChecked: Date | null;
   createdAt: Date;
 };
-
-function timeAgo(date: Date): string {
-  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
 
 function SourceItem({ source }: { source: SourceRow }) {
   const { act, pending } = useAction();
@@ -109,15 +102,17 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
           onChange={(e) => setRepo(e.target.value)}
         />
         {showToken ? (
-          <Input
-            variant="sm"
-            placeholder="github token (optional, for private repos)"
-            value={ghToken}
-            onChange={(e) => setGhToken(e.target.value)}
-            type="password"
-            autoComplete="off"
-            autoFocus
-          />
+          <div className="animate-slide-down">
+            <Input
+              variant="sm"
+              placeholder="github token (optional, for private repos)"
+              value={ghToken}
+              onChange={(e) => setGhToken(e.target.value)}
+              type="password"
+              autoComplete="off"
+              autoFocus
+            />
+          </div>
         ) : (
           <button
             type="button"

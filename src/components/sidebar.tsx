@@ -9,7 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
@@ -19,13 +19,15 @@ const navItems = [
   { href: "/settings", label: "settings", icon: IconSettings },
 ];
 
-export function Sidebar({ userEmail }: { userEmail: string }) {
+export function Sidebar({
+  userEmail,
+  initialCollapsed = false,
+}: {
+  userEmail: string;
+  initialCollapsed?: boolean;
+}) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    if (localStorage.getItem("sidebar-collapsed") === "true") setCollapsed(true);
-  }, []);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   return (
     <aside
@@ -41,7 +43,9 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         )}
       >
         <Logo />
-        {!collapsed && <span className="text-sm">feedbackflow</span>}
+        {!collapsed && (
+          <span className="text-sm transition-opacity duration-150 opacity-100">feedbackflow</span>
+        )}
       </div>
 
       <nav className="flex-1 py-2 px-2">
@@ -77,7 +81,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             {userEmail.charAt(0).toLowerCase()}
           </div>
           {!collapsed && (
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 transition-opacity duration-150 opacity-100">
               <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
           )}
@@ -100,7 +104,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         onClick={() => {
           const next = !collapsed;
           setCollapsed(next);
-          localStorage.setItem("sidebar-collapsed", String(next));
+          document.cookie = `sidebar-collapsed=${next};path=/;max-age=31536000`;
         }}
         className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         title={collapsed ? "expand" : "collapse"}

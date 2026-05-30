@@ -16,19 +16,25 @@ const PROVIDERS: { value: LLMProvider; label: string }[] = [
 const MODEL_OPTIONS: Record<LLMProvider, string[]> = {
   openrouter: [
     "openrouter/auto",
-    "openrouter/owl-alpha",
-    "openai/gpt-oss-120b:free",
-    "openai/gpt-oss-20b:free",
-    "google/gemma-4-31b-it:free",
-    "google/gemma-4-26b-a4b-it:free",
-    "deepseek/deepseek-v4-flash:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "z-ai/glm-4.5-air:free",
-    "moonshotai/kimi-k2.6:free",
+    "google/gemini-3.5-flash",
+    "google/gemini-3.1-flash-lite",
+    "google/gemini-2.5-flash",
+    "openai/gpt-5.4-mini",
+    "openai/gpt-5.4-nano",
+    "anthropic/claude-haiku-4-5",
+    "meta-llama/llama-4-maverick",
+    "deepseek/deepseek-chat-v3-0324:free",
+    "mistralai/mistral-small-3.2-24b-instruct:free",
   ],
-  google: ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
-  openai: ["gpt-5.4-nano", "gpt-5.4-mini", "gpt-5-mini", "gpt-4.1-mini", "gpt-4.1"],
-  anthropic: ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-7"],
+  google: [
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-3.1-pro-preview",
+  ],
+  openai: ["gpt-5.4-nano", "gpt-5.4-mini", "gpt-5.4", "gpt-5.5"],
+  anthropic: ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"],
 };
 
 const KEY_LINKS: Record<LLMProvider, string> = {
@@ -61,7 +67,7 @@ export function LLMSettingsCard({
   function handleSave() {
     if (!configured || editingKey) {
       if (!apiKey) return;
-      act(() => saveSettings(provider, model, btoa(apiKey)), "saved");
+      act(() => saveSettings(provider, model, apiKey), "saved");
       setApiKey("");
       setEditingKey(false);
     } else {
@@ -135,15 +141,17 @@ export function LLMSettingsCard({
             </div>
           </div>
           {editingKey || !configured ? (
-            <Input
-              variant="sm"
-              type="password"
-              autoComplete="off"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder={`paste ${provider} api key...`}
-              autoFocus={editingKey && configured}
-            />
+            <div className="animate-slide-down">
+              <Input
+                variant="sm"
+                type="password"
+                autoComplete="off"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={`paste ${provider} api key...`}
+                autoFocus={editingKey && configured}
+              />
+            </div>
           ) : (
             <button
               type="button"

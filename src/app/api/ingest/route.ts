@@ -15,7 +15,13 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!isValidCronRequest(req)) await requireAuth();
+  if (!isValidCronRequest(req)) {
+    try {
+      await requireAuth();
+    } catch (e) {
+      return e as Response;
+    }
+  }
 
   try {
     const result = await runIngest();

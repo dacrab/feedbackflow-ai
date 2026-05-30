@@ -2,8 +2,6 @@ import { requireAuth } from "@/lib/api";
 import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(req: Request) {
   let userId: string;
   try {
@@ -40,6 +38,7 @@ export async function GET(req: Request) {
         const { fetched, inserted, analyzed } = await runIngest(
           (event) => send(event.stage, event.message),
           abortCtrl.signal,
+          userId,
         );
         if (!abortCtrl.signal.aborted) {
           send("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`);

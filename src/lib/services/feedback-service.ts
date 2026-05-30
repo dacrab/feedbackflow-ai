@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, gte, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
-import { DEFAULT_FEEDBACK_LIMIT } from "@/lib/constants";
+import { DEFAULT_FEEDBACK_LIMIT, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
 import type { FeedbackItemWithAnalysis, FeedbackStatus, Sentiment } from "@/lib/types";
 
 const feedbackSelect = {
@@ -19,7 +19,7 @@ const feedbackSelect = {
   status: feedbackAnalyses.status,
 } as const;
 
-type FeedbackFilters = {
+export type FeedbackFilters = {
   sentiment?: Sentiment;
   status?: FeedbackStatus;
   topic?: string;
@@ -49,7 +49,7 @@ function transform(row: any): FeedbackItemWithAnalysis {
   };
 }
 
-function baseQuery(userId: string, filters: FeedbackFilters) {
+function buildConditions(userId: string, filters: FeedbackFilters) {
   const conditions = [eq(feedbackItems.userId, userId)];
   if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
   if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
@@ -58,7 +58,7 @@ function baseQuery(userId: string, filters: FeedbackFilters) {
   if (filters.severityMax !== undefined)
     conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
   if (filters.q) {
-    const q = `%${filters.q.toLowerCase()}%`;
+    const q = `%${filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase()}%`;
     const cond = or(
       sql`LOWER(${feedbackItems.rawContent}) LIKE ${q}`,
       sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q}`,
@@ -67,13 +67,15 @@ function baseQuery(userId: string, filters: FeedbackFilters) {
   }
   if (filters.topic)
     conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
-  const orderBy =
-    filters.sort === "severity_desc"
-      ? desc(feedbackAnalyses.severityScore)
-      : filters.sort === "severity_asc"
-        ? asc(feedbackAnalyses.severityScore)
-        : desc(feedbackItems.createdAt);
-  return { conditions, orderBy };
+  return conditions;
+}
+
+function buildOrder(filters: FeedbackFilters) {
+  return filters.sort === "severity_desc"
+    ? desc(feedbackAnalyses.severityScore)
+    : filters.sort === "severity_asc"
+      ? asc(feedbackAnalyses.severityScore)
+      : desc(feedbackItems.createdAt);
 }
 
 export async function getFeedbackItems(
@@ -81,11 +83,13 @@ export async function getFeedbackItems(
   options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
 ): Promise<FeedbackItemWithAnalysis[]> {
   const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
-  const { conditions, orderBy } = baseQuery(userId, filters);
+  const conditions = buildConditions(userId, filters);
+  const orderBy = buildOrder(filters);
+
   const rows = await db
     .select(feedbackSelect)
     .from(feedbackItems)
-    .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
     .where(and(...conditions))
     .orderBy(orderBy)
     .limit(limit)
@@ -97,11 +101,12 @@ export async function getFeedbackCount(
   userId: string,
   filters: FeedbackFilters = {},
 ): Promise<number> {
-  const { conditions } = baseQuery(userId, filters);
+  const conditions = buildConditions(userId, filters);
+
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(feedbackItems)
-    .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
     .where(and(...conditions));
   return Number(row?.count ?? 0);
 }

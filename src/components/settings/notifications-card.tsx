@@ -19,6 +19,10 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
   const [minSeverity, setMinSeverity] = useState(hook.config.minSeverity ?? 4);
   const { act, pending } = useAction();
 
+  // Sync if the server revalidates and returns an updated config
+  const configSeverity = hook.config.minSeverity ?? 4;
+  if (!editingSeverity && minSeverity !== configSeverity) setMinSeverity(configSeverity);
+
   function onDelete() {
     toast("delete this webhook?", {
       action: {
@@ -66,7 +70,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">alert on severity ≥</span>
         {editingSeverity ? (
-          <>
+          <div className="flex items-center gap-2 animate-slide-down">
             <Select
               size="xs"
               value={String(minSeverity)}
@@ -97,7 +101,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
             >
               cancel
             </button>
-          </>
+          </div>
         ) : (
           <button
             type="button"

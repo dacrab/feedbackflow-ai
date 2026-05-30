@@ -60,7 +60,7 @@ export default async function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_70%)]" />
 
         <div className="relative mx-auto max-w-6xl px-6 pt-12 pb-20">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center animate-fade-up [animation-fill-mode:both]">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground mb-8">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
@@ -189,7 +189,7 @@ export default async function LandingPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
             <Feature
               icon={<IconBolt className="h-5 w-5" />}
               title="Automated ingestion"

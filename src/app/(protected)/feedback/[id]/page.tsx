@@ -11,9 +11,10 @@ import StatusChanger from "./status-changer";
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession();
+  const userId = session?.user?.id;
   const { id } = await params;
-
-  const item = await getFeedbackItem(session?.user?.id as string, id).catch(() => null);
+  if (!userId) notFound();
+  const item = await getFeedbackItem(userId, id).catch(() => null);
   if (!item) notFound();
   const a = item.feedback_analyses;
 
@@ -34,7 +35,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
         back to inbox
       </Link>
 
-      <div className="grid gap-2 lg:grid-cols-3">
+      <div className="grid gap-2 lg:grid-cols-3 animate-fade-up [animation-fill-mode:both]">
         {/* Main — 2 cols */}
         <div className="lg:col-span-2 space-y-2">
           {/* Summary card */}

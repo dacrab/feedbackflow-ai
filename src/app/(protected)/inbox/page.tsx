@@ -14,7 +14,8 @@ export default async function InboxPage({
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
   const session = await getServerSession();
-  const userId = session?.user?.id as string;
+  const userId = session?.user?.id;
+  if (!userId) return null;
 
   const spObj = await searchParams;
   const sp = new URLSearchParams(
@@ -41,8 +42,8 @@ export default async function InboxPage({
     ...(status && { status }),
     ...(topic && { topic }),
     ...(q && { q }),
-    severityMin,
-    severityMax,
+    ...(severityMin > 1 && { severityMin }),
+    ...(severityMax < MAX_SEVERITY && { severityMax }),
     sort,
   };
 
@@ -63,9 +64,9 @@ export default async function InboxPage({
   const hasFilters = !!(q || sentiment || status || topic);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full gap-4">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between shrink-0">
         <div>
           <p className="text-xs text-muted-foreground">// feedback items</p>
           <h1 className="text-xl font-medium">inbox</h1>
@@ -76,7 +77,7 @@ export default async function InboxPage({
       </div>
 
       {/* Filter bar */}
-      <form className="grid gap-2 grid-cols-2 sm:flex sm:flex-wrap sm:items-center">
+      <form className="grid gap-2 grid-cols-2 sm:flex sm:flex-wrap sm:items-center shrink-0">
         <Input
           id="inbox-search"
           type="text"
@@ -112,18 +113,21 @@ export default async function InboxPage({
         {hasFilters && (
           <Link
             href="/inbox"
-            className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors inline-flex items-center"
+            className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors inline-flex items-center animate-fade-in"
           >
             clear
           </Link>
         )}
       </form>
 
-      <InboxBulkActions items={items} />
+      {/* Scrollable list */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <InboxBulkActions items={items} />
+      </div>
 
-      {/* Pagination */}
+      {/* Pagination — pinned at bottom */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground shrink-0">
           <span>
             page {page} / {totalPages}
           </span>
