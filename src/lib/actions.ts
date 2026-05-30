@@ -14,20 +14,16 @@ import type { FeedbackStatus, LLMProvider } from "@/lib/types";
 async function uid() {
   const s = await getServerSession();
   if (!s?.user?.id) throw new Error("unauthorized");
-  return s.user.id;
+  const userId = s.user.id;
+  const { success } = rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!success) throw new Error("Too many requests. Please try again later.");
+  return userId;
 }
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (!result.success) throw new Error(result.error.issues[0]?.message ?? "invalid input");
   return result.data;
-}
-
-async function authedUid() {
-  const userId = await uid();
-  const { success } = rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 });
-  if (!success) throw new Error("Too many requests. Please try again later.");
-  return userId;
 }
 
 const uuidSchema = z.string().uuid();
@@ -46,14 +42,15 @@ const statusSchema = z.enum(["New", "Acknowledged", "Actioned"]);
 export async function addSource(repo: string, token?: string) {
   parse(repoSchema, repo);
   if (token) parse(z.string().min(1).max(512), token);
-  const userId = await authedUid();
+  const userId = await uid();
   await db.insert(userSources).values({
     userId,
     type: "github",
     config: { repo },
     secretCipher: token ? encrypt(token) : null,
   });
-  runIngest().catch(console.error);
+  // Scope ingest to this user only — don't trigger a full cross-user ingest
+  runIngest(undefined, undefined, userId).catch(console.error);
   revalidatePath("/settings");
 }
 
@@ -64,7 +61,7 @@ export async function updateSource(
   parse(uuidSchema, id);
   if (data.repo) parse(repoSchema, data.repo);
   if (data.token) parse(z.string().min(1).max(512), data.token);
-  const userId = await authedUid();
+  const userId = await uid();
   await db
     .update(userSources)
     .set({
@@ -78,7 +75,7 @@ export async function updateSource(
 
 export async function deleteSource(id: string) {
   parse(uuidSchema, id);
-  const userId = await authedUid();
+  const userId = await uid();
   await db.delete(userSources).where(and(eq(userSources.id, id), eq(userSources.userId, userId)));
   revalidatePath("/settings");
 }
@@ -122,10 +119,9 @@ export async function deleteNotification(id: string) {
   revalidatePath("/settings");
 }
 
-export async function saveSettings(provider: LLMProvider, model: string, encryptedPayload: string) {
+export async function saveSettings(provider: LLMProvider, model: string, apiKey: string) {
   parse(providerSchema, provider);
   parse(modelSchema, model);
-  const apiKey = Buffer.from(encryptedPayload, "base64").toString("utf8");
   parse(apiKeySchema, apiKey);
   const userId = await uid();
   const apiKeyCipher = encrypt(apiKey);
@@ -143,8 +139,7 @@ export async function updateSettingsModel(model: string) {
   revalidatePath("/settings");
 }
 
-export async function updateSettingsKey(encryptedPayload: string) {
-  const apiKey = Buffer.from(encryptedPayload, "base64").toString("utf8");
+export async function updateSettingsKey(apiKey: string) {
   parse(apiKeySchema, apiKey);
   const userId = await uid();
   await db

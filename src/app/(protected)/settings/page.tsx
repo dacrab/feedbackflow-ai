@@ -12,6 +12,7 @@ export default async function SettingsPage() {
   const session = await getServerSession();
   const userId = session?.user?.id as string;
   const user = session?.user;
+  if (!userId) return null;
 
   const [settingsRow, sources, hooks, lastRun] = await Promise.all([
     db

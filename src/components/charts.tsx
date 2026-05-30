@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -22,7 +23,14 @@ const tooltip = {
 };
 const axisTick = { fontSize: 12 };
 
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
+
 export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
+  if (!useMounted()) return <div className="h-full w-full" />;
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <AreaChart data={data}>
@@ -52,6 +60,7 @@ export function SentimentChart({
 }: {
   data: { name: string; value: number; color: string }[];
 }) {
+  if (!useMounted()) return <div className="h-full w-full" />;
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <PieChart>
@@ -75,6 +84,7 @@ export function SentimentChart({
 }
 
 export function TopicsChart({ data }: { data: { topic: string; value: number }[] }) {
+  if (!useMounted()) return <div className="h-full w-full" />;
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <BarChart data={data} layout="vertical" margin={{ left: 0 }}>
@@ -95,6 +105,7 @@ export function TopicsChart({ data }: { data: { topic: string; value: number }[]
 }
 
 export function SeverityChart({ data }: { data: { name: string; value: number }[] }) {
+  if (!useMounted()) return <div className="h-full w-full" />;
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={1}>
       <BarChart data={data}>

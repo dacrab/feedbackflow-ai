@@ -39,7 +39,7 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
   return (
     <>
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 p-2 rounded border border-border bg-muted text-sm">
+        <div className="flex items-center gap-3 p-2 rounded border border-border bg-muted text-sm animate-slide-down">
           <span>{selected.size} selected</span>
           <button
             type="button"
@@ -91,7 +91,7 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors group"
+                  className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors group animate-fade-up"
                 >
                   <input
                     type="checkbox"
@@ -123,7 +123,9 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                       <StatusBadge status={analysis?.status} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      <span className="truncate max-w-[200px]">{item.raw_content}</span>
+                      <span className="truncate max-w-[200px]">
+                        {item.raw_content.slice(0, 120)}
+                      </span>
                       {analysis?.topics?.[0] && (
                         <>
                           <span>·</span>

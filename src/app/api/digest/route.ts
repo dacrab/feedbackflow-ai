@@ -1,47 +1,32 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { db } from "@/db/client";
-import { userNotifications } from "@/db/schema";
 import { isValidCronRequest, requireAuth } from "@/lib/api";
 import { rateLimit } from "@/lib/rate-limit";
-import { sendDailyDigest } from "@/lib/services/notification-service";
-import { getDateNHoursAgo } from "@/lib/utils";
+import { runDigest } from "@/lib/services/digest-service";
 
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const { success } = rateLimit(`digest:${ip}`, { maxRequests: 10, windowMs: 60_000 });
-  if (!success) {
+  if (!success)
     return NextResponse.json(
       { error: "Too many requests" },
       { status: 429, headers: { "Retry-After": "60" } },
     );
+
+  if (!isValidCronRequest(req)) {
+    try {
+      await requireAuth();
+    } catch (e) {
+      return e as Response;
+    }
   }
 
-  if (!isValidCronRequest(req)) await requireAuth();
-
-  let total = 0;
-  let high = 0;
   try {
-    const since = getDateNHoursAgo(24);
-    const userIds = await db
-      .selectDistinct({ userId: userNotifications.userId })
-      .from(userNotifications)
-      .where(eq(userNotifications.enabled, true));
-
-    for (const { userId } of userIds) {
-      try {
-        const r = await sendDailyDigest(userId, since);
-        total += r.total;
-        high += r.high;
-      } catch (e) {
-        console.error(`Digest failed for user ${userId}:`, e);
-      }
-    }
+    const result = await runDigest();
+    return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     console.error("Digest failed:", e);
+    return NextResponse.json({ error: "Digest failed" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true, total, high });
 }

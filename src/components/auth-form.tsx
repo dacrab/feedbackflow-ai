@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { Button, Input } from "@/components/ui/ui";
 
-const { signIn, signUp } = createAuthClient();
+const authClient = createAuthClient();
+const { signIn, signUp } = authClient;
 
 function passwordStrength(p: string): { label: string; color: string } {
   if (p.length < 8) return { label: "too short", color: "text-red-500" };
@@ -54,13 +55,16 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           return;
         }
         toast.success("account created");
+        router.push("/dashboard");
+        router.refresh();
+        return;
       }
       const { error } = await signIn.email({ email: normalizedEmail, password });
       if (error) {
         toast.error(error.message || "invalid credentials");
         return;
       }
-      if (!isSignup) toast.success("authenticated");
+      toast.success("authenticated");
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
@@ -102,7 +106,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             required
             minLength={isSignup ? 8 : undefined}
           />
-          {strength && <p className={`text-xs ${strength.color}`}>strength: {strength.label}</p>}
+          {strength && (
+            <p className={`text-xs ${strength.color} animate-fade-in`}>
+              strength: {strength.label}
+            </p>
+          )}
         </label>
         {isSignup && (
           <label className="block space-y-1.5" htmlFor="confirm">
@@ -117,7 +125,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               aria-invalid={mismatch || undefined}
               className={mismatch ? "border-red-500" : ""}
             />
-            {mismatch && <p className="text-xs text-red-500">passwords do not match</p>}
+            {mismatch && (
+              <p className="text-xs text-red-500 animate-fade-in">passwords do not match</p>
+            )}
           </label>
         )}
         <Button

@@ -5,11 +5,9 @@ import { HIGH_SEVERITY_THRESHOLD } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysisData } from "@/lib/types";
 
-async function notifySlack(text: string, url?: string) {
-  const webhook = url || process.env["SLACK_WEBHOOK_URL"];
-  if (!webhook) return;
+async function notifySlack(text: string, url: string) {
   try {
-    await fetch(webhook, {
+    await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -19,14 +17,26 @@ async function notifySlack(text: string, url?: string) {
   }
 }
 
-async function getWebhooks(userId: string): Promise<string[]> {
+type WebhookEntry = { url: string; minSeverity: number };
+
+async function getWebhooks(userId: string): Promise<WebhookEntry[]> {
   const rows = await db
-    .select({ secretCipher: userNotifications.secretCipher })
+    .select({
+      secretCipher: userNotifications.secretCipher,
+      config: userNotifications.config,
+    })
     .from(userNotifications)
     .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
+
   return rows.flatMap((h) => {
     try {
-      return h.secretCipher ? [decrypt(h.secretCipher)] : [];
+      if (!h.secretCipher) return [];
+      return [
+        {
+          url: decrypt(h.secretCipher),
+          minSeverity: h.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
+        },
+      ];
     } catch {
       return [];
     }
@@ -38,9 +48,16 @@ export async function notifyHighSeverityFeedback(
   analysis: FeedbackAnalysisData,
 ): Promise<void> {
   if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) return;
-  const msg = `High severity (${analysis.severity_score}) feedback detected: ${analysis.summary}`;
-  for (const url of await getWebhooks(userId)) await notifySlack(msg, url);
-  await notifySlack(msg);
+  const webhooks = await getWebhooks(userId);
+  const msg = `🚨 High severity (${analysis.severity_score}/5): ${analysis.summary}`;
+  const promises: Promise<void>[] = [];
+  for (const { url, minSeverity } of webhooks) {
+    if (analysis.severity_score >= minSeverity) promises.push(notifySlack(msg, url));
+  }
+  // Also notify global webhook if configured
+  const global = process.env["SLACK_WEBHOOK_URL"];
+  if (global) promises.push(notifySlack(msg, global));
+  await Promise.all(promises);
 }
 
 export async function sendDailyDigest(
@@ -57,19 +74,22 @@ export async function sendDailyDigest(
           gte(feedbackAnalyses.createdAt, new Date(sinceISO)),
         ),
       )
-      .orderBy(desc(feedbackAnalyses.createdAt))
-      .limit(500),
+      .orderBy(desc(feedbackAnalyses.severityScore)),
     getWebhooks(userId),
   ]);
 
-  const high = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
-  const summary = `Daily digest: ${analyses.length} analyses in last 24h. High severity: ${high.length}.`;
+  if (!analyses.length || !webhooks.length) return { total: analyses.length, high: 0 };
 
-  for (const url of webhooks) {
-    await notifySlack(summary, url);
-    for (const item of high.slice(0, 10))
-      await notifySlack(`• [sev ${item.severityScore}] ${item.summary}`, url);
-  }
+  const high = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
+
+  // Batch into a single Slack message instead of N individual posts
+  const lines = [
+    `📊 *Daily Digest* — ${analyses.length} items in last 24h, ${high.length} high severity`,
+    ...high.slice(0, 10).map((a) => `• [sev ${a.severityScore}] ${a.summary}`),
+  ];
+  const msg = lines.join("\n");
+
+  await Promise.all(webhooks.map(({ url }) => notifySlack(msg, url)));
 
   return { total: analyses.length, high: high.length };
 }

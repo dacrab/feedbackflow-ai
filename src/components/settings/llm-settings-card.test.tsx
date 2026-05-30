@@ -55,11 +55,11 @@ describe("LLMSettingsCard", () => {
     expect(screen.getByRole("button", { name: "save" })).toBeEnabled();
   });
 
-  it("calls saveSettings with provider, model, and base64 key", async () => {
+  it("calls saveSettings with provider, model, and key", async () => {
     const user = userEvent.setup();
     render(<LLMSettingsCard initialProvider={null} initialModel={null} hasKey={false} />);
     await user.type(screen.getByPlaceholderText(/paste openrouter api key/i), "sk-test-key");
     await user.click(screen.getByRole("button", { name: "save" }));
-    expect(saveSettings).toHaveBeenCalledWith("openrouter", "openrouter/auto", btoa("sk-test-key"));
+    expect(saveSettings).toHaveBeenCalledWith("openrouter", "openrouter/auto", "sk-test-key");
   });
 });

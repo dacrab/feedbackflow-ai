@@ -129,7 +129,10 @@ export const feedbackAnalyses = pgTable(
     index("feedback_analyses_user_id_idx").on(t.userId),
     index("feedback_analyses_sentiment_idx").on(t.sentiment),
     index("feedback_analyses_severity_idx").on(t.severityScore),
+    index("feedback_analyses_status_idx").on(t.status),
     index("feedback_analyses_user_created_idx").on(t.userId, t.createdAt),
+    // Composite index for common inbox filter: user + sentiment + status + severity
+    index("feedback_analyses_user_filter_idx").on(t.userId, t.sentiment, t.status, t.severityScore),
     check("severity_score_range", sql`${t.severityScore} >= 1 AND ${t.severityScore} <= 5`),
   ],
 );
