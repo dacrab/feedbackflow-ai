@@ -4,14 +4,20 @@ import { IconDeviceDesktop, IconMoon, IconSun } from "@tabler/icons-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
+const themeCycle: Record<string, { next: string; icon: typeof IconDeviceDesktop }> = {
+  dark: { next: "light", icon: IconMoon },
+  light: { next: "system", icon: IconSun },
+  system: { next: "dark", icon: IconDeviceDesktop },
+};
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-  const Icon =
-    !mounted || theme === "system" ? IconDeviceDesktop : theme === "dark" ? IconMoon : IconSun;
+  const entry = mounted ? themeCycle[theme ?? ""] : undefined;
+  const next = entry?.next ?? "dark";
+  const Icon = entry?.icon ?? IconDeviceDesktop;
 
   return (
     <button

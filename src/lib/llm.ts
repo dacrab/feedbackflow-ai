@@ -1,16 +1,18 @@
+import "server-only";
+
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import type { LLMProvider } from "@/lib/types";
 import {
   LLM_MAX_RETRIES,
   LLM_MAX_TOPICS,
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
-} from "./constants";
-import { rateLimit } from "./rate-limit";
+} from "@/lib/constants";
+import { rateLimit } from "@/lib/rate-limit";
+import type { LLMProvider } from "@/lib/types";
 
 const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),

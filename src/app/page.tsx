@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getServerSession } from "@/lib/api";
+import { sentColor, sevColor } from "@/lib/utils";
 
 export default async function LandingPage() {
   const session = await getServerSession();
@@ -309,19 +310,12 @@ function FeedbackRow({
   topics: string[];
   time: string;
 }) {
-  const sevColor =
-    severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-400" : "text-muted-foreground/40";
-  const sentColor =
-    sentiment === "positive"
-      ? "text-green-500"
-      : sentiment === "negative"
-        ? "text-red-500"
-        : "text-muted-foreground";
+  const sc = sevColor(severity);
   return (
     <div className="flex items-center gap-3 px-3 py-2.5">
-      <span className={`text-xs font-mono font-medium w-4 shrink-0 ${sevColor}`}>{severity}</span>
+      <span className={`text-xs font-mono font-medium w-4 shrink-0 ${sc}`}>{severity}</span>
       <span className="flex-1 text-sm truncate">{summary}</span>
-      <span className={`shrink-0 text-xs ${sentColor}`}>{sentiment}</span>
+      <span className={`shrink-0 text-xs ${sentColor(sentiment)}`}>{sentiment}</span>
       <span className="shrink-0 text-xs text-muted-foreground hidden md:inline">
         {topics.map((t) => `[${t}]`).join(" ")}
       </span>

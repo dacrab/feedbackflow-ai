@@ -4,14 +4,15 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Select } from "@/components/ui/ui";
 import { updateFeedbackStatus } from "@/lib/actions";
-import type { FeedbackStatus } from "@/lib/types";
+import { type FeedbackStatus, isFeedbackStatus } from "@/lib/types";
 
 export default function StatusChanger({ id, initial }: { id: string; initial: FeedbackStatus }) {
   const [status, setStatus] = useState<FeedbackStatus>(initial);
   const [pending, startTransition] = useTransition();
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const val = e.target.value as FeedbackStatus;
+    const val = e.target.value;
+    if (!isFeedbackStatus(val)) return;
     const prev = status;
     setStatus(val);
     startTransition(async () => {

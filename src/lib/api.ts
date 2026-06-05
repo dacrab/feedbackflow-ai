@@ -30,3 +30,15 @@ export function isValidCronRequest(req: Request): boolean {
   const cronToken = process.env["CRON_TOKEN"];
   return !!(cronToken && token && timingSafeEqual(token, cronToken));
 }
+
+export async function requireCronOrAuth(req: Request): Promise<Response | undefined> {
+  if (isValidCronRequest(req)) return;
+  try {
+    await requireAuth();
+  } catch (e) {
+    return e instanceof Response
+      ? e
+      : NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  return;
+}

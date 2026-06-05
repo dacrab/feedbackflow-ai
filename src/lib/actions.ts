@@ -1,5 +1,7 @@
 "use server";
 
+import "server-only";
+
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -136,16 +138,6 @@ export async function updateSettingsModel(model: string) {
   parse(modelSchema, model);
   const userId = await uid();
   await db.update(userSettings).set({ model }).where(eq(userSettings.userId, userId));
-  revalidatePath("/settings");
-}
-
-export async function updateSettingsKey(apiKey: string) {
-  parse(apiKeySchema, apiKey);
-  const userId = await uid();
-  await db
-    .update(userSettings)
-    .set({ apiKeyCipher: encrypt(apiKey) })
-    .where(eq(userSettings.userId, userId));
   revalidatePath("/settings");
 }
 

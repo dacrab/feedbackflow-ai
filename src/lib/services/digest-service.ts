@@ -1,3 +1,5 @@
+import "server-only";
+
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
-import type { LLMProvider } from "@/lib/types";
+import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
 
 const PROVIDERS: { value: LLMProvider; label: string }[] = [
@@ -75,7 +75,8 @@ export function LLMSettingsCard({
     }
   }
 
-  function handleProviderChange(p: LLMProvider) {
+  function handleProviderChange(p: string) {
+    if (!isLLMProvider(p)) return;
     setProvider(p);
     setModel(MODEL_OPTIONS[p][0] ?? "openrouter/auto");
     if (configured) setEditingKey(true);
@@ -92,7 +93,7 @@ export function LLMSettingsCard({
             className="w-full"
             size="sm"
             value={provider}
-            onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
+            onChange={(e) => handleProviderChange(e.target.value)}
           >
             {PROVIDERS.map((p) => (
               <option key={p.value} value={p.value}>

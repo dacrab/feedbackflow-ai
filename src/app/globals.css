@@ -188,4 +188,11 @@
   .stagger-children > *:nth-child(6) {
     animation-delay: 250ms;
   }
+
+  .page-btn {
+    @apply h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center;
+  }
+  .page-btn-disabled {
+    @apply border-border/50 text-muted-foreground/50;
+  }
 }

@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
 import { bulkUpdateStatus } from "@/lib/actions";
 import type { FeedbackItemWithAnalysis } from "@/lib/types";
-import { formatDateUTC } from "@/lib/utils";
+import { formatDateUTC, sevColor, sevLabel } from "@/lib/utils";
 
 export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -81,12 +81,6 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
             {items.map((item) => {
               const analysis = item.feedback_analyses;
               const severity = analysis?.severity_score ?? 0;
-              const severityLabel =
-                severity >= 4
-                  ? "high severity"
-                  : severity >= 3
-                    ? "medium severity"
-                    : "low severity";
 
               return (
                 <div
@@ -102,16 +96,10 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                   />
 
                   <div
-                    className={`text-xs font-mono font-medium w-5 text-center shrink-0 ${
-                      severity >= 4
-                        ? "text-red-500"
-                        : severity >= 3
-                          ? "text-orange-500"
-                          : "text-muted-foreground/50"
-                    }`}
-                    title={severityLabel}
+                    className={`text-xs font-mono font-medium w-5 text-center shrink-0 ${sevColor(severity)}`}
+                    title={sevLabel(severity)}
                     role="img"
-                    aria-label={severityLabel}
+                    aria-label={sevLabel(severity)}
                   >
                     {severity || "·"}
                   </div>

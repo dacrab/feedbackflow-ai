@@ -104,12 +104,8 @@ export function Sidebar({
         onClick={() => {
           const next = !collapsed;
           setCollapsed(next);
-          cookieStore.set({
-            name: "sidebar-collapsed",
-            value: String(next),
-            path: "/",
-            expires: Date.now() + 31536000_000,
-          });
+          // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not widely supported
+          document.cookie = `sidebar-collapsed=${next};path=/;max-age=31536000`;
         }}
         className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         title={collapsed ? "expand" : "collapse"}

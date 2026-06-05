@@ -22,3 +22,7 @@ export interface FeedbackItemWithAnalysis {
 export function isLLMProvider(val: unknown): val is LLMProvider {
   return typeof val === "string" && ["google", "openai", "anthropic", "openrouter"].includes(val);
 }
+
+export function isFeedbackStatus(val: unknown): val is FeedbackStatus {
+  return typeof val === "string" && ["New", "Acknowledged", "Actioned"].includes(val);
+}

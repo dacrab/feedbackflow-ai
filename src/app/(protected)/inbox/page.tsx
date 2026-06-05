@@ -29,8 +29,8 @@ export default async function InboxPage({
   const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
   const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
   const sort =
-    (spObj["sort"] as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
-  const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
+    (sp.get("sort") as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
+  const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10) || 1);
   const pageSize = Math.min(
     100,
     Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)),
@@ -133,28 +133,18 @@ export default async function InboxPage({
           </span>
           <div className="flex gap-1">
             {page > 1 ? (
-              <Link
-                href={pageUrl(page - 1)}
-                className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center"
-              >
+              <Link href={pageUrl(page - 1)} className="page-btn">
                 ← prev
               </Link>
             ) : (
-              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">
-                ← prev
-              </span>
+              <span className="page-btn page-btn-disabled">← prev</span>
             )}
             {page < totalPages ? (
-              <Link
-                href={pageUrl(page + 1)}
-                className="h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center"
-              >
+              <Link href={pageUrl(page + 1)} className="page-btn">
                 next →
               </Link>
             ) : (
-              <span className="h-7 px-3 rounded border border-border/50 text-muted-foreground/50 inline-flex items-center">
-                next →
-              </span>
+              <span className="page-btn page-btn-disabled">next →</span>
             )}
           </div>
         </div>

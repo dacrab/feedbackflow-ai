@@ -33,11 +33,10 @@ export const auth = betterAuth({
     generateId: () => crypto.randomUUID(),
     useSecureCookies: process.env.NODE_ENV === "production",
   },
-  trustedOrigins:
-    process.env.NODE_ENV === "production"
-      ? process.env["BETTER_AUTH_URL"]
-        ? [process.env["BETTER_AUTH_URL"]]
-        : []
+  trustedOrigins: process.env["BETTER_AUTH_URL"]
+    ? [process.env["BETTER_AUTH_URL"]]
+    : process.env.NODE_ENV === "production"
+      ? []
       : ["http://localhost:3000"],
   plugins: [nextCookies()],
 });
