@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isLLMProvider } from "./types";
+import { isFeedbackStatus, isLLMProvider } from "./types";
 
 describe("isLLMProvider", () => {
   it("returns true for valid providers", () => {
@@ -17,5 +17,23 @@ describe("isLLMProvider", () => {
     expect(isLLMProvider(undefined)).toBe(false);
     expect(isLLMProvider({})).toBe(false);
     expect(isLLMProvider([])).toBe(false);
+  });
+});
+
+describe("isFeedbackStatus", () => {
+  it("returns true for valid statuses", () => {
+    expect(isFeedbackStatus("New")).toBe(true);
+    expect(isFeedbackStatus("Acknowledged")).toBe(true);
+    expect(isFeedbackStatus("Actioned")).toBe(true);
+  });
+
+  it("returns false for invalid values", () => {
+    expect(isFeedbackStatus("new")).toBe(false);
+    expect(isFeedbackStatus("")).toBe(false);
+    expect(isFeedbackStatus(42)).toBe(false);
+    expect(isFeedbackStatus(null)).toBe(false);
+    expect(isFeedbackStatus(undefined)).toBe(false);
+    expect(isFeedbackStatus({})).toBe(false);
+    expect(isFeedbackStatus([])).toBe(false);
   });
 });

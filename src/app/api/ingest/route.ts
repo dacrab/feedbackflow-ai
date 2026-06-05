@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isValidCronRequest, requireAuth } from "@/lib/api";
+import { requireCronOrAuth } from "@/lib/api";
 import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
 
@@ -10,18 +10,13 @@ export async function POST(req: Request) {
   const { success } = rateLimit(`ingest:${ip}`, { maxRequests: 10, windowMs: 60_000 });
   if (!success) {
     return NextResponse.json(
-      { error: "Too many requests" },
+      { error: "too many requests" },
       { status: 429, headers: { "Retry-After": "60" } },
     );
   }
 
-  if (!isValidCronRequest(req)) {
-    try {
-      await requireAuth();
-    } catch (e) {
-      return e as Response;
-    }
-  }
+  const authError = await requireCronOrAuth(req);
+  if (authError) return authError;
 
   try {
     const result = await runIngest();
@@ -29,7 +24,7 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("[Ingest]", e);
     return NextResponse.json(
-      { error: "Ingest failed", detail: e instanceof Error ? e.message : "unknown" },
+      { error: "ingest failed", detail: e instanceof Error ? e.message : "unknown" },
       { status: 500 },
     );
   }

@@ -14,6 +14,18 @@ type LastRun = {
   analyzed: number | null;
 } | null;
 
+function statusInfo(ok: boolean | null | undefined): { cls: string; prefix: string } {
+  if (ok === true) return { cls: "text-green-500", prefix: "● ok" };
+  if (ok === false) return { cls: "text-red-500", prefix: "● failed" };
+  return { cls: "text-muted-foreground", prefix: "● running" };
+}
+
+function logPrefix(ok: boolean | null | undefined): string {
+  if (ok === true) return "✓ ";
+  if (ok === false) return "✗ ";
+  return "· ";
+}
+
 export function SystemHealthCard({
   enabledSources,
   totalSources,
@@ -127,10 +139,8 @@ export function SystemHealthCard({
           <div className="rounded border border-border bg-muted/20 px-3 py-2 space-y-1.5">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">last run</p>
-              <span
-                className={`text-xs ${lastRun.ok ? "text-green-500" : lastRun.ok === false ? "text-red-500" : "text-muted-foreground"}`}
-              >
-                {lastRun.ok ? "● ok" : lastRun.ok === false ? "● failed" : "● running"}
+              <span className={`text-xs ${statusInfo(lastRun.ok).cls}`}>
+                {statusInfo(lastRun.ok).prefix}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">{timeAgo(lastRun.startedAt)}</p>
@@ -178,11 +188,8 @@ export function SystemHealthCard({
           className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 space-y-0.5 shadow-lg animate-slide-down"
         >
           {logs.map((l) => (
-            <p
-              key={l.id}
-              className={`text-xs font-mono ${l.ok === true ? "text-green-500" : l.ok === false ? "text-red-500" : "text-muted-foreground"}`}
-            >
-              {l.ok === true ? "✓ " : l.ok === false ? "✗ " : "· "}
+            <p key={l.id} className={`text-xs font-mono ${statusInfo(l.ok).cls}`}>
+              {logPrefix(l.ok)}
               {l.msg}
             </p>
           ))}

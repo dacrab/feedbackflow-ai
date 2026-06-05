@@ -29,8 +29,20 @@ export type FeedbackFilters = {
   sort?: "created_desc" | "severity_desc" | "severity_asc";
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: Drizzle row shape is not statically typed here
-function transform(row: any): FeedbackItemWithAnalysis {
+type FeedbackRow = {
+  id: string;
+  source: string;
+  raw_content: string;
+  original_timestamp: Date;
+  created_at: Date;
+  sentiment: Sentiment | null;
+  topics: string[] | null;
+  severity_score: number | null;
+  summary: string | null;
+  status: FeedbackStatus | null;
+};
+
+function transform(row: FeedbackRow): FeedbackItemWithAnalysis {
   return {
     id: row.id,
     source: row.source,

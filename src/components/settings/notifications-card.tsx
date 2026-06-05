@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
@@ -19,9 +19,9 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
   const [minSeverity, setMinSeverity] = useState(hook.config.minSeverity ?? 4);
   const { act, pending } = useAction();
 
-  // Sync if the server revalidates and returns an updated config
-  const configSeverity = hook.config.minSeverity ?? 4;
-  if (!editingSeverity && minSeverity !== configSeverity) setMinSeverity(configSeverity);
+  useEffect(() => {
+    if (!editingSeverity) setMinSeverity(hook.config.minSeverity ?? 4);
+  }, [hook.config.minSeverity, editingSeverity]);
 
   function onDelete() {
     toast("delete this webhook?", {

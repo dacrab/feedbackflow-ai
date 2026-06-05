@@ -10,7 +10,7 @@
       "complexity": { "useLiteralKeys": "off" },
       "style": { "useComponentExportOnlyModules": "off" },
       "suspicious": {
-        "noExplicitAny": "warn",
+        "noExplicitAny": "error",
         "noCommentText": "off"
       }
     }

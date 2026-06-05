@@ -14,7 +14,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   allowedDevOrigins: ["localhost:3000"],
   typescript: { ignoreBuildErrors: false },
-  compiler: { removeConsole: process.env["NODE_ENV"] === "production" },
+  compiler: {
+    removeConsole:
+      process.env["NODE_ENV"] === "production" ? { exclude: ["error", "warn"] } : false,
+  },
   async headers() {
     return [
       {

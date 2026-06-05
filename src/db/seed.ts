@@ -6,7 +6,7 @@ async function main() {
 
   const [existingUser] = await db.select({ id: user.id }).from(user).limit(1);
   if (!existingUser) {
-    process.stdout.write("No users found - skipping seed (create a user first)\n");
+    console.log("No users found - skipping seed (create a user first)");
     return;
   }
 
@@ -35,6 +35,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  process.stderr.write(`Seed failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  console.error(`Seed failed: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(1);
 });

@@ -14,6 +14,15 @@ describe("Card", () => {
     expect(screen.getByText("// test title")).toBeInTheDocument();
     expect(screen.getByText("child content")).toBeInTheDocument();
   });
+
+  it("applies className", () => {
+    render(
+      <Card title="x" className="custom-class">
+        <p>c</p>
+      </Card>,
+    );
+    expect(screen.getByText("// x").parentElement).toHaveClass("custom-class");
+  });
 });
 
 describe("Input", () => {
@@ -46,9 +55,25 @@ describe("Button", () => {
     expect(btn).toHaveAttribute("aria-busy", "true");
   });
 
+  it("shows spinner when isLoading without loadingText", () => {
+    render(<Button isLoading>click me</Button>);
+    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button").querySelector(".animate-spin")).toBeInTheDocument();
+  });
+
   it("is disabled when disabled prop set", () => {
     render(<Button disabled>click me</Button>);
     expect(screen.getByRole("button")).toBeDisabled();
+  });
+
+  it("applies primary variant class", () => {
+    render(<Button variant="primary">primary</Button>);
+    expect(screen.getByRole("button")).toHaveClass("bg-foreground", "text-background");
+  });
+
+  it("applies sm size class", () => {
+    render(<Button size="sm">small</Button>);
+    expect(screen.getByRole("button")).toHaveClass("h-8", "px-3");
   });
 });
 

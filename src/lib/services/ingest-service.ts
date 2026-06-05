@@ -1,3 +1,5 @@
+import "server-only";
+
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
@@ -7,12 +9,85 @@ import {
   userSettings,
   userSources,
 } from "@/db/schema";
-import { HIGH_SEVERITY_THRESHOLD, LLM_MAX_RETRIES, MAX_RAW_CONTENT_LENGTH } from "@/lib/constants";
+import {
+  GITHUB_MAX_RETRIES,
+  GITHUB_PER_PAGE,
+  GITHUB_RETRY_BASE_DELAY_MS,
+  HIGH_SEVERITY_THRESHOLD,
+  LLM_MAX_RETRIES,
+  MAX_RAW_CONTENT_LENGTH,
+} from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
-import { fetchGithubIssues } from "./github-service";
+
+interface GithubIssue {
+  id: number;
+  title: string;
+  body: string | null;
+  created_at: string;
+}
+
+async function fetchGithubPage(
+  repo: string,
+  page: number,
+  token?: string,
+): Promise<{ issues: GithubIssue[]; rawCount: number }> {
+  const url = `https://api.github.com/repos/${repo}/issues?state=open&type=issues&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "feedbackflow-ai",
+      Accept: "application/vnd.github+json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
+  const data = await res.json();
+  if (!Array.isArray(data)) return { issues: [], rawCount: 0 };
+  const issues = data.map(({ id, title, body, created_at }: GithubIssue) => ({
+    id,
+    title,
+    body,
+    created_at,
+  }));
+  return { issues, rawCount: data.length };
+}
+
+async function fetchGithubPageWithRetry(
+  repo: string,
+  page: number,
+  token?: string,
+): Promise<{ issues: GithubIssue[]; rawCount: number }> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= GITHUB_MAX_RETRIES; attempt++) {
+    try {
+      return await fetchGithubPage(repo, page, token);
+    } catch (err) {
+      lastErr = err;
+      if (attempt < GITHUB_MAX_RETRIES)
+        await new Promise((r) => setTimeout(r, GITHUB_RETRY_BASE_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIssue[]> {
+  const results: GithubIssue[] = [];
+  for (let page = 1; ; page++) {
+    try {
+      const { issues, rawCount } = await fetchGithubPageWithRetry(repo, page, token);
+      if (!rawCount) break;
+      results.push(...issues);
+      if (rawCount < GITHUB_PER_PAGE) break;
+    } catch (e) {
+      if (page === 1) throw e;
+      break;
+    }
+  }
+  return results;
+}
 
 type LLMOpts = { provider: LLMProvider; model?: string; apiKey?: string } | undefined;
 

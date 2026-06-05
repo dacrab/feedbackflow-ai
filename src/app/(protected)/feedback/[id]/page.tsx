@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
-import { formatDateUTC } from "@/lib/utils";
+import { formatDateUTC, sevColor } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,12 +18,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
   if (!item) notFound();
   const a = item.feedback_analyses;
 
-  const severityColor =
-    (a?.severity_score ?? 0) >= 4
-      ? "text-red-500"
-      : (a?.severity_score ?? 0) >= 3
-        ? "text-orange-500"
-        : "text-muted-foreground";
+  const severityColor = sevColor(a?.severity_score ?? 0);
 
   return (
     <div className="space-y-4">

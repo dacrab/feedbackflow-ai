@@ -4,6 +4,19 @@ export function cn(...inputs: (string | undefined | null | false | 0)[]) {
   return twMerge(...inputs.filter(Boolean).map(String));
 }
 
+export const sevColor = (severity: number) =>
+  severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground";
+
+export const sevLabel = (severity: number) =>
+  severity >= 4 ? "high severity" : severity >= 3 ? "medium severity" : "low severity";
+
+export const sentColor = (sentiment: string) =>
+  sentiment === "positive"
+    ? "text-green-500"
+    : sentiment === "negative"
+      ? "text-red-500"
+      : "text-muted-foreground";
+
 export const formatDateUTC = (iso: string) =>
   new Date(iso).toLocaleString("en-US", {
     timeZone: "UTC",

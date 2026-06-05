@@ -10,7 +10,7 @@ import { isLLMProvider } from "@/lib/types";
 
 export default async function SettingsPage() {
   const session = await getServerSession();
-  const userId = session?.user?.id as string;
+  const userId = session?.user?.id;
   const user = session?.user;
   if (!userId) return null;
 
