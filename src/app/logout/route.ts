@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
+export const dynamic = "force-dynamic";
+
 async function handle() {
   await auth.api.signOut({ headers: await headers() });
   return NextResponse.redirect(
