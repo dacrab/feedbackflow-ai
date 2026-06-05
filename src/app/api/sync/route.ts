@@ -1,5 +1,4 @@
-import { requireAuth } from "@/lib/api";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitMiddleware, requireAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 
 export async function GET(req: Request) {
@@ -10,13 +9,8 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
   }
 
-  const { success } = rateLimit(`sync:${userId}`, { maxRequests: 5, windowMs: 60_000 });
-  if (!success) {
-    return new Response(JSON.stringify({ error: "too many requests" }), {
-      status: 429,
-      headers: { "Retry-After": "60" },
-    });
-  }
+  const rl = rateLimitMiddleware(req, `sync:${userId}`, 5);
+  if (rl) return rl;
 
   const enc = new TextEncoder();
   const abortCtrl = new AbortController();

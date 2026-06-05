@@ -9,6 +9,12 @@ import { getFeedbackItem } from "@/lib/services/feedback-service";
 import { formatDateUTC, sevColor } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
+function TopicTag({ topic }: { topic: string }) {
+  return (
+    <span className="px-1.5 py-0.5 rounded border border-border bg-muted/30 text-xs">{topic}</span>
+  );
+}
+
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession();
   const userId = session?.user?.id;
@@ -53,12 +59,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
             {(a?.topics?.length ?? 0) > 0 && (
               <div className="flex flex-wrap gap-1">
                 {a?.topics.map((t) => (
-                  <span
-                    key={t}
-                    className="px-2 py-0.5 rounded border border-border bg-muted/30 text-xs"
-                  >
-                    {t}
-                  </span>
+                  <TopicTag key={t} topic={t} />
                 ))}
               </div>
             )}
@@ -107,12 +108,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
                     <dt className="text-xs text-muted-foreground">topics</dt>
                     <dd className="mt-1 flex flex-wrap gap-1">
                       {a.topics.map((t) => (
-                        <span
-                          key={t}
-                          className="px-1.5 py-0.5 rounded border border-border bg-muted/30 text-xs"
-                        >
-                          {t}
-                        </span>
+                        <TopicTag key={t} topic={t} />
                       ))}
                     </dd>
                   </div>

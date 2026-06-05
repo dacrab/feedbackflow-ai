@@ -3,7 +3,7 @@ import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
-import type { FeedbackStatus, Sentiment } from "@/lib/types";
+import { type FeedbackStatus, isFeedbackStatus, type Sentiment } from "@/lib/types";
 import { InboxBulkActions } from "./bulk-actions";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -22,14 +22,22 @@ export default async function InboxPage({
     Object.entries(spObj).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : [])),
   );
 
-  const sentiment = (sp.get("sentiment") as Sentiment | undefined) || undefined;
-  const status = (sp.get("status") as FeedbackStatus | undefined) || undefined;
+  const rawSentiment = sp.get("sentiment");
+  const sentiment: Sentiment | undefined =
+    rawSentiment === "positive" || rawSentiment === "neutral" || rawSentiment === "negative"
+      ? rawSentiment
+      : undefined;
+  const rawStatus = sp.get("status");
+  const status: FeedbackStatus | undefined = isFeedbackStatus(rawStatus) ? rawStatus : undefined;
   const topic = sp.get("topic") || undefined;
   const q = sp.get("q") || undefined;
   const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
   const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
-  const sort =
-    (sp.get("sort") as "created_desc" | "severity_desc" | "severity_asc") || "created_desc";
+  const rawSort = sp.get("sort");
+  const sort: "created_desc" | "severity_desc" | "severity_asc" =
+    rawSort === "created_desc" || rawSort === "severity_desc" || rawSort === "severity_asc"
+      ? rawSort
+      : "created_desc";
   const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10) || 1);
   const pageSize = Math.min(
     100,
