@@ -107,7 +107,7 @@ export function SystemHealthCard({
         }
       }
     } catch (err) {
-      if ((err as Error).name === "AbortError") return;
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(err instanceof Error ? err.message : "sync failed");
       setLogs((prev) => [...prev, { id: logId.current++, msg: "sync failed", ok: false }]);
     } finally {
