@@ -1,6 +1,7 @@
 import "server-only";
 
 import { and, asc, desc, eq, gte, lte, or, sql } from "drizzle-orm";
+import { cache } from "react";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
@@ -90,49 +91,49 @@ function buildOrder(filters: FeedbackFilters) {
       : desc(feedbackItems.createdAt);
 }
 
-export async function getFeedbackItems(
-  userId: string,
-  options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
-): Promise<FeedbackItemWithAnalysis[]> {
-  const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
-  const conditions = buildConditions(userId, filters);
-  const orderBy = buildOrder(filters);
+export const getFeedbackItems = cache(
+  async (
+    userId: string,
+    options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
+  ): Promise<FeedbackItemWithAnalysis[]> => {
+    const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
+    const conditions = buildConditions(userId, filters);
+    const orderBy = buildOrder(filters);
 
-  const rows = await db
-    .select(feedbackSelect)
-    .from(feedbackItems)
-    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(and(...conditions))
-    .orderBy(orderBy)
-    .limit(limit)
-    .offset(offset);
-  return rows.map(transform);
-}
+    const rows = await db
+      .select(feedbackSelect)
+      .from(feedbackItems)
+      .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(and(...conditions))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+    return rows.map(transform);
+  },
+);
 
-export async function getFeedbackCount(
-  userId: string,
-  filters: FeedbackFilters = {},
-): Promise<number> {
-  const conditions = buildConditions(userId, filters);
+export const getFeedbackCount = cache(
+  async (userId: string, filters: FeedbackFilters = {}): Promise<number> => {
+    const conditions = buildConditions(userId, filters);
 
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(feedbackItems)
-    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(and(...conditions));
-  return Number(row?.count ?? 0);
-}
+    const [row] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(feedbackItems)
+      .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(and(...conditions));
+    return Number(row?.count ?? 0);
+  },
+);
 
-export async function getFeedbackItem(
-  userId: string,
-  itemId: string,
-): Promise<FeedbackItemWithAnalysis> {
-  const [row] = await db
-    .select(feedbackSelect)
-    .from(feedbackItems)
-    .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))
-    .limit(1);
-  if (!row) throw new Error("not found");
-  return transform(row);
-}
+export const getFeedbackItem = cache(
+  async (userId: string, itemId: string): Promise<FeedbackItemWithAnalysis> => {
+    const [row] = await db
+      .select(feedbackSelect)
+      .from(feedbackItems)
+      .leftJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))
+      .limit(1);
+    if (!row) throw new Error("not found");
+    return transform(row);
+  },
+);

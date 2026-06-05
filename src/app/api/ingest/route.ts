@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { rateLimitMiddleware, requireCronOrAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 
+export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {

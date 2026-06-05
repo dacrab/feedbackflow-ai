@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: (string | undefined | null | false | 0)[]) {
-  return twMerge(...inputs.filter(Boolean).map(String));
+  return twMerge(...inputs);
 }
 
 export const sevColor = (severity: number) =>
@@ -10,12 +10,11 @@ export const sevColor = (severity: number) =>
 export const sevLabel = (severity: number) =>
   severity >= 4 ? "high severity" : severity >= 3 ? "medium severity" : "low severity";
 
-export const sentColor = (sentiment: string) =>
-  sentiment === "positive"
-    ? "text-green-500"
-    : sentiment === "negative"
-      ? "text-red-500"
-      : "text-muted-foreground";
+const sentColorMap: Record<string, string> = {
+  positive: "text-green-500",
+  negative: "text-red-500",
+};
+export const sentColor = (sentiment: string) => sentColorMap[sentiment] ?? "text-muted-foreground";
 
 export const formatDateUTC = (iso: string) =>
   new Date(iso).toLocaleString("en-US", {

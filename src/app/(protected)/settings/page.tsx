@@ -66,6 +66,9 @@ export default async function SettingsPage() {
   const provider =
     settingsRow?.provider && isLLMProvider(settingsRow.provider) ? settingsRow.provider : null;
 
+  const enabledSources = sources.filter((s) => s.enabled);
+  const enabledHooks = hooks.filter((h) => h.enabled);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -92,9 +95,9 @@ export default async function SettingsPage() {
           />
         </div>
         <SystemHealthCard
-          enabledSources={sources.filter((s) => s.enabled).length}
+          enabledSources={enabledSources.length}
           totalSources={sources.length}
-          enabledHooks={hooks.filter((h) => h.enabled).length}
+          enabledHooks={enabledHooks.length}
           lastRun={lastRun}
         />
         <DataSourcesCard sources={sources} />

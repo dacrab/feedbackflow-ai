@@ -1,6 +1,8 @@
 import { rateLimitMiddleware, requireAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   let userId: string;
   try {
