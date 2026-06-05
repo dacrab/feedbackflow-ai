@@ -1,21 +1,12 @@
 import "server-only";
 
 import { and, eq, gte, sql } from "drizzle-orm";
-import dynamic from "next/dynamic";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
-
-const TrendChart = dynamic(() => import("./charts").then((m) => m.TrendChart), { ssr: false });
-const SentimentChart = dynamic(() => import("./charts").then((m) => m.SentimentChart), {
-  ssr: false,
-});
-const TopicsChart = dynamic(() => import("./charts").then((m) => m.TopicsChart), { ssr: false });
-const SeverityChart = dynamic(() => import("./charts").then((m) => m.SeverityChart), {
-  ssr: false,
-});
+import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "./charts-dynamic";
 
 interface ComputedMetrics {
   total: number;
