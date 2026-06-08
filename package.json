@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "doppler run -- next dev",
+    "build": "doppler run -- next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "biome check",
@@ -12,10 +12,10 @@
     "check": "tsc --noEmit && biome check && DATABASE_URL=postgresql://_ knip",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "bun --env-file=.env.local drizzle-kit generate",
-    "db:migrate": "bun --env-file=.env.local drizzle-kit migrate",
-    "db:seed": "bun --env-file=.env.local src/db/seed.ts",
-    "db:studio": "bun --env-file=.env.local drizzle-kit studio"
+    "db:generate": "doppler run -- drizzle-kit generate",
+    "db:migrate": "doppler run -- drizzle-kit migrate",
+    "db:seed": "doppler run -- bun src/db/seed.ts",
+    "db:studio": "doppler run -- drizzle-kit studio"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.81",

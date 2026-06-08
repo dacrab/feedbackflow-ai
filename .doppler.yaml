@@ -1,0 +1,3 @@
+setup:
+  project: feedbackflow-ai
+  config: dev_app
