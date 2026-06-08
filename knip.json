@@ -1,6 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/db/seed.ts"],
   "ignoreExportsUsedInFile": true,
+  "ignoreBinaries": ["doppler"],
   "rules": {
     "files": "error",
     "dependencies": "error",
