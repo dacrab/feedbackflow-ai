@@ -1,5 +1,6 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import * as Sentry from "@sentry/nextjs";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           >
             Skip to content
           </a>
-          {children}
+          <Sentry.ErrorBoundary fallback={<p>An error occurred</p>}>
+            {children}
+          </Sentry.ErrorBoundary>
           <div role="status" aria-live="polite">
             <Toaster position="bottom-right" richColors closeButton />
           </div>
