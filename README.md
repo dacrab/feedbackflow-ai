@@ -38,7 +38,7 @@ Copy `.env.example` to `.env.local` and fill in the required values:
 | `ENCRYPTION_KEY` | ✅ | Used to encrypt stored API keys — run `openssl rand -base64 32` |
 | `OPENROUTER_API_KEY` | — | Recommended free LLM option |
 | `OPENAI_API_KEY` | — | OpenAI alternative |
-| `ANTHROPIC_API_KEY` | — | Anthropic alternative |
+
 | `GOOGLE_GENERATIVE_AI_API_KEY` | — | Google Gemini alternative |
 | `GITHUB_CLIENT_ID/SECRET` | — | For GitHub OAuth login (optional) |
 | `GOOGLE_CLIENT_ID/SECRET` | — | For Google OAuth login (optional) |
