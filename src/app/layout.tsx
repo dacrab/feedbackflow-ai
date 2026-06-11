@@ -22,18 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:border focus:border-border focus:rounded"
-          >
-            Skip to content
-          </a>
           <Sentry.ErrorBoundary fallback={<p>An error occurred</p>}>
             {children}
           </Sentry.ErrorBoundary>
-          <div role="status" aria-live="polite">
-            <Toaster position="bottom-right" richColors closeButton />
-          </div>
+          <Toaster position="bottom-right" richColors closeButton />
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

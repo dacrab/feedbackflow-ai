@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
-import { useAction } from "@/lib/use-action";
 
 type NotificationRow = {
   id: string;
@@ -17,17 +16,26 @@ type NotificationRow = {
 function WebhookItem({ hook }: { hook: NotificationRow }) {
   const [editingSeverity, setEditingSeverity] = useState(false);
   const [minSeverity, setMinSeverity] = useState(hook.config.minSeverity ?? 4);
-  const { act, pending } = useAction();
+  const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (!editingSeverity) setMinSeverity(hook.config.minSeverity ?? 4);
-  }, [hook.config.minSeverity, editingSeverity]);
+  function cancelEdit() {
+    setMinSeverity(hook.config.minSeverity ?? 4);
+    setEditingSeverity(false);
+  }
 
   function onDelete() {
     toast("delete this webhook?", {
       action: {
         label: "delete",
-        onClick: () => act(() => deleteNotification(hook.id), "webhook deleted"),
+        onClick: () =>
+          startTransition(async () => {
+            try {
+              await deleteNotification(hook.id);
+              toast.success("webhook deleted");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "failed");
+            }
+          }),
       },
     });
   }
@@ -46,10 +54,14 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
             type="button"
             disabled={pending}
             onClick={() =>
-              act(
-                () => updateNotification(hook.id, { enabled: !hook.enabled }),
-                hook.enabled ? "disabled" : "enabled",
-              )
+              startTransition(async () => {
+                try {
+                  await updateNotification(hook.id, { enabled: !hook.enabled });
+                  toast.success(hook.enabled ? "disabled" : "enabled");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "failed");
+                }
+              })
             }
             className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
           >
@@ -87,7 +99,14 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
               type="button"
               disabled={pending}
               onClick={() => {
-                act(() => updateNotification(hook.id, { minSeverity }), "updated");
+                startTransition(async () => {
+                  try {
+                    await updateNotification(hook.id, { minSeverity });
+                    toast.success("updated");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "failed");
+                  }
+                });
                 setEditingSeverity(false);
               }}
               className="text-xs text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
@@ -96,7 +115,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
             </button>
             <button
               type="button"
-              onClick={() => setEditingSeverity(false)}
+              onClick={cancelEdit}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               cancel
@@ -119,14 +138,19 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
 
 export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
-  const { act, pending } = useAction();
+  const [pending, startTransition] = useTransition();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    act(async () => {
-      await addNotification(slackUrl);
-      setSlackUrl("");
-    }, "webhook added");
+    startTransition(async () => {
+      try {
+        await addNotification(slackUrl);
+        toast.success("webhook added");
+        setSlackUrl("");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "failed");
+      }
+    });
   }
 
   return (

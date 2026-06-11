@@ -13,7 +13,7 @@ export const getServerSession = cache(async () =>
 
 export async function requireAuth(): Promise<string> {
   const session = await getServerSession();
-  if (!session?.user?.id) throw NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!session?.user?.id) throw new Error("unauthorized");
   return session.user.id;
 }
 
@@ -36,12 +36,10 @@ export async function requireCronOrAuth(req: Request): Promise<Response | undefi
   if (isValidCronRequest(req)) return;
   try {
     await requireAuth();
-  } catch (e) {
-    return e instanceof Response
-      ? e
-      : NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  } catch {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  return;
+  return undefined;
 }
 
 export function rateLimitMiddleware(
@@ -56,5 +54,5 @@ export function rateLimitMiddleware(
       { error: "too many requests" },
       { status: 429, headers: { "Retry-After": "60" } },
     );
-  return;
+  return undefined;
 }

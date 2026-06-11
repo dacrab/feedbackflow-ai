@@ -46,13 +46,7 @@ async function fetchGithubPage(
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
   const data = await res.json();
   if (!Array.isArray(data)) return { issues: [], rawCount: 0 };
-  const issues = data.map(({ id, title, body, created_at }: GithubIssue) => ({
-    id,
-    title,
-    body,
-    created_at,
-  }));
-  return { issues, rawCount: data.length };
+  return { issues: data, rawCount: data.length };
 }
 
 async function fetchGithubPageWithRetry(
@@ -89,7 +83,7 @@ async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIs
   return results;
 }
 
-type LLMOpts = { provider: LLMProvider; model?: string; apiKey?: string } | undefined;
+type LLMOpts = { provider: LLMProvider; model?: string; apiKey: string } | undefined;
 
 export type IngestEvent =
   | { stage: "fetching"; message: string }
@@ -111,9 +105,12 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
     .from(userSettings)
     .where(eq(userSettings.userId, userId))
     .limit(1);
-  if (!s || !isLLMProvider(s.provider)) return undefined;
-  const apiKey = s.apiKeyCipher ? decrypt(s.apiKeyCipher) : undefined;
-  return { provider: s.provider, ...(s.model && { model: s.model }), ...(apiKey && { apiKey }) };
+  if (!s || !isLLMProvider(s.provider) || !s.apiKeyCipher) return undefined;
+  return {
+    provider: s.provider,
+    apiKey: decrypt(s.apiKeyCipher),
+    ...(s.model && { model: s.model }),
+  };
 }
 
 async function analyzeAndStore(
@@ -124,11 +121,9 @@ async function analyzeAndStore(
   signal?: AbortSignal,
 ): Promise<number> {
   let count = 0;
-  for (let i = 0; i < items.length; i++) {
+  for (const item of items) {
     if (signal?.aborted) break;
-    const item = items[i];
-    if (!item) continue;
-    onProgress?.({ stage: "analyzing", message: `analyzing ${i + 1}/${items.length}...` });
+    onProgress?.({ stage: "analyzing", message: `analyzing ${count + 1}/${items.length}...` });
     try {
       const a = await analyzeFeedback(item.rawContent, LLM_MAX_RETRIES, llmOpts);
       const analysisData = {
@@ -160,7 +155,6 @@ async function analyzeAndStore(
 export async function runIngest(
   onProgress?: OnProgress,
   signal?: AbortSignal,
-  /** When provided, only ingest sources belonging to this user */
   scopedUserId?: string,
 ): Promise<{ fetched: number; inserted: number; analyzed: number }> {
   const query = db
@@ -191,11 +185,9 @@ export async function runIngest(
     const llmOpts = llmOptsCache.get(src.userId);
 
     const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
-
     onProgress?.({ stage: "fetching", message: `fetching from ${src.config.repo}...` });
 
     const issues = await fetchGithubIssues(src.config.repo, token);
-
     onProgress?.({ stage: "fetching", message: `fetched ${issues.length} items` });
 
     const rows = issues.map((i) => ({
@@ -220,23 +212,23 @@ export async function runIngest(
       .returning({ id: ingestRuns.id });
 
     const insertedIds = new Set(inserted.map((i) => i.id));
-
-    // Scope unanalyzed query to externalIds fetched this run — prevents cross-source contamination
     const fetchedExternalIds = rows.map((r) => r.externalId);
-    const unanalyzed = fetchedExternalIds.length
-      ? await db
-          .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
-          .from(feedbackItems)
-          .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
-          .where(
-            and(
-              eq(feedbackItems.userId, src.userId),
-              eq(feedbackItems.source, "github"),
-              inArray(feedbackItems.externalId, fetchedExternalIds),
-              isNull(feedbackAnalyses.id),
-            ),
-          )
-      : [];
+
+    let unanalyzed: { id: string; rawContent: string }[] = [];
+    if (fetchedExternalIds.length > 0) {
+      unanalyzed = await db
+        .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+        .from(feedbackItems)
+        .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
+        .where(
+          and(
+            eq(feedbackItems.userId, src.userId),
+            eq(feedbackItems.source, "github"),
+            inArray(feedbackItems.externalId, fetchedExternalIds),
+            isNull(feedbackAnalyses.id),
+          ),
+        );
+    }
 
     const toAnalyze = [...inserted, ...unanalyzed.filter((u) => !insertedIds.has(u.id))];
 
@@ -246,7 +238,6 @@ export async function runIngest(
 
     const analyzed = await analyzeAndStore(toAnalyze, src.userId, llmOpts, onProgress, signal);
 
-    // Update lastChecked timestamp for this source
     await db.update(userSources).set({ lastChecked: new Date() }).where(eq(userSources.id, src.id));
 
     if (run) {

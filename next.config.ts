@@ -13,12 +13,8 @@ const csp = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  allowedDevOrigins: ["localhost:3000"],
   typescript: { ignoreBuildErrors: false },
-  compiler: {
-    removeConsole:
-      process.env["NODE_ENV"] === "production" ? { exclude: ["error", "warn"] } : false,
-  },
+  serverExternalPackages: ["@neondatabase/serverless"],
   async headers() {
     return [
       {

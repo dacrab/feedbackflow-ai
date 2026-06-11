@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
-import { useAction } from "@/lib/use-action";
 
 const PROVIDERS: { value: LLMProvider; label: string }[] = [
   { value: "openrouter", label: "OpenRouter (free)" },
@@ -62,16 +62,30 @@ export function LLMSettingsCard({
   );
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
-  const { act, pending } = useAction();
+  const [pending, startTransition] = useTransition();
 
   function handleSave() {
     if (!configured || editingKey) {
       if (!apiKey) return;
-      act(() => saveSettings(provider, model, apiKey), "saved");
-      setApiKey("");
-      setEditingKey(false);
+      startTransition(async () => {
+        try {
+          await saveSettings(provider, model, apiKey);
+          toast.success("saved");
+          setApiKey("");
+          setEditingKey(false);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "failed");
+        }
+      });
     } else {
-      act(() => updateSettingsModel(model), "model updated");
+      startTransition(async () => {
+        try {
+          await updateSettingsModel(model);
+          toast.success("model updated");
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "failed");
+        }
+      });
     }
   }
 
@@ -191,11 +205,16 @@ export function LLMSettingsCard({
               type="button"
               disabled={pending}
               onClick={() =>
-                act(async () => {
-                  await deleteSettings();
-                  setEditingKey(true);
-                  setApiKey("");
-                }, "removed")
+                startTransition(async () => {
+                  try {
+                    await deleteSettings();
+                    toast.success("removed");
+                    setEditingKey(true);
+                    setApiKey("");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "failed");
+                  }
+                })
               }
               className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >

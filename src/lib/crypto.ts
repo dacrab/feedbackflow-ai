@@ -1,14 +1,20 @@
 import crypto from "node:crypto";
 
-const secret = process.env["ENCRYPTION_KEY"];
-if (!secret) throw new Error("ENCRYPTION_KEY is required");
+const SALT = "feedbackflow-aes-256-gcm";
 
-// HKDF derives a proper key from the high-entropy env secret with domain separation.
-const KEY = Buffer.from(crypto.hkdfSync("sha256", secret, "", "feedbackflow-aes-256-gcm", 32));
+let key: Buffer | null = null;
+
+function getKey(): Buffer {
+  if (key) return key;
+  const secret = process.env["ENCRYPTION_KEY"];
+  if (!secret) throw new Error("ENCRYPTION_KEY is required");
+  key = Buffer.from(crypto.hkdfSync("sha256", secret, "", SALT, 32));
+  return key;
+}
 
 export function encrypt(plain: string): string {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", KEY, iv);
+  const cipher = crypto.createCipheriv("aes-256-gcm", getKey(), iv);
   const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, enc]).toString("base64");
@@ -17,7 +23,7 @@ export function encrypt(plain: string): string {
 export function decrypt(b64: string): string {
   try {
     const buf = Buffer.from(b64, "base64");
-    const decipher = crypto.createDecipheriv("aes-256-gcm", KEY, buf.subarray(0, 12));
+    const decipher = crypto.createDecipheriv("aes-256-gcm", getKey(), buf.subarray(0, 12));
     decipher.setAuthTag(buf.subarray(12, 28));
     return Buffer.concat([decipher.update(buf.subarray(28)), decipher.final()]).toString("utf8");
   } catch {
@@ -25,7 +31,6 @@ export function decrypt(b64: string): string {
   }
 }
 
-// Fixed: always run the comparison regardless of length to prevent timing side-channels.
 const DUMMY = Buffer.alloc(64);
 
 export function timingSafeEqual(a: string, b: string): boolean {

@@ -40,15 +40,6 @@ const oauthProviders: { id: "github" | "google"; label: string; icon: ReactNode 
   },
 ];
 
-function passwordStrength(p: string): { label: string; color: string } {
-  if (p.length < 8) return { label: "too short", color: "text-red-500" };
-  const score = [/[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter((r) => r.test(p)).length;
-  if (score === 0) return { label: "weak", color: "text-orange-500" };
-  if (score === 1) return { label: "fair", color: "text-yellow-500" };
-  if (score === 2) return { label: "good", color: "text-blue-500" };
-  return { label: "strong", color: "text-green-500" };
-}
-
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,7 +48,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const isSignup = mode === "signup";
 
-  const strength = isSignup && password ? passwordStrength(password) : null;
   const mismatch = isSignup && confirm && password !== confirm;
 
   async function onSubmit(e: React.FormEvent) {
@@ -77,7 +67,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         const { error } = await signUp.email({
           email: normalizedEmail,
           password,
-          name: email.split("@")[0] || "User",
+          name: normalizedEmail.split("@")[0] || "User",
         });
         if (error) {
           toast.error(error.message || "failed to create account");
@@ -135,11 +125,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             required
             minLength={isSignup ? 8 : undefined}
           />
-          {strength && (
-            <p className={`text-xs ${strength.color} animate-fade-in`}>
-              strength: {strength.label}
-            </p>
-          )}
         </label>
         {isSignup && (
           <label className="block space-y-1.5" htmlFor="confirm">
