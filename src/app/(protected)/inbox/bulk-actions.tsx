@@ -4,7 +4,7 @@ import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { SentimentBadge, StatusBadge } from "@/components/ui/badges";
+import { SentimentBadge, StatusBadge } from "@/components/ui/ui";
 import { bulkUpdateStatus } from "@/lib/actions";
 import type { FeedbackItemWithAnalysis } from "@/lib/types";
 import { formatDateUTC, sevColor, sevLabel } from "@/lib/utils";

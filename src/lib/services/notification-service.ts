@@ -56,9 +56,6 @@ export async function notifyHighSeverityFeedback(
   for (const { url, minSeverity } of webhooks) {
     if (analysis.severity_score >= minSeverity) promises.push(notifySlack(msg, url));
   }
-  // Also notify global webhook if configured
-  const global = process.env["SLACK_WEBHOOK_URL"];
-  if (global) promises.push(notifySlack(msg, global));
   await Promise.all(promises);
 }
 

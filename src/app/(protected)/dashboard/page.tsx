@@ -24,16 +24,23 @@ interface ComputedMetrics {
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-type TrendRow = { day: string; cnt: string; delta: string };
-type SummaryRow = {
+interface SummaryRow {
   sentiment: string | null;
   cnt: number;
   highCnt: number;
   avgSev: string;
-  positiveShare: number;
-};
-type SeverityRow = { score: number; cnt: number };
-type TopicRow = { topic: string; cnt: string };
+}
+
+interface TrendRow {
+  day: string;
+  cnt: string;
+  delta: string;
+}
+
+interface TopicRow {
+  topic: string;
+  cnt: string;
+}
 
 function aggregateSummary(rows: SummaryRow[]) {
   let total = 0;
@@ -59,7 +66,7 @@ function aggregateSummary(rows: SummaryRow[]) {
   return { total, positive, neutral, negative, highSeverity, avgSeverity, positiveShare };
 }
 
-function buildSeverityHist(rows: SeverityRow[]): Record<number, number> {
+function buildSeverityHist(rows: Array<{ score: number; cnt: number }>): Record<number, number> {
   const hist: Record<number, number> = {};
   for (let i = 1; i <= MAX_SEVERITY; i++) hist[i] = 0;
   for (const r of rows) hist[r.score] = Number(r.cnt);
@@ -71,14 +78,13 @@ const getDashboard = cache(
     const since = new Date(Date.now() - THIRTY_DAYS_MS);
     const base = and(eq(feedbackItems.userId, userId), gte(feedbackItems.createdAt, since));
 
-    const [summaryRows, severityRows, trendRows, topicRows] = await Promise.all([
+    const [summaryRows, severityRows, trendResult, topicResult] = await Promise.all([
       db
         .select({
           sentiment: feedbackAnalyses.sentiment,
           cnt: sql<number>`COUNT(*)`,
           highCnt: sql<number>`COUNT(*) FILTER (WHERE ${feedbackAnalyses.severityScore} >= ${HIGH_SEVERITY_THRESHOLD})`,
           avgSev: sql<string>`ROUND(AVG(${feedbackAnalyses.severityScore})::numeric, 1)`,
-          positiveShare: sql<number>`ROUND(100.0 * COUNT(*) FILTER (WHERE ${feedbackAnalyses.sentiment} = 'positive') / NULLIF(COUNT(*), 0))`,
         })
         .from(feedbackItems)
         .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
@@ -126,11 +132,13 @@ const getDashboard = cache(
 
     const severityHist = buildSeverityHist(severityRows);
 
-    const trendData = trendRows.rows as TrendRow[];
-    const topTopics = (topicRows.rows as TopicRow[]).map((r) => ({
+    const trendData = (trendResult.rows ?? []) as unknown as TrendRow[];
+    const topTopics = ((topicResult.rows ?? []) as unknown as TopicRow[]).map((r) => ({
       topic: r.topic,
       value: Number(r.cnt),
     }));
+
+    const lastTrend = trendData.at(-1);
 
     return {
       total,
@@ -142,7 +150,7 @@ const getDashboard = cache(
       avgSeverity,
       trendLabels: trendData.map((r) => r.day),
       trendValues: trendData.map((r) => Number(r.cnt)),
-      trendDelta: Number(trendData.at(-1)?.delta ?? 0),
+      trendDelta: Number(lastTrend?.delta ?? 0),
       topTopics,
       severityHist,
     };
@@ -224,7 +232,7 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-medium">dashboard</h1>
       </div>
 
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 stagger-children">
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         <MetricCard label="total" value={m.total} delta={m.trendDelta} />
         <MetricCard label="positive" value={`${m.positiveShare}%`} />
         <MetricCard
@@ -235,7 +243,7 @@ export default async function DashboardPage() {
         <MetricCard label="avg severity" value={m.avgSeverity} note={`of ${MAX_SEVERITY}`} />
       </div>
 
-      <div className="grid gap-2 lg:grid-cols-2 stagger-children">
+      <div className="grid gap-2 lg:grid-cols-2">
         <ChartCard label="trend">
           <TrendChart data={trendData} />
         </ChartCard>

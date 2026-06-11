@@ -49,26 +49,16 @@ export async function addSource(repo: string, token?: string) {
     config: { repo },
     secretCipher: token ? encrypt(token) : null,
   });
-  // Scope ingest to this user only — don't trigger a full cross-user ingest
   runIngest(undefined, undefined, userId).catch(console.error);
   revalidatePath("/settings");
 }
 
-export async function updateSource(
-  id: string,
-  data: { enabled?: boolean; repo?: string; token?: string },
-) {
+export async function updateSource(id: string, data: { enabled?: boolean }) {
   parse(uuidSchema, id);
-  if (data.repo) parse(repoSchema, data.repo);
-  if (data.token) parse(z.string().min(1).max(512), data.token);
   const userId = await uid();
   await db
     .update(userSources)
-    .set({
-      ...(data.enabled !== undefined && { enabled: data.enabled }),
-      ...(data.repo !== undefined && { config: { repo: data.repo } }),
-      ...(data.token !== undefined && { secretCipher: data.token ? encrypt(data.token) : null }),
-    })
+    .set({ enabled: data.enabled })
     .where(and(eq(userSources.id, id), eq(userSources.userId, userId)));
   revalidatePath("/settings");
 }
@@ -91,21 +81,17 @@ export async function addNotification(webhook: string) {
 
 export async function updateNotification(
   id: string,
-  data: { enabled?: boolean; webhook?: string; minSeverity?: number },
+  data: { enabled?: boolean; minSeverity?: number },
 ) {
   parse(uuidSchema, id);
-  if (data.webhook) parse(webhookSchema, data.webhook);
   if (data.minSeverity !== undefined) parse(z.number().int().min(1).max(5), data.minSeverity);
   const userId = await uid();
+  const setData: Partial<typeof userNotifications.$inferInsert> = {};
+  if (data.enabled !== undefined) setData.enabled = data.enabled;
+  if (data.minSeverity !== undefined) setData.config = { minSeverity: data.minSeverity };
   await db
     .update(userNotifications)
-    .set({
-      ...(data.enabled !== undefined && { enabled: data.enabled }),
-      ...(data.webhook !== undefined && {
-        secretCipher: data.webhook ? encrypt(data.webhook) : null,
-      }),
-      ...(data.minSeverity !== undefined && { config: { minSeverity: data.minSeverity } }),
-    })
+    .set(setData)
     .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
   revalidatePath("/settings");
 }

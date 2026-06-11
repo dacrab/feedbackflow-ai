@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
@@ -31,29 +31,16 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openrouter: "openrouter/auto",
 } as const;
 
-type LLMOptions = { provider?: LLMProvider; model?: string; apiKey?: string };
+type LLMOptions = { provider: LLMProvider; model?: string; apiKey: string };
 export type Analysis = z.infer<typeof AnalysisSchema>;
 
-function getModel(opts?: LLMOptions) {
-  const provider = opts?.provider ?? "google";
-  const modelName = opts?.model ?? DEFAULT_MODELS[provider];
-  if (provider === "openai") {
-    const apiKey = opts?.apiKey ?? process.env["OPENAI_API_KEY"];
-    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
-    return createOpenAI({ apiKey })(modelName);
-  }
-  if (provider === "anthropic") {
-    const apiKey = opts?.apiKey ?? process.env["ANTHROPIC_API_KEY"];
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
-    return createAnthropic({ apiKey })(modelName);
-  }
-  if (provider === "openrouter") {
-    const apiKey = opts?.apiKey ?? process.env["OPENROUTER_API_KEY"];
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY missing");
+function getModel({ provider, model, apiKey }: LLMOptions) {
+  const modelName = model ?? DEFAULT_MODELS[provider];
+  if (provider === "openai") return createOpenAI({ apiKey })(modelName);
+  if (provider === "anthropic") return createAnthropic({ apiKey })(modelName);
+  if (provider === "openrouter")
     return createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(modelName);
-  }
-  if (opts?.apiKey) return createGoogleGenerativeAI({ apiKey: opts.apiKey })(modelName);
-  return google(modelName);
+  return createGoogleGenerativeAI({ apiKey })(modelName);
 }
 
 function normalize(text: string): string {
@@ -72,10 +59,11 @@ export async function analyzeFeedback(
   retries = LLM_MAX_RETRIES,
   opts?: LLMOptions,
 ): Promise<Analysis> {
+  if (!opts?.apiKey || !opts?.provider)
+    throw new Error("LLM not configured. Set your provider and API key in Settings.");
   const normalized = normalize(text);
-  const provider = opts?.provider ?? "google";
-  const { success } = rateLimit(`llm:${provider}`, { maxRequests: 15, windowMs: 60_000 });
-  if (!success) throw new Error(`LLM rate limit exceeded for ${provider}. Try again later.`);
+  const { success } = rateLimit(`llm:${opts.provider}`, { maxRequests: 15, windowMs: 60_000 });
+  if (!success) throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
 
   const model = getModel(opts);
   let lastErr: unknown;

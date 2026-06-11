@@ -95,11 +95,6 @@
     cursor: pointer;
   }
 
-  main,
-  .page-content {
-    animation: fadeIn 0.3s ease-out;
-  }
-
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -164,35 +159,5 @@
 
   .animate-fade-in {
     animation: fadeIn 0.2s ease-out;
-  }
-
-  /* stagger helpers — apply to children via nth-child */
-  .stagger-children > * {
-    animation: fadeUp 0.25s ease-out both;
-  }
-  .stagger-children > *:nth-child(1) {
-    animation-delay: 0ms;
-  }
-  .stagger-children > *:nth-child(2) {
-    animation-delay: 50ms;
-  }
-  .stagger-children > *:nth-child(3) {
-    animation-delay: 100ms;
-  }
-  .stagger-children > *:nth-child(4) {
-    animation-delay: 150ms;
-  }
-  .stagger-children > *:nth-child(5) {
-    animation-delay: 200ms;
-  }
-  .stagger-children > *:nth-child(6) {
-    animation-delay: 250ms;
-  }
-
-  .page-btn {
-    @apply h-7 px-3 rounded border border-border hover:bg-muted transition-colors inline-flex items-center;
-  }
-  .page-btn-disabled {
-    @apply border-border/50 text-muted-foreground/50;
   }
 }

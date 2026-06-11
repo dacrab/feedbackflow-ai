@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/ui/ui";
 import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
-import { useAction } from "@/lib/use-action";
 import { timeAgo } from "@/lib/utils";
 
 type SourceRow = {
@@ -18,13 +17,21 @@ type SourceRow = {
 };
 
 function SourceItem({ source }: { source: SourceRow }) {
-  const { act, pending } = useAction();
+  const [pending, startTransition] = useTransition();
 
   function onDelete() {
     toast(`delete ${source.config.repo}?`, {
       action: {
         label: "delete",
-        onClick: () => act(() => deleteSource(source.id), "source deleted"),
+        onClick: () =>
+          startTransition(async () => {
+            try {
+              await deleteSource(source.id);
+              toast.success("source deleted");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "failed");
+            }
+          }),
       },
     });
   }
@@ -53,10 +60,14 @@ function SourceItem({ source }: { source: SourceRow }) {
             type="button"
             disabled={pending}
             onClick={() =>
-              act(
-                () => updateSource(source.id, { enabled: !source.enabled }),
-                source.enabled ? "disabled" : "enabled",
-              )
+              startTransition(async () => {
+                try {
+                  await updateSource(source.id, { enabled: !source.enabled });
+                  toast.success(source.enabled ? "disabled" : "enabled");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "failed");
+                }
+              })
             }
             className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
           >
@@ -80,16 +91,21 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
   const [repo, setRepo] = useState("");
   const [ghToken, setGhToken] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const { act, pending } = useAction();
+  const [pending, startTransition] = useTransition();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    act(async () => {
-      await addSource(repo, ghToken || undefined);
-      setRepo("");
-      setGhToken("");
-      setShowToken(false);
-    }, "source added");
+    startTransition(async () => {
+      try {
+        await addSource(repo, ghToken || undefined);
+        toast.success("source added");
+        setRepo("");
+        setGhToken("");
+        setShowToken(false);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "failed");
+      }
+    });
   }
 
   return (
