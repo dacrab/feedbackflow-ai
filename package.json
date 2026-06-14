@@ -18,16 +18,16 @@
     "db:studio": "doppler run -- drizzle-kit studio"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.82",
-    "@ai-sdk/google": "^3.0.80",
-    "@ai-sdk/openai": "^3.0.69",
+    "@ai-sdk/anthropic": "^3.0.84",
+    "@ai-sdk/google": "^3.0.82",
+    "@ai-sdk/openai": "^3.0.71",
     "@neondatabase/serverless": "^1.1.0",
     "@sentry/nextjs": "^10.57.0",
     "@tabler/icons-react": "^3.44.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "ai": "^6.0.201",
-    "better-auth": "^1.6.16",
+    "ai": "^6.0.204",
+    "better-auth": "^1.6.18",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.9",
     "next-themes": "^0.4.6",
@@ -40,8 +40,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
-    "@tailwindcss/postcss": "^4.3.0",
+    "@biomejs/biome": "2.5.0",
+    "@tailwindcss/postcss": "^4.3.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -53,7 +53,7 @@
     "jsdom": "^29.1.1",
     "knip": "^6.16.1",
     "postcss": "^8.5.15",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }
