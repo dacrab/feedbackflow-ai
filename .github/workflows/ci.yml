@@ -26,10 +26,9 @@ jobs:
       - uses: dopplerhq/cli-action@v4
 
       - name: Check
-        run: doppler run -- bun run typecheck && doppler run -- bun run lint
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: bun run typecheck && bun run lint
       - name: Test
+        if: github.actor != 'dependabot[bot]'
         run: doppler run -- bun run test
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
