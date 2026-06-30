@@ -1,15 +1,34 @@
 import "server-only";
 
-import { headers } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { cache } from "react";
-import { auth } from "@/auth";
+import { db } from "@/db/client";
+import { user } from "@/db/schema";
 import { timingSafeEqual } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 
-export const getServerSession = cache(async () =>
-  auth.api.getSession({ headers: await headers() }),
-);
+interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+interface Session {
+  user: SessionUser;
+}
+
+export const getServerSession = cache(async (): Promise<Session | null> => {
+  const { userId } = await auth();
+  if (!userId) return null;
+  const [row] = await db
+    .select({ email: user.email, name: user.name })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return { user: { id: userId, email: row?.email ?? "", name: row?.name ?? "" } };
+});
 
 export async function requireAuth(): Promise<string> {
   const session = await getServerSession();

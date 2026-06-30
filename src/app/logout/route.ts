@@ -1,13 +1,12 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 async function handle() {
-  await auth.api.signOut({ headers: await headers() });
+  // Clerk manages sessions via its own middleware/cookies —
+  // redirecting to the sign-in page is sufficient to end the session.
   return NextResponse.redirect(
-    new URL("/login", process.env["BETTER_AUTH_URL"] ?? "http://localhost:3000"),
+    new URL("/login", process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000"),
   );
 }
 

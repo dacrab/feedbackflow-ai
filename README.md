@@ -31,8 +31,10 @@ Copy `.env.example` to `.env.local`:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon Postgres connection string |
-| `BETTER_AUTH_URL` | Yes | App base URL (e.g. `http://localhost:3000`) |
-| `BETTER_AUTH_SECRET` | Yes | `openssl rand -base64 32` |
+| `NEXT_PUBLIC_APP_URL` | Yes | App base URL (e.g. `http://localhost:3000`) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key |
+| `CLERK_WEBHOOK_SECRET` | No | Clerk webhook signing secret |
 | `ENCRYPTION_KEY` | Yes | `openssl rand -base64 32` |
 | `OPENROUTER_API_KEY` | No | Recommended free LLM |
 | `OPENAI_API_KEY` | No | OpenAI alternative |
@@ -53,7 +55,7 @@ bun dev           # http://localhost:3000
 
 ## Tech
 
-Bun · Neon Postgres · Drizzle ORM · better-auth · Vercel AI SDK · Tailwind CSS v4 · Recharts
+Bun · Neon Postgres · Drizzle ORM · Clerk · Vercel AI SDK · Tailwind CSS v4 · Recharts
 
 ## Contributing
 
