@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
+import { MAX_SEVERITY } from "@/lib/constants";
 import { encrypt } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
@@ -84,7 +85,8 @@ export async function updateNotification(
   data: { enabled?: boolean; minSeverity?: number },
 ) {
   parse(uuidSchema, id);
-  if (data.minSeverity !== undefined) parse(z.number().int().min(1).max(5), data.minSeverity);
+  if (data.minSeverity !== undefined)
+    parse(z.number().int().min(1).max(MAX_SEVERITY), data.minSeverity);
   const userId = await uid();
   const setData: Partial<typeof userNotifications.$inferInsert> = {};
   if (data.enabled !== undefined) setData.enabled = data.enabled;

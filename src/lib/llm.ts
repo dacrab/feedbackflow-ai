@@ -10,6 +10,7 @@ import {
   LLM_MAX_TOPICS,
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
+  MAX_SEVERITY,
 } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
 import type { LLMProvider } from "@/lib/types";
@@ -17,7 +18,7 @@ import type { LLMProvider } from "@/lib/types";
 const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
   topics: z.array(z.string()).min(1).max(LLM_MAX_TOPICS),
-  severity_score: z.number().int().min(1).max(5),
+  severity_score: z.number().int().min(1).max(MAX_SEVERITY),
   summary: z.string().min(5).max(200),
 });
 
