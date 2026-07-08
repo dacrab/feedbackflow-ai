@@ -30,8 +30,10 @@ export const formatDateUTC = (iso: string) =>
     minute: "2-digit",
   });
 
+const HOUR_MS = 3_600_000;
+
 export const getDateNHoursAgo = (hours: number) =>
-  new Date(Date.now() - hours * 3600000).toISOString();
+  new Date(Date.now() - hours * HOUR_MS).toISOString();
 
 export function timeAgo(date: Date | string): string {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);

@@ -7,6 +7,19 @@ import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
 import type { FeedbackItemWithAnalysis, FeedbackStatus, Sentiment } from "@/lib/types";
 
+type FeedbackRow = {
+  id: string;
+  source: string;
+  raw_content: string;
+  original_timestamp: Date;
+  created_at: Date;
+  sentiment: Sentiment | null;
+  topics: string[] | null;
+  severity_score: number | null;
+  summary: string | null;
+  status: FeedbackStatus | null;
+};
+
 function buildFilterConditions(filters: FeedbackFilters, userId: string) {
   const conditions = [eq(feedbackItems.userId, userId)];
   if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
@@ -74,24 +87,28 @@ export const getFeedbackItems = cache(
       .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
-    return rows.map((row) => ({
-      id: row.id,
-      source: row.source,
-      raw_content: row.raw_content,
-      original_timestamp: row.original_timestamp.toISOString(),
-      created_at: row.created_at.toISOString(),
-      feedback_analyses: row.sentiment
-        ? {
-            sentiment: row.sentiment,
-            topics: row.topics ?? [],
-            severity_score: row.severity_score ?? 0,
-            summary: row.summary ?? "",
-            status: row.status ?? "New",
-          }
-        : null,
-    }));
+    return rows.map(mapFeedbackRow);
   },
 );
+
+function mapFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
+  return {
+    id: row.id,
+    source: row.source,
+    raw_content: row.raw_content,
+    original_timestamp: row.original_timestamp.toISOString(),
+    created_at: row.created_at.toISOString(),
+    feedback_analyses: row.sentiment
+      ? {
+          sentiment: row.sentiment,
+          topics: row.topics ?? [],
+          severity_score: row.severity_score ?? 0,
+          summary: row.summary ?? "",
+          status: row.status ?? "New",
+        }
+      : null,
+  };
+}
 
 export const getFeedbackCount = cache(
   async (userId: string, filters: FeedbackFilters = {}): Promise<number> => {
@@ -115,21 +132,6 @@ export const getFeedbackItem = cache(
       .where(and(eq(feedbackItems.userId, userId), eq(feedbackItems.id, itemId)))
       .limit(1);
     if (!row) throw new Error("not found");
-    return {
-      id: row.id,
-      source: row.source,
-      raw_content: row.raw_content,
-      original_timestamp: row.original_timestamp.toISOString(),
-      created_at: row.created_at.toISOString(),
-      feedback_analyses: row.sentiment
-        ? {
-            sentiment: row.sentiment,
-            topics: row.topics ?? [],
-            severity_score: row.severity_score ?? 0,
-            summary: row.summary ?? "",
-            status: row.status ?? "New",
-          }
-        : null,
-    };
+    return mapFeedbackRow(row);
   },
 );
