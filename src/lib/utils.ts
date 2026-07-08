@@ -1,4 +1,5 @@
 import { twMerge } from "tailwind-merge";
+import { HIGH_SEVERITY_THRESHOLD, MEDIUM_SEVERITY_THRESHOLD } from "@/lib/constants";
 
 export function cn(...inputs: (string | undefined | null | false | 0)[]) {
   return twMerge(...inputs);
@@ -9,10 +10,18 @@ export function handleActionError(e: unknown, fallback = "Action failed") {
 }
 
 export const sevColor = (severity: number) =>
-  severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground";
+  severity >= HIGH_SEVERITY_THRESHOLD
+    ? "text-red-500"
+    : severity >= MEDIUM_SEVERITY_THRESHOLD
+      ? "text-orange-500"
+      : "text-muted-foreground";
 
 export const sevLabel = (severity: number) =>
-  severity >= 4 ? "high severity" : severity >= 3 ? "medium severity" : "low severity";
+  severity >= HIGH_SEVERITY_THRESHOLD
+    ? "high severity"
+    : severity >= MEDIUM_SEVERITY_THRESHOLD
+      ? "medium severity"
+      : "low severity";
 
 const sentColorMap: Record<string, string> = {
   positive: "text-green-500",

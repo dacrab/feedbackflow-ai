@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
+import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { handleActionError } from "@/lib/utils";
 
 type NotificationRow = {
@@ -16,11 +17,13 @@ type NotificationRow = {
 
 function WebhookItem({ hook }: { hook: NotificationRow }) {
   const [editingSeverity, setEditingSeverity] = useState(false);
-  const [minSeverity, setMinSeverity] = useState(hook.config.minSeverity ?? 4);
+  const [minSeverity, setMinSeverity] = useState(
+    hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
+  );
   const [pending, startTransition] = useTransition();
 
   function cancelEdit() {
-    setMinSeverity(hook.config.minSeverity ?? 4);
+    setMinSeverity(hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD);
     setEditingSeverity(false);
   }
 
@@ -60,7 +63,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
                   await updateNotification(hook.id, { enabled: !hook.enabled });
                   toast.success(hook.enabled ? "disabled" : "enabled");
                 } catch (e) {
-                  toast.error(handleActionError(e, "Failed to add webhook"));
+                  toast.error(handleActionError(e, "Failed to update webhook"));
                 }
               })
             }
@@ -89,7 +92,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
               onChange={(e) => setMinSeverity(Number(e.target.value))}
               className="w-16"
             >
-              {[1, 2, 3, 4, 5].map((n) => (
+              {Array.from({ length: MAX_SEVERITY }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
@@ -127,7 +130,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
             onClick={() => setEditingSeverity(true)}
             className="text-xs font-medium hover:text-muted-foreground transition-colors"
           >
-            {hook.config.minSeverity ?? 4}
+            {hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD}
             <span className="text-muted-foreground ml-1">edit</span>
           </button>
         )}

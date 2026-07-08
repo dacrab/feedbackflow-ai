@@ -65,7 +65,7 @@ function SourceItem({ source }: { source: SourceRow }) {
                   await updateSource(source.id, { enabled: !source.enabled });
                   toast.success(source.enabled ? "disabled" : "enabled");
                 } catch (e) {
-                  toast.error(handleActionError(e, "Failed to delete source"));
+                  toast.error(handleActionError(e, "Failed to update source"));
                 }
               })
             }
