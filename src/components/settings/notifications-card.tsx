@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
+import { handleActionError } from "@/lib/utils";
 
 type NotificationRow = {
   id: string;
@@ -33,7 +34,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
               await deleteNotification(hook.id);
               toast.success("webhook deleted");
             } catch (e) {
-              toast.error(e instanceof Error ? e.message : "failed");
+              toast.error(handleActionError(e, "Failed to delete webhook"));
             }
           }),
       },
@@ -59,7 +60,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
                   await updateNotification(hook.id, { enabled: !hook.enabled });
                   toast.success(hook.enabled ? "disabled" : "enabled");
                 } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "failed");
+                  toast.error(handleActionError(e, "Failed to add webhook"));
                 }
               })
             }
@@ -78,7 +79,6 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
         </div>
       </div>
 
-      {/* Min severity config */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">alert on severity ≥</span>
         {editingSeverity ? (
@@ -104,7 +104,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
                     await updateNotification(hook.id, { minSeverity });
                     toast.success("updated");
                   } catch (e) {
-                    toast.error(e instanceof Error ? e.message : "failed");
+                    toast.error(handleActionError(e, "Failed to save severity"));
                   }
                 });
                 setEditingSeverity(false);
@@ -148,7 +148,7 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
         toast.success("webhook added");
         setSlackUrl("");
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "failed");
+        toast.error(handleActionError(e, "Failed to update notification"));
       }
     });
   }

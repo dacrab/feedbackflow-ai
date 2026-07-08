@@ -19,7 +19,6 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background font-mono selection:bg-foreground/10">
-      {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 text-sm">
@@ -55,7 +54,6 @@ export default async function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="relative pt-28 pb-4 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-40" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_70%)]" />
@@ -110,11 +108,9 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Product Preview — matches actual dashboard + inbox */}
       <section className="pb-20">
         <div className="mx-auto max-w-5xl px-6">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5 dark:shadow-black/20">
-            {/* Window chrome */}
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/30">
               <div className="flex gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
@@ -127,7 +123,6 @@ export default async function LandingPage() {
             </div>
 
             <div className="p-4 sm:p-6 space-y-4">
-              {/* Metric cards — matches real dashboard */}
               <div>
                 <p className="text-xs text-muted-foreground mb-2">// overview</p>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -138,7 +133,6 @@ export default async function LandingPage() {
                 </div>
               </div>
 
-              {/* Inbox list — matches real inbox rows */}
               <div>
                 <p className="text-xs text-muted-foreground mb-2">// feedback items</p>
                 <div className="rounded border border-border divide-y divide-border">
@@ -177,7 +171,6 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="py-20 border-t border-border">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl mb-12">
@@ -225,7 +218,6 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-20 border-t border-border">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <h2 className="text-3xl font-semibold tracking-tight">
@@ -248,7 +240,6 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="mx-auto max-w-6xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">

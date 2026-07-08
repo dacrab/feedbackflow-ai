@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { Logo } from "@/components/logo";
 import { Sidebar } from "@/components/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -14,7 +15,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <div className="flex h-screen font-mono overflow-hidden">
-      <Sidebar userEmail={email} initialCollapsed={initialCollapsed} />
+      <Suspense
+        fallback={<div className="hidden md:flex w-52 border-r border-border bg-background" />}
+      >
+        <Sidebar userEmail={email} initialCollapsed={initialCollapsed} />
+      </Suspense>
 
       <main id="main-content" className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="flex h-12 shrink-0 items-center justify-between md:justify-end px-4 border-b border-border bg-background">

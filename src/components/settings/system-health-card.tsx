@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/ui/ui";
-import { timeAgo } from "@/lib/utils";
+import { handleActionError, timeAgo } from "@/lib/utils";
 
 type LastRun = {
   startedAt: Date;
@@ -53,6 +53,7 @@ export function SystemHealthCard({
   }
 
   async function runSync() {
+    if (abortRef.current) abortRef.current.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     setSyncing(true);
@@ -108,7 +109,7 @@ export function SystemHealthCard({
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
-      toast.error(err instanceof Error ? err.message : "sync failed");
+      toast.error(handleActionError(err, "sync failed"));
       setLogs((prev) => [...prev, { id: logId.current++, msg: "sync failed", ok: false }]);
     } finally {
       setSyncing(false);
@@ -119,7 +120,6 @@ export function SystemHealthCard({
   return (
     <div className="relative">
       <Card title="system" className={className ?? ""}>
-        {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded border border-border bg-muted/20 px-3 py-2">
             <p className="text-xs text-muted-foreground">sources</p>
@@ -134,7 +134,6 @@ export function SystemHealthCard({
           </div>
         </div>
 
-        {/* Last run */}
         {lastRun ? (
           <div className="rounded border border-border bg-muted/20 px-3 py-2 space-y-1.5">
             <div className="flex items-center justify-between">
@@ -163,7 +162,6 @@ export function SystemHealthCard({
           <p className="text-xs text-muted-foreground text-center py-2">no runs yet</p>
         )}
 
-        {/* Sync button */}
         {syncing ? (
           <Button size="sm" onClick={cancel} className="w-full">
             cancel sync
@@ -181,7 +179,6 @@ export function SystemHealthCard({
         )}
       </Card>
 
-      {/* Log output — absolute so it overlays without affecting grid row height */}
       {logs.length > 0 && (
         <div
           ref={logRef}

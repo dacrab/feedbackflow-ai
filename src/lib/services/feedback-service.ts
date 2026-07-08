@@ -7,6 +7,27 @@ import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
 import type { FeedbackItemWithAnalysis, FeedbackStatus, Sentiment } from "@/lib/types";
 
+function buildFilterConditions(filters: FeedbackFilters, userId: string) {
+  const conditions = [eq(feedbackItems.userId, userId)];
+  if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
+  if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
+  if (filters.severityMin !== undefined)
+    conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
+  if (filters.severityMax !== undefined)
+    conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
+  if (filters.q) {
+    const q = `%${filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase()}%`;
+    const cond = or(
+      sql`LOWER(${feedbackItems.rawContent}) LIKE ${q}`,
+      sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q}`,
+    );
+    if (cond) conditions.push(cond);
+  }
+  if (filters.topic)
+    conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
+  return conditions;
+}
+
 const feedbackSelect = {
   id: feedbackItems.id,
   source: feedbackItems.source,
@@ -36,23 +57,7 @@ export const getFeedbackItems = cache(
     options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
   ): Promise<FeedbackItemWithAnalysis[]> => {
     const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
-    const conditions = [eq(feedbackItems.userId, userId)];
-    if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
-    if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
-    if (filters.severityMin !== undefined)
-      conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
-    if (filters.severityMax !== undefined)
-      conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
-    if (filters.q) {
-      const q = `%${filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase()}%`;
-      const cond = or(
-        sql`LOWER(${feedbackItems.rawContent}) LIKE ${q}`,
-        sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q}`,
-      );
-      if (cond) conditions.push(cond);
-    }
-    if (filters.topic)
-      conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
+    const conditions = buildFilterConditions(filters, userId);
 
     const orderBy =
       filters.sort === "severity_desc"
@@ -90,23 +95,7 @@ export const getFeedbackItems = cache(
 
 export const getFeedbackCount = cache(
   async (userId: string, filters: FeedbackFilters = {}): Promise<number> => {
-    const conditions = [eq(feedbackItems.userId, userId)];
-    if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
-    if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
-    if (filters.severityMin !== undefined)
-      conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
-    if (filters.severityMax !== undefined)
-      conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
-    if (filters.q) {
-      const q = `%${filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase()}%`;
-      const cond = or(
-        sql`LOWER(${feedbackItems.rawContent}) LIKE ${q}`,
-        sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q}`,
-      );
-      if (cond) conditions.push(cond);
-    }
-    if (filters.topic)
-      conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
+    const conditions = buildFilterConditions(filters, userId);
 
     const [row] = await db
       .select({ count: sql<number>`count(*)` })

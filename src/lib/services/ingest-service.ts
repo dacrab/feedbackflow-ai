@@ -119,8 +119,9 @@ async function analyzeAndStore(
   llmOpts: LLMOpts,
   onProgress?: OnProgress,
   signal?: AbortSignal,
-): Promise<number> {
+): Promise<{ count: number; hasError: boolean }> {
   let count = 0;
+  let hasError = false;
   for (const item of items) {
     if (signal?.aborted) break;
     onProgress?.({ stage: "analyzing", message: `analyzing ${count + 1}/${items.length}...` });
@@ -146,10 +147,13 @@ async function analyzeAndStore(
         .slice(0, 200);
       console.error(`[Ingest] Failed to analyze ${item.id}:`, msg);
       onProgress?.({ stage: "analysis_error", message: `failed: ${msg}` });
-      if (/credits|quota|per.?day|unauthorized|invalid.api.key/i.test(msg)) break;
+      if (/credits|quota|per.?day|unauthorized|invalid.api.key/i.test(msg)) {
+        hasError = true;
+        break;
+      }
     }
   }
-  return count;
+  return { count, hasError };
 }
 
 export async function runIngest(
@@ -236,15 +240,34 @@ export async function runIngest(
       onProgress?.({ stage: "analyzing", message: `analyzing ${toAnalyze.length} items...` });
     }
 
-    const analyzed = await analyzeAndStore(toAnalyze, src.userId, llmOpts, onProgress, signal);
+    const { count: analyzed, hasError } = await analyzeAndStore(
+      toAnalyze,
+      src.userId,
+      llmOpts,
+      onProgress,
+      signal,
+    );
 
     await db.update(userSources).set({ lastChecked: new Date() }).where(eq(userSources.id, src.id));
 
     if (run) {
-      await db
-        .update(ingestRuns)
-        .set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed })
-        .where(eq(ingestRuns.id, run.id));
+      if (hasError) {
+        await db
+          .update(ingestRuns)
+          .set({
+            ok: false,
+            error: "LLM API error - partial analysis",
+            finishedAt: new Date(),
+            inserted: inserted.length,
+            analyzed,
+          })
+          .where(eq(ingestRuns.id, run.id));
+      } else {
+        await db
+          .update(ingestRuns)
+          .set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed })
+          .where(eq(ingestRuns.id, run.id));
+      }
     }
 
     totals.fetched += issues.length;

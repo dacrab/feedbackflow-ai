@@ -98,6 +98,7 @@ export const ingestRuns = pgTable(
     fetched: integer("fetched"),
     inserted: integer("inserted"),
     analyzed: integer("analyzed"),
+    error: text("error"),
   },
   (t) => [index("ingest_runs_user_id_idx").on(t.userId)],
 );

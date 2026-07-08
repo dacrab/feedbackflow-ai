@@ -12,8 +12,4 @@ function getDb() {
   return _db;
 }
 
-export const db = new Proxy<ReturnType<typeof getDb>>({} as ReturnType<typeof getDb>, {
-  get(_, prop) {
-    return getDb()[prop as keyof ReturnType<typeof getDb>];
-  },
-});
+export const db = getDb();
