@@ -16,6 +16,13 @@ import {
 
 const axisTick = { fontSize: 12 };
 
+const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {
+  background: "hsl(var(--background))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: "8px",
+  fontSize: "13px",
+};
+
 export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -28,14 +35,7 @@ export function TrendChart({ data }: { data: { name: string; value: number }[] }
         </defs>
         <XAxis dataKey="name" tick={axisTick} tickLine={false} axisLine={false} />
         <YAxis tick={axisTick} tickLine={false} axisLine={false} width={30} />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--color-card)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "8px",
-            fontSize: "12px",
-          }}
-        />
+        <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Area
           type="monotone"
           dataKey="value"
@@ -69,14 +69,7 @@ export function SentimentChart({
             <Cell key={e.name} fill={e.color} />
           ))}
         </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--color-card)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "8px",
-            fontSize: "12px",
-          }}
-        />
+        <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -95,14 +88,7 @@ export function TopicsChart({ data }: { data: { topic: string; value: number }[]
           axisLine={false}
           width={100}
         />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--color-card)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "8px",
-            fontSize: "12px",
-          }}
-        />
+        <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Bar dataKey="value" fill="var(--color-chart-2)" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -115,14 +101,7 @@ export function SeverityChart({ data }: { data: { name: string; value: number }[
       <BarChart data={data}>
         <XAxis dataKey="name" tick={axisTick} tickLine={false} axisLine={false} />
         <YAxis tick={axisTick} tickLine={false} axisLine={false} width={30} />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--color-card)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "8px",
-            fontSize: "12px",
-          }}
-        />
+        <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Bar dataKey="value" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>

@@ -4,6 +4,10 @@ export function cn(...inputs: (string | undefined | null | false | 0)[]) {
   return twMerge(...inputs);
 }
 
+export function handleActionError(e: unknown, fallback = "Action failed") {
+  return e instanceof Error ? e.message : fallback;
+}
+
 export const sevColor = (severity: number) =>
   severity >= 4 ? "text-red-500" : severity >= 3 ? "text-orange-500" : "text-muted-foreground";
 

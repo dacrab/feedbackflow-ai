@@ -73,7 +73,6 @@ export default async function InboxPage({
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {/* Header */}
       <div className="flex items-end justify-between shrink-0">
         <div>
           <p className="text-xs text-muted-foreground">// feedback items</p>
@@ -84,7 +83,6 @@ export default async function InboxPage({
         </p>
       </div>
 
-      {/* Filter bar */}
       <form className="grid gap-2 grid-cols-2 sm:flex sm:flex-wrap sm:items-center shrink-0">
         <Input
           id="inbox-search"
@@ -128,12 +126,10 @@ export default async function InboxPage({
         )}
       </form>
 
-      {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <InboxBulkActions items={items} />
       </div>
 
-      {/* Pagination — pinned at bottom */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-xs text-muted-foreground shrink-0">
           <span>

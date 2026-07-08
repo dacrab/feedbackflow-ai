@@ -2,15 +2,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/use-action", () => ({
-  useAction: () => ({
-    act: (fn: () => Promise<void>, msg?: string) => {
-      fn().then(() => msg && vi.fn()(msg));
-    },
-    pending: false,
-  }),
-}));
-
 vi.mock("@/lib/actions", () => ({
   saveSettings: vi.fn().mockResolvedValue(undefined),
   updateSettingsModel: vi.fn().mockResolvedValue(undefined),

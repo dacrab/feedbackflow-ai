@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
+import { handleActionError } from "@/lib/utils";
 
 const PROVIDERS: { value: LLMProvider; label: string }[] = [
   { value: "openrouter", label: "OpenRouter (free)" },
@@ -74,7 +75,7 @@ export function LLMSettingsCard({
           setApiKey("");
           setEditingKey(false);
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "failed");
+          toast.error(handleActionError(e, "Failed to save settings"));
         }
       });
     } else {
@@ -83,7 +84,7 @@ export function LLMSettingsCard({
           await updateSettingsModel(model);
           toast.success("model updated");
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "failed");
+          toast.error(handleActionError(e, "Failed to update model"));
         }
       });
     }
@@ -99,7 +100,6 @@ export function LLMSettingsCard({
   return (
     <Card title="llm provider" className={className ?? ""}>
       <div className="grid gap-4 sm:grid-cols-3">
-        {/* Provider */}
         <label className="space-y-1.5" htmlFor="llm-provider">
           <span className="text-xs text-muted-foreground">provider</span>
           <Select
@@ -117,7 +117,6 @@ export function LLMSettingsCard({
           </Select>
         </label>
 
-        {/* Model */}
         <label className="space-y-1.5 sm:col-span-2" htmlFor="llm-model">
           <span className="text-xs text-muted-foreground">model</span>
           <Select
@@ -136,7 +135,6 @@ export function LLMSettingsCard({
         </label>
       </div>
 
-      {/* API Key + Actions row */}
       <div className="flex gap-3 items-end">
         <div className="flex-1 space-y-1.5">
           <div className="flex items-center justify-between">
@@ -212,7 +210,7 @@ export function LLMSettingsCard({
                     setEditingKey(true);
                     setApiKey("");
                   } catch (e) {
-                    toast.error(e instanceof Error ? e.message : "failed");
+                    toast.error(handleActionError(e, "Failed to remove settings"));
                   }
                 })
               }
@@ -224,7 +222,6 @@ export function LLMSettingsCard({
         </div>
       </div>
 
-      {/* Status row */}
       {configured && (
         <div className="flex items-center gap-2 rounded border border-border bg-muted/20 px-3 py-2">
           <span className="text-xs text-green-500">●</span>

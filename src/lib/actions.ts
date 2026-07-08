@@ -49,7 +49,7 @@ export async function addSource(repo: string, token?: string) {
     config: { repo },
     secretCipher: token ? encrypt(token) : null,
   });
-  runIngest(undefined, undefined, userId).catch(console.error);
+  await runIngest(undefined, undefined, userId).catch(console.error);
   revalidatePath("/settings");
 }
 

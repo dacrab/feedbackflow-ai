@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/ui/ui";
 import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
-import { timeAgo } from "@/lib/utils";
+import { handleActionError, timeAgo } from "@/lib/utils";
 
 type SourceRow = {
   id: string;
@@ -29,7 +29,7 @@ function SourceItem({ source }: { source: SourceRow }) {
               await deleteSource(source.id);
               toast.success("source deleted");
             } catch (e) {
-              toast.error(e instanceof Error ? e.message : "failed");
+              toast.error(handleActionError(e, "Failed to update source"));
             }
           }),
       },
@@ -65,7 +65,7 @@ function SourceItem({ source }: { source: SourceRow }) {
                   await updateSource(source.id, { enabled: !source.enabled });
                   toast.success(source.enabled ? "disabled" : "enabled");
                 } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "failed");
+                  toast.error(handleActionError(e, "Failed to delete source"));
                 }
               })
             }
@@ -103,7 +103,7 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
         setGhToken("");
         setShowToken(false);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "failed");
+        toast.error(handleActionError(e, "Failed to add source"));
       }
     });
   }

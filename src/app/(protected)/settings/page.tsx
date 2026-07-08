@@ -71,7 +71,6 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">// configuration</p>
@@ -85,7 +84,6 @@ export default async function SettingsPage() {
         )}
       </div>
 
-      {/* 3-column grid with reduced gap */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2">
         <div className="xl:col-span-2">
           <LLMSettingsCard

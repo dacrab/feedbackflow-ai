@@ -1,3 +1,6 @@
+// NOTE: In-memory rate limiter — NOT suitable for serverless/multi-instance deployments.
+// For production, replace with a DB-backed limiter (Redis, Drizzle, Upstash, etc.).
+
 const store = new Map<string, number[]>();
 
 export function rateLimit(
