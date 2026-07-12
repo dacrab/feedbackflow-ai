@@ -3,10 +3,12 @@ import {
   cn,
   formatDateUTC,
   getDateNHoursAgo,
+  handleActionError,
   sentimentColor,
   sevColor,
   sevLabel,
   timeAgo,
+  withRetry,
 } from "./utils";
 
 describe("cn", () => {
@@ -22,17 +24,12 @@ describe("cn", () => {
 });
 
 describe("formatDateUTC", () => {
-  it("includes year, month abbreviation, and day", () => {
-    const result = formatDateUTC("2024-06-15T14:30:00.000Z");
-    expect(result).toContain("Jun");
-    expect(result).toContain("15");
-    expect(result).toContain("2024");
+  it("formats an afternoon time in UTC with 12-hour clock", () => {
+    expect(formatDateUTC("2024-06-15T14:30:00.000Z")).toBe("Jun 15, 2024, 02:30 PM");
   });
 
-  it("formats midnight correctly", () => {
-    const result = formatDateUTC("2024-01-01T00:00:00.000Z");
-    expect(result).toContain("Jan");
-    expect(result).toContain("2024");
+  it("formats midnight as 12:00 AM with zero-padded day", () => {
+    expect(formatDateUTC("2024-01-01T00:00:00.000Z")).toBe("Jan 01, 2024, 12:00 AM");
   });
 });
 
@@ -111,5 +108,54 @@ describe("getDateNHoursAgo", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
     expect(getDateNHoursAgo(0)).toBe("2024-01-10T12:00:00.000Z");
+  });
+});
+
+describe("handleActionError", () => {
+  it("returns the message of an Error instance", () => {
+    expect(handleActionError(new Error("boom"))).toBe("boom");
+  });
+
+  it("returns the default fallback for non-Error values", () => {
+    expect(handleActionError("oops")).toBe("Action failed");
+  });
+
+  it("returns a custom fallback for non-Error values", () => {
+    expect(handleActionError(null, "custom fallback")).toBe("custom fallback");
+  });
+});
+
+describe("withRetry", () => {
+  const opts = { retries: 2, baseDelay: 0 };
+
+  it("returns the result without retrying on first success", async () => {
+    const fn = vi.fn().mockResolvedValue("ok");
+    await expect(withRetry(fn, opts)).resolves.toBe("ok");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries and resolves once the function succeeds", async () => {
+    const fn = vi.fn().mockRejectedValueOnce(new Error("transient")).mockResolvedValue("recovered");
+    await expect(withRetry(fn, opts)).resolves.toBe("recovered");
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws the last error after exhausting retries", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error("always fails"));
+    await expect(withRetry(fn, opts)).rejects.toThrow("always fails");
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it("stops retrying when abortOn matches the error", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error("401 unauthorized"));
+    await expect(withRetry(fn, { ...opts, abortOn: /401/ })).rejects.toThrow("401 unauthorized");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("invokes onError for every failed attempt", async () => {
+    const onError = vi.fn();
+    const fn = vi.fn().mockRejectedValue(new Error("fail"));
+    await expect(withRetry(fn, { ...opts, onError })).rejects.toThrow("fail");
+    expect(onError).toHaveBeenCalledTimes(3);
   });
 });
