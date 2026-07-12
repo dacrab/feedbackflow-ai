@@ -17,3 +17,5 @@ export const GITHUB_RETRY_BASE_DELAY_MS = 400;
 export const GITHUB_MAX_RETRIES = 3;
 
 export const MAX_SEARCH_TERM_LENGTH = 200;
+
+export const ONE_MINUTE_MS = 60_000;

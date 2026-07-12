@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
+import { ONE_MINUTE_MS } from "@/lib/constants";
 import { timingSafeEqual } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -67,7 +68,7 @@ export function rateLimitMiddleware(
   maxRequests = 10,
 ): Response | undefined {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const { success } = rateLimit(`${prefix}:${ip}`, { maxRequests, windowMs: 60_000 });
+  const { success } = rateLimit(`${prefix}:${ip}`, { maxRequests, windowMs: ONE_MINUTE_MS });
   if (!success)
     return NextResponse.json(
       { error: "too many requests" },

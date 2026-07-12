@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
@@ -15,7 +16,7 @@ async function notifySlack(text: string, url: string) {
       body: JSON.stringify({ text }),
     });
   } catch (e) {
-    console.error("[Slack]", e);
+    Sentry.captureException(e, { extra: { context: "slack-notify" } });
   }
 }
 

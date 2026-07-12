@@ -14,6 +14,35 @@ type LastRun = {
   analyzed: number | null;
 } | null;
 
+interface SyncEvent {
+  stage: string;
+  message: string;
+}
+
+function stageToStatus(stage: string): boolean | undefined {
+  if (stage === "complete" || stage === "analysis_ok") return true;
+  if (stage === "error" || stage === "analysis_error") return false;
+  return undefined;
+}
+
+async function parseSSE(response: Response, onEvent: (e: SyncEvent) => void): Promise<void> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("no reader");
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop() ?? "";
+    for (const block of blocks) {
+      if (!block.startsWith("data: ")) continue;
+      onEvent(JSON.parse(block.slice(6)) as SyncEvent);
+    }
+  }
+}
+
 function statusInfo(ok: boolean | null | undefined): { cls: string; prefix: string } {
   if (ok === true) return { cls: "text-green-500", prefix: "● ok" };
   if (ok === false) return { cls: "text-red-500", prefix: "● failed" };
@@ -62,51 +91,31 @@ export function SystemHealthCard({
     try {
       const response = await fetch("/api/sync", { signal: ctrl.signal });
       if (!response.ok) throw new Error("sync request failed");
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("no reader");
 
-      const decoder = new TextDecoder();
-      let buffer = "";
+      await parseSSE(response, (data) => {
+        const stage = data.stage;
+        const ok = stageToStatus(stage);
+        const msg = data.message;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = JSON.parse(line.slice(6));
-          const stage = data.stage as string;
-          const ok =
-            stage === "complete" || stage === "analysis_ok"
-              ? true
-              : stage === "error" || stage === "analysis_error"
-                ? false
-                : undefined;
-          const msg = data.message as string;
-
-          // Progress stages (analyzing/ok/error per item) replace the last line in-place
-          const isProgress =
-            stage === "analyzing" || stage === "analysis_ok" || stage === "analysis_error";
-          setLogs((prev) => {
-            const last = prev[prev.length - 1];
-            if (isProgress && last) {
-              return [...prev.slice(0, -1), { id: last.id, msg, ...(ok !== undefined && { ok }) }];
-            }
-            return [...prev, { id: logId.current++, msg, ...(ok !== undefined && { ok }) }];
-          });
-
-          logRef.current?.scrollTo({ top: 9999, behavior: "smooth" });
-          if (stage === "complete") toast.success(msg);
-          if (stage === "error") {
-            toast.error(msg);
-            setSyncing(false);
-            abortRef.current = null;
-            return;
+        // Progress stages (analyzing/ok/error per item) replace the last line in-place
+        const isProgress =
+          stage === "analyzing" || stage === "analysis_ok" || stage === "analysis_error";
+        setLogs((prev) => {
+          const last = prev[prev.length - 1];
+          if (isProgress && last) {
+            return [...prev.slice(0, -1), { id: last.id, msg, ...(ok !== undefined && { ok }) }];
           }
+          return [...prev, { id: logId.current++, msg, ...(ok !== undefined && { ok }) }];
+        });
+
+        logRef.current?.scrollTo({ top: 9999, behavior: "smooth" });
+        if (stage === "complete") toast.success(msg);
+        if (stage === "error") {
+          toast.error(msg);
+          setSyncing(false);
+          abortRef.current = null;
         }
-      }
+      });
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
       toast.error(handleActionError(err, "sync failed"));

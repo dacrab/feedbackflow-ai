@@ -3,7 +3,13 @@ import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
-import { type FeedbackStatus, isFeedbackStatus, type Sentiment } from "@/lib/types";
+import {
+  FEEDBACK_STATUS_OPTIONS,
+  type FeedbackStatus,
+  isFeedbackStatus,
+  SENTIMENT_OPTIONS,
+  type Sentiment,
+} from "@/lib/types";
 import { InboxBulkActions } from "./bulk-actions";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -95,15 +101,19 @@ export default async function InboxPage({
         />
         <Select name="sentiment" defaultValue={sp.get("sentiment") || ""} size="sm">
           <option value="">all sentiment</option>
-          <option value="positive">positive</option>
-          <option value="neutral">neutral</option>
-          <option value="negative">negative</option>
+          {SENTIMENT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </Select>
         <Select name="status" defaultValue={sp.get("status") || ""} size="sm">
           <option value="">all status</option>
-          <option value="New">new</option>
-          <option value="Acknowledged">acknowledged</option>
-          <option value="Actioned">actioned</option>
+          {FEEDBACK_STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </Select>
         <Select name="sort" defaultValue={sp.get("sort") || "created_desc"} size="sm">
           <option value="created_desc">newest</option>

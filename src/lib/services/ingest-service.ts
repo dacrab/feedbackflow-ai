@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
@@ -21,6 +22,7 @@ import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
+import { withRetry } from "@/lib/utils";
 
 interface GithubIssue {
   id: number;
@@ -54,17 +56,10 @@ async function fetchGithubPageWithRetry(
   page: number,
   token?: string,
 ): Promise<{ issues: GithubIssue[]; rawCount: number }> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= GITHUB_MAX_RETRIES; attempt++) {
-    try {
-      return await fetchGithubPage(repo, page, token);
-    } catch (err) {
-      lastErr = err;
-      if (attempt < GITHUB_MAX_RETRIES)
-        await new Promise((r) => setTimeout(r, GITHUB_RETRY_BASE_DELAY_MS * (attempt + 1)));
-    }
-  }
-  throw lastErr;
+  return withRetry(() => fetchGithubPage(repo, page, token), {
+    retries: GITHUB_MAX_RETRIES,
+    baseDelay: GITHUB_RETRY_BASE_DELAY_MS,
+  });
 }
 
 async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIssue[]> {
@@ -145,7 +140,7 @@ async function analyzeAndStore(
       const msg = String(err)
         .replace(/^Error:\s*/, "")
         .slice(0, 200);
-      console.error(`[Ingest] Failed to analyze ${item.id}:`, msg);
+      Sentry.captureException(err, { extra: { context: "ingest-analyze", itemId: item.id } });
       onProgress?.({ stage: "analysis_error", message: `failed: ${msg}` });
       if (/credits|quota|per.?day|unauthorized|invalid.api.key/i.test(msg)) {
         hasError = true;

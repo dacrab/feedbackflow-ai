@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+// Static salt for HKDF key derivation. It is not secret — it only needs to stay
+// constant across restarts so the same ENCRYPTION_KEY derives the same AES-256 key.
 const SALT = "feedbackflow-aes-256-gcm";
 
 let key: Buffer | null = null;

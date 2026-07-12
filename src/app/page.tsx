@@ -10,8 +10,9 @@ import {
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MetricCard } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
-import { sentColor, sevColor } from "@/lib/utils";
+import { sentimentColor, sevColor } from "@/lib/utils";
 
 export default async function LandingPage() {
   const session = await getServerSession();
@@ -126,10 +127,10 @@ export default async function LandingPage() {
               <div>
                 <p className="text-xs text-muted-foreground mb-2">// overview</p>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  <Metric label="total" value="1,247" delta={38} />
-                  <Metric label="positive" value="64%" />
-                  <Metric label="critical" value="12" note="severity 4+" />
-                  <Metric label="avg severity" value="2.4" note="of 5" />
+                  <MetricCard label="total" value="1,247" delta={38} />
+                  <MetricCard label="positive" value="64%" />
+                  <MetricCard label="critical" value="12" note="severity 4+" />
+                  <MetricCard label="avg severity" value="2.4" note="of 5" />
                 </div>
               </div>
 
@@ -263,31 +264,6 @@ export default async function LandingPage() {
   );
 }
 
-function Metric({
-  label,
-  value,
-  delta,
-  note,
-}: {
-  label: string;
-  value: string;
-  delta?: number;
-  note?: string;
-}) {
-  return (
-    <div className="rounded border border-border bg-background px-3 py-2.5 space-y-0.5">
-      <p className="text-xs text-muted-foreground">// {label}</p>
-      <div className="flex items-end justify-between gap-1">
-        <p className="text-xl font-medium leading-none">{value}</p>
-        {delta !== undefined && (
-          <span className="text-xs text-green-500 font-mono mb-0.5">↑{delta}</span>
-        )}
-      </div>
-      {note && <p className="text-xs text-muted-foreground">{note}</p>}
-    </div>
-  );
-}
-
 function FeedbackRow({
   summary,
   sentiment,
@@ -306,7 +282,7 @@ function FeedbackRow({
     <div className="flex items-center gap-3 px-3 py-2.5">
       <span className={`text-xs font-mono font-medium w-4 shrink-0 ${sc}`}>{severity}</span>
       <span className="flex-1 text-sm truncate">{summary}</span>
-      <span className={`shrink-0 text-xs ${sentColor(sentiment)}`}>{sentiment}</span>
+      <span className={`shrink-0 text-xs ${sentimentColor(sentiment)}`}>{sentiment}</span>
       <span className="shrink-0 text-xs text-muted-foreground hidden md:inline">
         {topics.map((t) => `[${t}]`).join(" ")}
       </span>

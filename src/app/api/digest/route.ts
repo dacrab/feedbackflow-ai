@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { rateLimitMiddleware, requireCronOrAuth } from "@/lib/api";
 import { runDigest } from "@/lib/services/digest-service";
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
     const result = await runDigest();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
-    console.error("Digest failed:", e);
+    Sentry.captureException(e, { extra: { context: "api-digest" } });
     return NextResponse.json(
       { error: "digest failed", detail: e instanceof Error ? e.message : "unknown" },
       { status: 500 },

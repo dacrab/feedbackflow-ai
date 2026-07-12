@@ -125,6 +125,8 @@ export const getFeedbackCount = cache(
 
 export const getFeedbackItem = cache(
   async (userId: string, itemId: string): Promise<FeedbackItemWithAnalysis> => {
+    // leftJoin: a feedback item can exist without an analysis (ingested but not yet analyzed),
+    // unlike the list/count queries above which only show analyzed items via innerJoin.
     const [row] = await db
       .select(feedbackSelect)
       .from(feedbackItems)

@@ -1,9 +1,11 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+type Db = ReturnType<typeof drizzle>;
 
-function getDb() {
+let _db: Db | null = null;
+
+function getDb(): Db {
   if (!_db) {
     const url = process.env["DATABASE_URL"];
     if (!url) throw new Error("DATABASE_URL required");
@@ -12,4 +14,8 @@ function getDb() {
   return _db;
 }
 
-export const db = getDb();
+export const db = new Proxy({} as Db, {
+  get(_target, prop) {
+    return Reflect.get(getDb(), prop);
+  },
+});

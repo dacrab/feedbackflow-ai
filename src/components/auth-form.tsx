@@ -3,6 +3,16 @@
 import { SignIn, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
+const clerkAppearance = {
+  elements: {
+    rootBox: "w-full",
+    card: "w-full shadow-none border border-border bg-transparent",
+    formButtonPrimary: "bg-foreground text-background hover:bg-foreground/90",
+    footerActionLink: "text-foreground hover:underline",
+    formFieldInput: "border-border",
+  },
+};
+
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
 
@@ -20,30 +30,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           routing="hash"
           signInUrl="/login#"
           fallbackRedirectUrl="/dashboard"
-          appearance={{
-            elements: {
-              rootBox: "w-full",
-              card: "w-full shadow-none border border-border bg-transparent",
-              formButtonPrimary: "bg-foreground text-background hover:bg-foreground/90",
-              footerActionLink: "text-foreground hover:underline",
-              formFieldInput: "border-border",
-            },
-          }}
+          appearance={clerkAppearance}
         />
       ) : (
         <SignIn
           routing="hash"
           signUpUrl="/signup#"
           fallbackRedirectUrl="/dashboard"
-          appearance={{
-            elements: {
-              rootBox: "w-full",
-              card: "w-full shadow-none border border-border bg-transparent",
-              formButtonPrimary: "bg-foreground text-background hover:bg-foreground/90",
-              footerActionLink: "text-foreground hover:underline",
-              formFieldInput: "border-border",
-            },
-          }}
+          appearance={clerkAppearance}
         />
       )}
 

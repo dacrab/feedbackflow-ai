@@ -1,6 +1,19 @@
 export type Sentiment = "positive" | "neutral" | "negative";
 export type FeedbackStatus = "New" | "Acknowledged" | "Actioned";
-export type LLMProvider = "google" | "openai" | "anthropic" | "openrouter";
+export const LLM_PROVIDER_IDS = ["google", "openai", "anthropic", "openrouter"] as const;
+export type LLMProvider = (typeof LLM_PROVIDER_IDS)[number];
+
+export const FEEDBACK_STATUS_OPTIONS: { value: FeedbackStatus; label: string }[] = [
+  { value: "New", label: "new" },
+  { value: "Acknowledged", label: "acknowledged" },
+  { value: "Actioned", label: "actioned" },
+];
+
+export const SENTIMENT_OPTIONS: { value: Sentiment; label: string }[] = [
+  { value: "positive", label: "positive" },
+  { value: "neutral", label: "neutral" },
+  { value: "negative", label: "negative" },
+];
 
 export interface FeedbackAnalysisData {
   sentiment: Sentiment;
@@ -20,7 +33,7 @@ export interface FeedbackItemWithAnalysis {
 }
 
 export function isLLMProvider(val: unknown): val is LLMProvider {
-  return typeof val === "string" && ["google", "openai", "anthropic", "openrouter"].includes(val);
+  return typeof val === "string" && (LLM_PROVIDER_IDS as readonly string[]).includes(val);
 }
 
 export function isFeedbackStatus(val: unknown): val is FeedbackStatus {
