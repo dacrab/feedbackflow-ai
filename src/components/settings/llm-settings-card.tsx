@@ -1,49 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
+import { PROVIDER_KEY_URLS, PROVIDER_LABELS, PROVIDER_MODELS } from "@/lib/llm-providers";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
-import { handleActionError } from "@/lib/utils";
+import { useAction } from "@/lib/use-action";
 
-const PROVIDERS: { value: LLMProvider; label: string }[] = [
-  { value: "openrouter", label: "OpenRouter (free)" },
-  { value: "google", label: "Google Gemini" },
-  { value: "openai", label: "OpenAI" },
-  { value: "anthropic", label: "Anthropic" },
-];
-
-const MODEL_OPTIONS: Record<LLMProvider, string[]> = {
-  openrouter: [
-    "openrouter/auto",
-    "google/gemini-3.5-flash",
-    "google/gemini-3.1-flash-lite",
-    "google/gemini-2.5-flash",
-    "openai/gpt-5.4-mini",
-    "openai/gpt-5.4-nano",
-    "anthropic/claude-haiku-4-5",
-    "meta-llama/llama-4-maverick",
-    "deepseek/deepseek-chat-v3-0324:free",
-    "mistralai/mistral-small-3.2-24b-instruct:free",
-  ],
-  google: [
-    "gemini-3.5-flash",
-    "gemini-3.1-flash-lite",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-3.1-pro-preview",
-  ],
-  openai: ["gpt-5.4-nano", "gpt-5.4-mini", "gpt-5.4", "gpt-5.5"],
-  anthropic: ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"],
-};
-
-const KEY_LINKS: Record<LLMProvider, string> = {
-  openrouter: "https://openrouter.ai/keys",
-  google: "https://aistudio.google.com/app/apikey",
-  openai: "https://platform.openai.com/api-keys",
-  anthropic: "https://console.anthropic.com/settings/keys",
-};
+const PROVIDERS = PROVIDER_LABELS;
+const MODEL_OPTIONS = PROVIDER_MODELS;
+const KEY_LINKS = PROVIDER_KEY_URLS;
 
 export function LLMSettingsCard({
   initialProvider,
@@ -63,30 +29,18 @@ export function LLMSettingsCard({
   );
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
-  const [pending, startTransition] = useTransition();
+  const { run, pending } = useAction();
 
   function handleSave() {
-    if (!configured || editingKey) {
-      if (!apiKey) return;
-      startTransition(async () => {
-        try {
-          await saveSettings(provider, model, apiKey);
-          toast.success("saved");
-          setApiKey("");
-          setEditingKey(false);
-        } catch (e) {
-          toast.error(handleActionError(e, "Failed to save settings"));
-        }
-      });
+    if (configured && !editingKey) {
+      run(() => updateSettingsModel(model), "model updated");
     } else {
-      startTransition(async () => {
-        try {
-          await updateSettingsModel(model);
-          toast.success("model updated");
-        } catch (e) {
-          toast.error(handleActionError(e, "Failed to update model"));
-        }
-      });
+      if (!apiKey) return;
+      run(async () => {
+        await saveSettings(provider, model, apiKey);
+        setApiKey("");
+        setEditingKey(false);
+      }, "saved");
     }
   }
 
@@ -203,16 +157,11 @@ export function LLMSettingsCard({
               type="button"
               disabled={pending}
               onClick={() =>
-                startTransition(async () => {
-                  try {
-                    await deleteSettings();
-                    toast.success("removed");
-                    setEditingKey(true);
-                    setApiKey("");
-                  } catch (e) {
-                    toast.error(handleActionError(e, "Failed to remove settings"));
-                  }
-                })
+                run(async () => {
+                  await deleteSettings();
+                  setEditingKey(true);
+                  setApiKey("");
+                }, "removed")
               }
               className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >

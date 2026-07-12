@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
-import { handleActionError } from "@/lib/utils";
+import { useAction } from "@/lib/use-action";
 
 type NotificationRow = {
   id: string;
@@ -20,7 +20,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
   const [minSeverity, setMinSeverity] = useState(
     hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
   );
-  const [pending, startTransition] = useTransition();
+  const { run, pending } = useAction();
 
   function cancelEdit() {
     setMinSeverity(hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD);
@@ -31,15 +31,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
     toast("delete this webhook?", {
       action: {
         label: "delete",
-        onClick: () =>
-          startTransition(async () => {
-            try {
-              await deleteNotification(hook.id);
-              toast.success("webhook deleted");
-            } catch (e) {
-              toast.error(handleActionError(e, "Failed to delete webhook"));
-            }
-          }),
+        onClick: () => run(() => deleteNotification(hook.id), "webhook deleted"),
       },
     });
   }
@@ -58,14 +50,10 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
             type="button"
             disabled={pending}
             onClick={() =>
-              startTransition(async () => {
-                try {
-                  await updateNotification(hook.id, { enabled: !hook.enabled });
-                  toast.success(hook.enabled ? "disabled" : "enabled");
-                } catch (e) {
-                  toast.error(handleActionError(e, "Failed to update webhook"));
-                }
-              })
+              run(
+                () => updateNotification(hook.id, { enabled: !hook.enabled }),
+                hook.enabled ? "disabled" : "enabled",
+              )
             }
             className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
           >
@@ -102,14 +90,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
               type="button"
               disabled={pending}
               onClick={() => {
-                startTransition(async () => {
-                  try {
-                    await updateNotification(hook.id, { minSeverity });
-                    toast.success("updated");
-                  } catch (e) {
-                    toast.error(handleActionError(e, "Failed to save severity"));
-                  }
-                });
+                run(() => updateNotification(hook.id, { minSeverity }), "updated");
                 setEditingSeverity(false);
               }}
               className="text-xs text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
@@ -141,19 +122,14 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
 
 export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
-  const [pending, startTransition] = useTransition();
+  const { run, pending } = useAction();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    startTransition(async () => {
-      try {
-        await addNotification(slackUrl);
-        toast.success("webhook added");
-        setSlackUrl("");
-      } catch (e) {
-        toast.error(handleActionError(e, "Failed to update notification"));
-      }
-    });
+    run(async () => {
+      await addNotification(slackUrl);
+      setSlackUrl("");
+    }, "webhook added");
   }
 
   return (

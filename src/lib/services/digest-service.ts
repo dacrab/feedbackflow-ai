@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
@@ -21,7 +22,7 @@ export async function runDigest(): Promise<{ total: number; high: number }> {
       total += r.total;
       high += r.high;
     } catch (e) {
-      console.error(`Digest failed for user ${userId}:`, e);
+      Sentry.captureException(e, { extra: { context: "digest", userId } });
     }
   }
   return { total, high };

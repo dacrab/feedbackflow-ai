@@ -1,7 +1,23 @@
+import { sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
+import { z } from "zod";
+import { db } from "@/db/client";
+import { user } from "@/db/schema";
 
 const webhookSecret = process.env["CLERK_WEBHOOK_SECRET"];
+
+const ClerkEventSchema = z.object({
+  type: z.string(),
+  data: z.record(z.string(), z.unknown()),
+});
+
+const ClerkUserSchema = z.object({
+  id: z.string(),
+  email_addresses: z.array(z.object({ email_address: z.string() })).optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+});
 
 async function handle(req: Request) {
   if (!webhookSecret) {
@@ -19,30 +35,27 @@ async function handle(req: Request) {
   const body = await req.text();
   const wh = new Webhook(webhookSecret);
 
-  let evt: { type: string; data: Record<string, unknown> };
+  let evt: z.infer<typeof ClerkEventSchema>;
   try {
-    evt = wh.verify(body, {
-      "svix-id": svix_id,
-      "svix-timestamp": svix_timestamp,
-      "svix-signature": svix_signature,
-    }) as { type: string; data: Record<string, unknown> };
+    evt = ClerkEventSchema.parse(
+      wh.verify(body, {
+        "svix-id": svix_id,
+        "svix-timestamp": svix_timestamp,
+        "svix-signature": svix_signature,
+      }),
+    );
   } catch {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
 
   const eventType = evt.type;
-  const data = evt.data;
-
-  const { db } = await import("@/db/client");
-  const { user } = await import("@/db/schema");
-  const { sql } = await import("drizzle-orm");
+  const data = ClerkUserSchema.parse(evt.data);
 
   if (eventType === "user.created" || eventType === "user.updated") {
-    const clerkId = data["id"] as string;
-    const emailAddresses = data["email_addresses"] as Array<{ email_address: string }> | undefined;
-    const email = emailAddresses?.[0]?.email_address ?? "";
-    const firstName = (data["first_name"] as string) ?? "";
-    const lastName = (data["last_name"] as string) ?? "";
+    const clerkId = data.id;
+    const email = data.email_addresses?.[0]?.email_address ?? "";
+    const firstName = data.first_name ?? "";
+    const lastName = data.last_name ?? "";
     const name = [firstName, lastName].filter(Boolean).join(" ") || email.split("@")[0] || "User";
 
     await db
@@ -55,7 +68,7 @@ async function handle(req: Request) {
   }
 
   if (eventType === "user.deleted") {
-    const clerkId = data["id"] as string;
+    const clerkId = data.id;
     await db.delete(user).where(sql`${user.id} = ${clerkId}`);
   }
 

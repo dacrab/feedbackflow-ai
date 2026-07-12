@@ -3,7 +3,7 @@ import {
   cn,
   formatDateUTC,
   getDateNHoursAgo,
-  sentColor,
+  sentimentColor,
   sevColor,
   sevLabel,
   timeAgo,
@@ -60,13 +60,13 @@ describe("sevLabel", () => {
   });
 });
 
-describe("sentColor", () => {
+describe("sentimentColor", () => {
   it.each([
     ["positive", "text-green-500"],
     ["neutral", "text-muted-foreground"],
     ["negative", "text-red-500"],
   ])("returns %s for %s", (sentiment, expected) => {
-    expect(sentColor(sentiment)).toBe(expected);
+    expect(sentimentColor(sentiment)).toBe(expected);
   });
 });
 

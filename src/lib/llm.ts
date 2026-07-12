@@ -3,6 +3,7 @@ import "server-only";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
+import * as Sentry from "@sentry/nextjs";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import {
@@ -11,9 +12,12 @@ import {
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
   MAX_SEVERITY,
+  ONE_MINUTE_MS,
 } from "@/lib/constants";
+import { DEFAULT_MODELS } from "@/lib/llm-providers";
 import { rateLimit } from "@/lib/rate-limit";
 import type { LLMProvider } from "@/lib/types";
+import { withRetry } from "@/lib/utils";
 
 const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
@@ -24,13 +28,6 @@ const AnalysisSchema = z.object({
 
 const SYSTEM_PROMPT =
   'You are a feedback classifier. Respond ONLY with a single valid JSON object, no markdown, no explanation:\n{"sentiment":"positive|neutral|negative","topics":["tag1","tag2"],"severity_score":1,"summary":"one sentence"}\nsentiment: overall tone. topics: 1-5 short tags. severity_score: 1(trivial)–5(critical). summary: ≤20 words.';
-
-const DEFAULT_MODELS: Record<LLMProvider, string> = {
-  google: "gemini-3.5-flash",
-  openai: "gpt-5.4-nano",
-  anthropic: "claude-haiku-4-5",
-  openrouter: "openrouter/auto",
-} as const;
 
 type LLMOptions = { provider: LLMProvider; model?: string; apiKey: string };
 export type Analysis = z.infer<typeof AnalysisSchema>;
@@ -63,14 +60,16 @@ export async function analyzeFeedback(
   if (!opts?.apiKey || !opts?.provider)
     throw new Error("LLM not configured. Set your provider and API key in Settings.");
   const normalized = normalize(text);
-  const { success } = rateLimit(`llm:${opts.provider}`, { maxRequests: 15, windowMs: 60_000 });
+  const { success } = rateLimit(`llm:${opts.provider}`, {
+    maxRequests: 15,
+    windowMs: ONE_MINUTE_MS,
+  });
   if (!success) throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
 
   const model = getModel(opts);
-  let lastErr: unknown;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
+  return withRetry(
+    async () => {
       const { output } = await generateText({
         model,
         system: SYSTEM_PROMPT,
@@ -78,13 +77,12 @@ export async function analyzeFeedback(
         prompt: `Classify this feedback:\n${normalized}`,
       });
       return output;
-    } catch (err) {
-      lastErr = err;
-      const msg = String(err);
-      if (/rate.?limit|per.?day|quota/i.test(msg)) break;
-      if (attempt < retries)
-        await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
-    }
-  }
-  throw lastErr;
+    },
+    {
+      retries,
+      baseDelay: LLM_RETRY_BASE_DELAY_MS,
+      abortOn: /rate.?limit|per.?day|quota/i,
+      onError: (err) => Sentry.captureException(err, { extra: { context: "llm-analyze" } }),
+    },
+  );
 }

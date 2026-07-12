@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { rateLimitMiddleware, requireAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
 
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
           send("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`);
         }
       } catch (err) {
-        console.error("[Sync]", err);
+        Sentry.captureException(err, { extra: { context: "api-sync" } });
         send("error", err instanceof Error ? err.message : "sync failed");
       } finally {
         ctrl.close();

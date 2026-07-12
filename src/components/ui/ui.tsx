@@ -1,11 +1,6 @@
 import { IconChevronDown, IconLoader2 } from "@tabler/icons-react";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
-
-const sentimentColor: Record<Sentiment, string> = {
-  positive: "text-green-500",
-  neutral: "text-muted-foreground",
-  negative: "text-red-500",
-};
+import { sentimentColor } from "@/lib/utils";
 
 const statusColor: Record<FeedbackStatus, string> = {
   New: "text-muted-foreground",
@@ -15,7 +10,37 @@ const statusColor: Record<FeedbackStatus, string> = {
 
 export function SentimentBadge({ sentiment }: { sentiment?: Sentiment | null | undefined }) {
   if (!sentiment) return null;
-  return <span className={`text-xs ${sentimentColor[sentiment]}`}>{sentiment}</span>;
+  return <span className={`text-xs ${sentimentColor(sentiment)}`}>{sentiment}</span>;
+}
+
+export function MetricCard({
+  label,
+  value,
+  delta,
+  note,
+}: {
+  label: string;
+  value: string | number;
+  delta?: number;
+  note?: string;
+}) {
+  return (
+    <div className="rounded border border-border bg-card px-4 py-3 space-y-1">
+      <p className="text-xs text-muted-foreground">// {label}</p>
+      <div className="flex items-end justify-between gap-2">
+        <p className="text-2xl font-medium leading-none">{value}</p>
+        {delta !== undefined && (
+          <span
+            className={`text-xs font-mono mb-0.5 ${delta >= 0 ? "text-green-500" : "text-red-500"}`}
+          >
+            {delta >= 0 ? "↑" : "↓"}
+            {Math.abs(delta)}
+          </span>
+        )}
+      </div>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+    </div>
+  );
 }
 
 export function StatusBadge({ status }: { status?: FeedbackStatus | null | undefined }) {

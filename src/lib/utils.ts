@@ -23,11 +23,13 @@ export const sevLabel = (severity: number) =>
       ? "medium severity"
       : "low severity";
 
-const sentColorMap: Record<string, string> = {
+const SENTIMENT_COLOR_MAP: Record<string, string> = {
   positive: "text-green-500",
   negative: "text-red-500",
 };
-export const sentColor = (sentiment: string) => sentColorMap[sentiment] ?? "text-muted-foreground";
+
+export const sentimentColor = (sentiment: string) =>
+  SENTIMENT_COLOR_MAP[sentiment] ?? "text-muted-foreground";
 
 export const formatDateUTC = (iso: string) =>
   new Date(iso).toLocaleString("en-US", {
@@ -50,4 +52,29 @@ export function timeAgo(date: Date | string): string {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
+}
+
+export const APP_URL = process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000";
+
+export interface RetryOptions {
+  retries: number;
+  baseDelay: number;
+  abortOn?: RegExp;
+  onError?: (err: unknown) => void;
+}
+
+export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= opts.retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      opts.onError?.(err);
+      if (opts.abortOn?.test(String(err))) break;
+      if (attempt < opts.retries)
+        await new Promise((r) => setTimeout(r, opts.baseDelay * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }

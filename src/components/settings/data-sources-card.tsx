@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/ui/ui";
 import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
-import { handleActionError, timeAgo } from "@/lib/utils";
+import { useAction } from "@/lib/use-action";
+import { timeAgo } from "@/lib/utils";
 
 type SourceRow = {
   id: string;
@@ -17,21 +18,13 @@ type SourceRow = {
 };
 
 function SourceItem({ source }: { source: SourceRow }) {
-  const [pending, startTransition] = useTransition();
+  const { run, pending } = useAction();
 
   function onDelete() {
     toast(`delete ${source.config.repo}?`, {
       action: {
         label: "delete",
-        onClick: () =>
-          startTransition(async () => {
-            try {
-              await deleteSource(source.id);
-              toast.success("source deleted");
-            } catch (e) {
-              toast.error(handleActionError(e, "Failed to update source"));
-            }
-          }),
+        onClick: () => run(() => deleteSource(source.id), "source deleted"),
       },
     });
   }
@@ -60,14 +53,10 @@ function SourceItem({ source }: { source: SourceRow }) {
             type="button"
             disabled={pending}
             onClick={() =>
-              startTransition(async () => {
-                try {
-                  await updateSource(source.id, { enabled: !source.enabled });
-                  toast.success(source.enabled ? "disabled" : "enabled");
-                } catch (e) {
-                  toast.error(handleActionError(e, "Failed to update source"));
-                }
-              })
+              run(
+                () => updateSource(source.id, { enabled: !source.enabled }),
+                source.enabled ? "disabled" : "enabled",
+              )
             }
             className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
           >
@@ -91,21 +80,16 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
   const [repo, setRepo] = useState("");
   const [ghToken, setGhToken] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { run, pending } = useAction();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    startTransition(async () => {
-      try {
-        await addSource(repo, ghToken || undefined);
-        toast.success("source added");
-        setRepo("");
-        setGhToken("");
-        setShowToken(false);
-      } catch (e) {
-        toast.error(handleActionError(e, "Failed to add source"));
-      }
-    });
+    run(async () => {
+      await addSource(repo, ghToken || undefined);
+      setRepo("");
+      setGhToken("");
+      setShowToken(false);
+    }, "source added");
   }
 
   return (

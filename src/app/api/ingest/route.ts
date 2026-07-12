@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { rateLimitMiddleware, requireCronOrAuth } from "@/lib/api";
 import { runIngest } from "@/lib/services/ingest-service";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     const result = await runIngest();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
-    console.error("[Ingest]", e);
+    Sentry.captureException(e, { extra: { context: "api-ingest" } });
     return NextResponse.json(
       { error: "ingest failed", detail: e instanceof Error ? e.message : "unknown" },
       { status: 500 },
