@@ -11,7 +11,7 @@ import {
   LLM_RETRY_BASE_DELAY_MS,
   MAX_LLM_INPUT_LENGTH,
 } from "@/lib/constants";
-import { rateLimitAsync } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import type { LLMProvider } from "@/lib/types";
 
 const AnalysisSchema = z.object({
@@ -57,7 +57,7 @@ export async function analyzeFeedback(
     throw new Error("LLM not configured. Set your provider and API key in Settings.");
   const normalized = normalize(text);
   const key = userId ? `llm:${userId}:${opts.provider}` : `llm:${opts.provider}`;
-  const { success } = await rateLimitAsync(key, { maxRequests: 15, windowMs: 60_000 });
+  const { success } = await rateLimit(key, { maxRequests: 15, windowMs: 60_000 });
   if (!success) throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
 
   const model = getModel(opts);

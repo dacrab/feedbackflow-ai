@@ -7,7 +7,7 @@ import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
-import { rateLimitAsync } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
 import type { FeedbackStatus, LLMProvider } from "@/lib/types";
 
@@ -15,7 +15,7 @@ async function uid() {
   const s = await getServerSession();
   if (!s?.user?.id) throw new Error("unauthorized");
   const userId = s.user.id;
-  const { success } = await rateLimitAsync(`actions:${userId}`, {
+  const { success } = await rateLimit(`actions:${userId}`, {
     maxRequests: 20,
     windowMs: 60_000,
   });
