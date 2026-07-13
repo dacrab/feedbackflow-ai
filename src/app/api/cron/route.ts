@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  const rl = rateLimitMiddleware(req, "cron");
+  const rl = await rateLimitMiddleware(req, "cron");
   if (rl) return rl;
 
   const authError = await requireCronOrAuth(req);

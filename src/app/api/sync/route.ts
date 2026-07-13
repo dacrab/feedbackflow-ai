@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
   }
 
-  const rl = rateLimitMiddleware(req, `sync:${userId}`, 5);
+  const rl = await rateLimitMiddleware(req, `sync:${userId}`, 5);
   if (rl) return rl;
 
   const enc = new TextEncoder();

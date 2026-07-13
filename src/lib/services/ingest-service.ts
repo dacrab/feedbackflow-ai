@@ -44,6 +44,7 @@ async function fetchGithubPage(
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     next: { revalidate: 0 },
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
   const data = await res.json();
@@ -78,7 +79,7 @@ async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIs
   return results;
 }
 
-type LLMOpts = { provider: LLMProvider; model?: string; apiKey: string } | undefined;
+type LLMOpts = { provider: LLMProvider; model: string; apiKey: string } | undefined;
 
 export type IngestEvent =
   | { stage: "fetching"; message: string }
@@ -100,11 +101,11 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
     .from(userSettings)
     .where(eq(userSettings.userId, userId))
     .limit(1);
-  if (!s || !isLLMProvider(s.provider) || !s.apiKeyCipher) return undefined;
+  if (!s || !isLLMProvider(s.provider) || !s.apiKeyCipher || !s.model) return undefined;
   return {
     provider: s.provider,
     apiKey: decrypt(s.apiKeyCipher),
-    ...(s.model && { model: s.model }),
+    model: s.model,
   };
 }
 
@@ -121,7 +122,7 @@ async function analyzeAndStore(
     if (signal?.aborted) break;
     onProgress?.({ stage: "analyzing", message: `analyzing ${count + 1}/${items.length}...` });
     try {
-      const a = await analyzeFeedback(item.rawContent, LLM_MAX_RETRIES, llmOpts);
+      const a = await analyzeFeedback(item.rawContent, LLM_MAX_RETRIES, llmOpts, userId, signal);
       const analysisData = {
         sentiment: a.sentiment,
         topics: a.topics,
