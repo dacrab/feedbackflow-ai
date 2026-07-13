@@ -7,7 +7,7 @@ import { cache } from "react";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
 import { timingSafeEqual } from "@/lib/crypto";
-import { rateLimitAsync } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 
 interface SessionUser {
   id: string;
@@ -67,7 +67,7 @@ export async function rateLimitMiddleware(
   maxRequests = 10,
 ): Promise<Response | undefined> {
   const ip = clientIp(req);
-  const { success } = await rateLimitAsync(`${prefix}:${ip}`, {
+  const { success } = await rateLimit(`${prefix}:${ip}`, {
     maxRequests,
     windowMs: 60_000,
   });
