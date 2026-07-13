@@ -63,12 +63,11 @@ function localLimit(
   return { success: true };
 }
 
-export function rateLimit(identifier: string, opts: RateLimitOptions): RateLimitResult {
-  if (!REST_URL || !REST_TOKEN) return localLimit(identifier, opts);
-  // Sync API preserved for callers that don't await; returns optimistic success
-  // (real enforcement happens via the await path below). Callers that want hard
-  // enforcement should use rateLimitAsync.
-  return localLimit(identifier, opts);
+export async function rateLimit(
+  identifier: string,
+  opts: RateLimitOptions,
+): Promise<RateLimitResult> {
+  return rateLimitAsync(identifier, opts);
 }
 
 export async function rateLimitAsync(

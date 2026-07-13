@@ -6,7 +6,6 @@ async function main() {
 
   const [existingUser] = await db.select({ id: user.id }).from(user).limit(1);
   if (!existingUser) {
-    console.log("No users found - skipping seed (create a user first)");
     return;
   }
 
