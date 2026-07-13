@@ -1,16 +1,13 @@
 "use server";
 
-import * as Sentry from "@sentry/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
-import { MAX_SEVERITY, ONE_MINUTE_MS } from "@/lib/constants";
 import { encrypt } from "@/lib/crypto";
-import { LLMProviderSchema } from "@/lib/llm-providers";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
 import type { FeedbackStatus, LLMProvider } from "@/lib/types";
 
@@ -18,7 +15,10 @@ async function uid() {
   const s = await getServerSession();
   if (!s?.user?.id) throw new Error("unauthorized");
   const userId = s.user.id;
-  const { success } = rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: ONE_MINUTE_MS });
+  const { success } = await rateLimitAsync(`actions:${userId}`, {
+    maxRequests: 20,
+    windowMs: 60_000,
+  });
   if (!success) throw new Error("Too many requests. Please try again later.");
   return userId;
 }
@@ -33,7 +33,7 @@ const uuidSchema = z.string().uuid();
 const repoSchema = z
   .string()
   .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
-const providerSchema = LLMProviderSchema;
+const providerSchema = z.enum(["google", "openai", "anthropic", "openrouter"]);
 const modelSchema = z.string().min(1).max(100);
 const apiKeySchema = z.string().min(8).max(512);
 const webhookSchema = z
@@ -52,9 +52,7 @@ export async function addSource(repo: string, token?: string) {
     config: { repo },
     secretCipher: token ? encrypt(token) : null,
   });
-  await runIngest(undefined, undefined, userId).catch((e) =>
-    Sentry.captureException(e, { extra: { context: "addSource-ingest" } }),
-  );
+  runIngest(undefined, undefined, userId).catch(console.error);
   revalidatePath("/settings");
 }
 
@@ -89,8 +87,7 @@ export async function updateNotification(
   data: { enabled?: boolean; minSeverity?: number },
 ) {
   parse(uuidSchema, id);
-  if (data.minSeverity !== undefined)
-    parse(z.number().int().min(1).max(MAX_SEVERITY), data.minSeverity);
+  if (data.minSeverity !== undefined) parse(z.number().int().min(1).max(5), data.minSeverity);
   const userId = await uid();
   const setData: Partial<typeof userNotifications.$inferInsert> = {};
   if (data.enabled !== undefined) setData.enabled = data.enabled;
@@ -153,11 +150,11 @@ export async function updateFeedbackStatus(feedbackItemId: string, status: Feedb
 
 export async function bulkUpdateStatus(ids: string[], status: string) {
   parse(z.array(uuidSchema).min(1).max(200), ids);
-  const validStatus = parse(statusSchema, status);
+  parse(statusSchema, status);
   const userId = await uid();
   await db
     .update(feedbackAnalyses)
-    .set({ status: validStatus })
+    .set({ status: status as FeedbackStatus })
     .where(and(eq(feedbackAnalyses.userId, userId), inArray(feedbackAnalyses.feedbackItemId, ids)));
   revalidatePath("/inbox");
 }

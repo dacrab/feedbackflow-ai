@@ -6,9 +6,8 @@ import { NextResponse } from "next/server";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
-import { ONE_MINUTE_MS } from "@/lib/constants";
 import { timingSafeEqual } from "@/lib/crypto";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 
 interface SessionUser {
   id: string;
@@ -62,17 +61,35 @@ export async function requireCronOrAuth(req: Request): Promise<Response | undefi
   return undefined;
 }
 
-export function rateLimitMiddleware(
+export async function rateLimitMiddleware(
   req: Request,
   prefix: string,
   maxRequests = 10,
-): Response | undefined {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const { success } = rateLimit(`${prefix}:${ip}`, { maxRequests, windowMs: ONE_MINUTE_MS });
+): Promise<Response | undefined> {
+  const ip = clientIp(req);
+  const { success } = await rateLimitAsync(`${prefix}:${ip}`, {
+    maxRequests,
+    windowMs: 60_000,
+  });
   if (!success)
     return NextResponse.json(
       { error: "too many requests" },
       { status: 429, headers: { "Retry-After": "60" } },
     );
   return undefined;
+}
+
+function clientIp(req: Request): string {
+  // Vercel sets x-vercel-forwarded-for with the chain; last trustworthy hop is the
+  // rightmost. We also accept x-forwarded-for for non-Vercel runtimes.
+  const chain =
+    req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-forwarded-for") ?? "";
+  if (!chain) return "unknown";
+  const hops = chain
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean);
+  // Rightmost is the closest to our infra; the client is the leftmost.
+  // On Vercel, the rightmost hop is the one Vercel added and is trustworthy.
+  return hops[hops.length - 1] ?? hops[0] ?? "unknown";
 }
