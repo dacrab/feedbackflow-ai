@@ -150,11 +150,11 @@ export async function updateFeedbackStatus(feedbackItemId: string, status: Feedb
 
 export async function bulkUpdateStatus(ids: string[], status: string) {
   parse(z.array(uuidSchema).min(1).max(200), ids);
-  parse(statusSchema, status);
+  const s = parse(statusSchema, status);
   const userId = await uid();
   await db
     .update(feedbackAnalyses)
-    .set({ status: status as FeedbackStatus })
+    .set({ status: s })
     .where(and(eq(feedbackAnalyses.userId, userId), inArray(feedbackAnalyses.feedbackItemId, ids)));
   revalidatePath("/inbox");
 }

@@ -7,10 +7,6 @@ import { PROVIDER_KEY_URLS, PROVIDER_LABELS, PROVIDER_MODELS } from "@/lib/llm-p
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
 
-const PROVIDERS = PROVIDER_LABELS;
-const MODEL_OPTIONS = PROVIDER_MODELS;
-const KEY_LINKS = PROVIDER_KEY_URLS;
-
 export function LLMSettingsCard({
   initialProvider,
   initialModel,
@@ -25,7 +21,7 @@ export function LLMSettingsCard({
   const configured = !!(initialProvider && initialModel);
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "openrouter");
   const [model, setModel] = useState<string>(
-    initialModel ?? MODEL_OPTIONS["openrouter"][0] ?? "openrouter/auto",
+    initialModel ?? PROVIDER_MODELS["openrouter"][0] ?? "openrouter/auto",
   );
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
@@ -47,7 +43,7 @@ export function LLMSettingsCard({
   function handleProviderChange(p: string) {
     if (!isLLMProvider(p)) return;
     setProvider(p);
-    setModel(MODEL_OPTIONS[p][0] ?? "openrouter/auto");
+    setModel(PROVIDER_MODELS[p][0] ?? "openrouter/auto");
     if (configured) setEditingKey(true);
   }
 
@@ -63,7 +59,7 @@ export function LLMSettingsCard({
             value={provider}
             onChange={(e) => handleProviderChange(e.target.value)}
           >
-            {PROVIDERS.map((p) => (
+            {PROVIDER_LABELS.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
               </option>
@@ -80,7 +76,7 @@ export function LLMSettingsCard({
             value={model}
             onChange={(e) => setModel(e.target.value)}
           >
-            {MODEL_OPTIONS[provider].map((m) => (
+            {PROVIDER_MODELS[provider].map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
@@ -98,7 +94,7 @@ export function LLMSettingsCard({
                 <span className="text-xs text-green-500">● key saved</span>
               )}
               <a
-                href={KEY_LINKS[provider]}
+                href={PROVIDER_KEY_URLS[provider]}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
