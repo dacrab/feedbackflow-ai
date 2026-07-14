@@ -80,8 +80,6 @@ export async function rateLimitMiddleware(
 }
 
 function clientIp(req: Request): string {
-  // Vercel sets x-vercel-forwarded-for with the chain; last trustworthy hop is the
-  // rightmost. We also accept x-forwarded-for for non-Vercel runtimes.
   const chain =
     req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-forwarded-for") ?? "";
   if (!chain) return "unknown";
@@ -89,7 +87,5 @@ function clientIp(req: Request): string {
     .split(",")
     .map((h) => h.trim())
     .filter(Boolean);
-  // Rightmost is the closest to our infra; the client is the leftmost.
-  // On Vercel, the rightmost hop is the one Vercel added and is trustworthy.
-  return hops[hops.length - 1] ?? hops[0] ?? "unknown";
+  return hops[hops.length - 1] ?? "unknown";
 }
