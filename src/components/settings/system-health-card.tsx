@@ -43,16 +43,10 @@ async function parseSSE(response: Response, onEvent: (e: SyncEvent) => void): Pr
   }
 }
 
-function statusInfo(ok: boolean | null | undefined): { cls: string; prefix: string } {
-  if (ok === true) return { cls: "text-green-500", prefix: "● ok" };
-  if (ok === false) return { cls: "text-red-500", prefix: "● failed" };
-  return { cls: "text-muted-foreground", prefix: "● running" };
-}
-
-function logPrefix(ok: boolean | null | undefined): string {
-  if (ok === true) return "✓ ";
-  if (ok === false) return "✗ ";
-  return "· ";
+function statusInfo(ok: boolean | null | undefined): { cls: string; prefix: string; log: string } {
+  if (ok === true) return { cls: "text-green-500", prefix: "● ok", log: "✓ " };
+  if (ok === false) return { cls: "text-red-500", prefix: "● failed", log: "✗ " };
+  return { cls: "text-muted-foreground", prefix: "● running", log: "· " };
 }
 
 export function SystemHealthCard({
@@ -195,7 +189,7 @@ export function SystemHealthCard({
         >
           {logs.map((l) => (
             <p key={l.id} className={`text-xs font-mono ${statusInfo(l.ok).cls}`}>
-              {logPrefix(l.ok)}
+              {statusInfo(l.ok).log}
               {l.msg}
             </p>
           ))}

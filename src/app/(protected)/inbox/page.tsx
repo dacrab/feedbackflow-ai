@@ -30,8 +30,8 @@ export default async function InboxPage({
 
   const rawSentiment = sp.get("sentiment");
   const sentiment: Sentiment | undefined =
-    rawSentiment === "positive" || rawSentiment === "neutral" || rawSentiment === "negative"
-      ? rawSentiment
+    rawSentiment && ["positive", "neutral", "negative"].includes(rawSentiment)
+      ? (rawSentiment as Sentiment)
       : undefined;
   const rawStatus = sp.get("status");
   const status: FeedbackStatus | undefined = isFeedbackStatus(rawStatus) ? rawStatus : undefined;
@@ -40,11 +40,10 @@ export default async function InboxPage({
   const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
   const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
   const rawSort = sp.get("sort");
-  const sort: "created_desc" | "severity_desc" | "severity_asc" =
-    rawSort === "created_desc" || rawSort === "severity_desc" || rawSort === "severity_asc"
-      ? rawSort
-      : "created_desc";
-  const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10) || 1);
+  const sort = ["created_desc", "severity_desc", "severity_asc"].includes(rawSort ?? "")
+    ? (rawSort as "created_desc" | "severity_desc" | "severity_asc")
+    : "created_desc";
+  const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
   const pageSize = Math.min(
     100,
     Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)),
