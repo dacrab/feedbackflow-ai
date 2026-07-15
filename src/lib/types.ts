@@ -36,6 +36,10 @@ export function isLLMProvider(val: unknown): val is LLMProvider {
   return typeof val === "string" && (LLM_PROVIDER_IDS as readonly string[]).includes(val);
 }
 
+export function isSentiment(val: unknown): val is Sentiment {
+  return typeof val === "string" && ["positive", "neutral", "negative"].includes(val);
+}
+
 export function isFeedbackStatus(val: unknown): val is FeedbackStatus {
   return typeof val === "string" && ["New", "Acknowledged", "Actioned"].includes(val);
 }

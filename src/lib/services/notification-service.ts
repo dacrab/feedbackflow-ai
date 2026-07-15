@@ -40,7 +40,8 @@ async function getWebhooks(userId: string): Promise<WebhookEntry[]> {
           minSeverity: h.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
         },
       ];
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e, { extra: { context: "get-webhooks-decrypt" } });
       return [];
     }
   });

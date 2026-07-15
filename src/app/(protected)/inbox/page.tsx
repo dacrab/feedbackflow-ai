@@ -7,6 +7,7 @@ import {
   FEEDBACK_STATUS_OPTIONS,
   type FeedbackStatus,
   isFeedbackStatus,
+  isSentiment,
   SENTIMENT_OPTIONS,
   type Sentiment,
 } from "@/lib/types";
@@ -29,20 +30,16 @@ export default async function InboxPage({
   );
 
   const rawSentiment = sp.get("sentiment");
-  const sentiment: Sentiment | undefined =
-    rawSentiment && ["positive", "neutral", "negative"].includes(rawSentiment)
-      ? (rawSentiment as Sentiment)
-      : undefined;
+  const sentiment: Sentiment | undefined = isSentiment(rawSentiment) ? rawSentiment : undefined;
   const rawStatus = sp.get("status");
   const status: FeedbackStatus | undefined = isFeedbackStatus(rawStatus) ? rawStatus : undefined;
   const topic = sp.get("topic") || undefined;
   const q = sp.get("q") || undefined;
   const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
   const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
-  const rawSort = sp.get("sort");
-  const sort = ["created_desc", "severity_desc", "severity_asc"].includes(rawSort ?? "")
-    ? (rawSort as "created_desc" | "severity_desc" | "severity_asc")
-    : "created_desc";
+  const SORT_OPTIONS = ["created_desc", "severity_desc", "severity_asc"] as const;
+  type SortOption = (typeof SORT_OPTIONS)[number];
+  const sort: SortOption = SORT_OPTIONS.find((s) => s === sp.get("sort")) ?? "created_desc";
   const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
   const pageSize = Math.min(
     100,
