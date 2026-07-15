@@ -79,6 +79,17 @@ export async function rateLimitMiddleware(
   return undefined;
 }
 
+export function apiErrorHandler(context: string) {
+  return (e: unknown) =>
+    NextResponse.json(
+      {
+        error: `${context} failed`,
+        detail: e instanceof Error ? e.message : "unknown",
+      },
+      { status: 500 },
+    );
+}
+
 function clientIp(req: Request): string {
   const chain =
     req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-forwarded-for") ?? "";

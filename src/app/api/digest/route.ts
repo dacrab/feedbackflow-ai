@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
-import { rateLimitMiddleware, requireCronOrAuth } from "@/lib/api";
+import { apiErrorHandler, rateLimitMiddleware, requireCronOrAuth } from "@/lib/api";
 import { runDigest } from "@/lib/services/digest-service";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +18,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     Sentry.captureException(e, { extra: { context: "api-digest" } });
-    return NextResponse.json(
-      { error: "digest failed", detail: e instanceof Error ? e.message : "unknown" },
-      { status: 500 },
-    );
+    return apiErrorHandler("digest")(e);
   }
 }

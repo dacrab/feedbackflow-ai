@@ -129,12 +129,14 @@ export const getDashboard = cache(async (userId: string): Promise<DashboardData>
 
   const severityHist = buildSeverityHist(severityRows);
 
-  const trendData = ((trendResult.rows ?? []) as Array<Record<string, unknown>>).map((r) => ({
+  const trendRows = (trendResult.rows ?? []) as Array<Record<string, unknown>>;
+  const trendData: TrendRow[] = trendRows.map((r) => ({
     day: String(r["day"]),
     cnt: Number(r["cnt"]),
     delta: Number(r["delta"]),
-  })) as TrendRow[];
-  const topTopics = ((topicResult.rows ?? []) as Array<Record<string, unknown>>).map((r) => ({
+  }));
+  const topicRows = (topicResult.rows ?? []) as Array<Record<string, unknown>>;
+  const topTopics = topicRows.map((r) => ({
     topic: String(r["topic"]),
     value: Number(r["cnt"]),
   }));
