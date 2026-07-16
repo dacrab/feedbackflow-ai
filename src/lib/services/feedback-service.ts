@@ -36,8 +36,10 @@ function buildFilterConditions(filters: FeedbackFilters, userId: string) {
     );
     if (cond) conditions.push(cond);
   }
-  if (filters.topic)
-    conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic])}`);
+  if (filters.topic) {
+    const topic = filters.topic.slice(0, MAX_SEARCH_TERM_LENGTH);
+    conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([topic])}`);
+  }
   return conditions;
 }
 

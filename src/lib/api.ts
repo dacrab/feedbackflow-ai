@@ -80,14 +80,21 @@ export async function rateLimitMiddleware(
 }
 
 export function apiErrorHandler(context: string) {
-  return (e: unknown) =>
-    NextResponse.json(
+  return (e: unknown) => {
+    const detail =
+      process.env["NODE_ENV"] === "development"
+        ? e instanceof Error
+          ? e.message
+          : "unknown"
+        : undefined;
+    return NextResponse.json(
       {
         error: `${context} failed`,
-        detail: e instanceof Error ? e.message : "unknown",
+        ...(detail && { detail }),
       },
       { status: 500 },
     );
+  };
 }
 
 function clientIp(req: Request): string {
