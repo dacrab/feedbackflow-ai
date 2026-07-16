@@ -1,19 +1,35 @@
 import Link from "next/link";
+import { z } from "zod";
 import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
-import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
+import {
+  type FeedbackFilters,
+  getFeedbackCount,
+  getFeedbackItems,
+} from "@/lib/services/feedback-service";
 import {
   FEEDBACK_STATUS_OPTIONS,
   type FeedbackStatus,
-  isFeedbackStatus,
-  isSentiment,
   SENTIMENT_OPTIONS,
   type Sentiment,
 } from "@/lib/types";
 import { InboxBulkActions } from "./bulk-actions";
 
 const DEFAULT_PAGE_SIZE = 20;
+const SORT_OPTIONS = ["created_desc", "severity_desc", "severity_asc"] as const;
+
+const SearchParamsSchema = z.object({
+  sentiment: z.enum(["positive", "neutral", "negative"]).optional(),
+  status: z.enum(["New", "Acknowledged", "Actioned"]).optional(),
+  topic: z.string().max(100).optional(),
+  q: z.string().max(200).optional(),
+  severity_min: z.coerce.number().int().min(1).max(5).optional(),
+  severity_max: z.coerce.number().int().min(1).max(5).optional(),
+  sort: z.enum(SORT_OPTIONS).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
+});
 
 export default async function InboxPage({
   searchParams,
@@ -29,25 +45,21 @@ export default async function InboxPage({
     Object.entries(spObj).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : [])),
   );
 
-  const rawSentiment = sp.get("sentiment");
-  const sentiment: Sentiment | undefined = isSentiment(rawSentiment) ? rawSentiment : undefined;
-  const rawStatus = sp.get("status");
-  const status: FeedbackStatus | undefined = isFeedbackStatus(rawStatus) ? rawStatus : undefined;
-  const topic = sp.get("topic") || undefined;
-  const q = sp.get("q") || undefined;
-  const severityMin = Number.parseInt(sp.get("severity_min") ?? "1", 10);
-  const severityMax = Number.parseInt(sp.get("severity_max") ?? String(MAX_SEVERITY), 10);
-  const SORT_OPTIONS = ["created_desc", "severity_desc", "severity_asc"] as const;
-  type SortOption = (typeof SORT_OPTIONS)[number];
-  const sort: SortOption = SORT_OPTIONS.find((s) => s === sp.get("sort")) ?? "created_desc";
-  const page = Math.max(1, Number.parseInt(sp.get("page") ?? "1", 10));
-  const pageSize = Math.min(
-    100,
-    Math.max(1, Number.parseInt(sp.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10)),
-  );
+  const parsed = SearchParamsSchema.safeParse(Object.fromEntries(sp));
+  const spv = parsed.success ? parsed.data : {};
+
+  const sentiment: Sentiment | undefined = spv.sentiment;
+  const status: FeedbackStatus | undefined = spv.status;
+  const topic = spv.topic;
+  const q = spv.q;
+  const severityMin = spv.severity_min ?? 1;
+  const severityMax = spv.severity_max ?? MAX_SEVERITY;
+  const sort = spv.sort ?? "created_desc";
+  const page = spv.page ?? 1;
+  const pageSize = spv.pageSize ?? DEFAULT_PAGE_SIZE;
   const offset = (page - 1) * pageSize;
 
-  const filters = {
+  const filters: FeedbackFilters = {
     ...(sentiment && { sentiment }),
     ...(status && { status }),
     ...(topic && { topic }),
