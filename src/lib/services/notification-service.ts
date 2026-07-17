@@ -83,7 +83,6 @@ export async function sendDailyDigest(
 
   const high = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
 
-  // Batch into a single Slack message instead of N individual posts
   const lines = [
     `📊 *Daily Digest* — ${analyses.length} items in last 24h, ${high.length} high severity`,
     ...high.slice(0, 10).map((a) => `• [sev ${a.severityScore}] ${a.summary}`),

@@ -91,7 +91,6 @@ export function SystemHealthCard({
         const ok = stageToStatus(stage);
         const msg = data.message;
 
-        // Progress stages (analyzing/ok/error per item) replace the last line in-place
         const isProgress =
           stage === "analyzing" || stage === "analysis_ok" || stage === "analysis_error";
         setLogs((prev) => {

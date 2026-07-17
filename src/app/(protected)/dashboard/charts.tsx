@@ -16,7 +16,7 @@ import {
 
 const axisTick = { fontSize: 12 };
 
-const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {
+const TOOLTIP_CONTENT_STYLE = {
   background: "hsl(var(--background))",
   border: "1px solid hsl(var(--border))",
   borderRadius: "8px",

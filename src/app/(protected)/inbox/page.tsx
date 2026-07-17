@@ -3,17 +3,8 @@ import { z } from "zod";
 import { Input, Select } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
-import {
-  type FeedbackFilters,
-  getFeedbackCount,
-  getFeedbackItems,
-} from "@/lib/services/feedback-service";
-import {
-  FEEDBACK_STATUS_OPTIONS,
-  type FeedbackStatus,
-  SENTIMENT_OPTIONS,
-  type Sentiment,
-} from "@/lib/types";
+import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
+import { FEEDBACK_STATUS_OPTIONS, SENTIMENT_OPTIONS } from "@/lib/types";
 import { InboxBulkActions } from "./bulk-actions";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -48,8 +39,8 @@ export default async function InboxPage({
   const parsed = SearchParamsSchema.safeParse(Object.fromEntries(sp));
   const spv = parsed.success ? parsed.data : {};
 
-  const sentiment: Sentiment | undefined = spv.sentiment;
-  const status: FeedbackStatus | undefined = spv.status;
+  const sentiment = spv.sentiment;
+  const status = spv.status;
   const topic = spv.topic;
   const q = spv.q;
   const severityMin = spv.severity_min ?? 1;
@@ -59,7 +50,7 @@ export default async function InboxPage({
   const pageSize = spv.pageSize ?? DEFAULT_PAGE_SIZE;
   const offset = (page - 1) * pageSize;
 
-  const filters: FeedbackFilters = {
+  const filters = {
     ...(sentiment && { sentiment }),
     ...(status && { status }),
     ...(topic && { topic }),
