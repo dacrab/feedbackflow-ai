@@ -25,7 +25,7 @@ const SYSTEM_PROMPT =
   'You are a feedback classifier. Respond ONLY with a single valid JSON object, no markdown, no explanation:\n{"sentiment":"positive|neutral|negative","topics":["tag1","tag2"],"severity_score":1,"summary":"one sentence"}\nsentiment: overall tone. topics: 1-5 short tags. severity_score: 1(trivial)–5(critical). summary: ≤20 words.';
 
 type LLMOptions = { provider: LLMProvider; model: string; apiKey: string };
-export type Analysis = z.infer<typeof AnalysisSchema>;
+type Analysis = z.infer<typeof AnalysisSchema>;
 
 function getModel({ provider, model, apiKey }: LLMOptions) {
   if (provider === "openai") return createOpenAI({ apiKey })(model);
