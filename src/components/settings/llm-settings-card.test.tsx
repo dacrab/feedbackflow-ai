@@ -10,7 +10,7 @@ vi.mock("@/lib/actions", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { saveSettings } from "@/lib/actions";
+import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { LLMSettingsCard } from "./llm-settings-card";
 
 afterEach(cleanup);
@@ -32,11 +32,11 @@ describe("LLMSettingsCard", () => {
     expect(screen.getByText("● key saved")).toBeInTheDocument();
   });
 
-  it("shows active config in status row", () => {
+  it("shows active model in status row", () => {
     render(
       <LLMSettingsCard initialProvider="google" initialModel="gemini-2.5-flash" hasKey={true} />,
     );
-    expect(screen.getAllByText(/gemini-2\.5-flash/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/google · gemini-2\.5-flash/)).toBeInTheDocument();
   });
 
   it("save button enables after typing key", async () => {
@@ -52,5 +52,36 @@ describe("LLMSettingsCard", () => {
     await user.type(screen.getByPlaceholderText(/paste openrouter api key/i), "sk-test-key");
     await user.click(screen.getByRole("button", { name: "save" }));
     expect(saveSettings).toHaveBeenCalledWith("openrouter", "openrouter/auto", "sk-test-key");
+  });
+
+  it("shows update model button when configured", () => {
+    render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-5.4-nano" hasKey={true} />);
+    expect(screen.getByRole("button", { name: "update model" })).toBeInTheDocument();
+  });
+
+  it("calls updateSettingsModel when updating model without changing key", async () => {
+    const user = userEvent.setup();
+    render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-5.4-nano" hasKey={true} />);
+    await user.click(screen.getByRole("button", { name: "update model" }));
+    expect(updateSettingsModel).toHaveBeenCalledWith("gpt-5.4-nano");
+  });
+
+  it("shows remove button when configured", () => {
+    render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-5.4-nano" hasKey={true} />);
+    expect(screen.getByRole("button", { name: "remove" })).toBeInTheDocument();
+  });
+
+  it("calls deleteSettings on remove", async () => {
+    const user = userEvent.setup();
+    render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-5.4-nano" hasKey={true} />);
+    await user.click(screen.getByRole("button", { name: "remove" }));
+    expect(deleteSettings).toHaveBeenCalledOnce();
+  });
+
+  it("shows cancel button when editing key on configured provider", async () => {
+    const user = userEvent.setup();
+    render(<LLMSettingsCard initialProvider="openai" initialModel="gpt-5.4-nano" hasKey={true} />);
+    await user.click(screen.getByText("••••••••••••••••"));
+    expect(screen.getByRole("button", { name: "cancel" })).toBeInTheDocument();
   });
 });

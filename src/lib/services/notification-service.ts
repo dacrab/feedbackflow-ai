@@ -51,7 +51,6 @@ export async function notifyHighSeverityFeedback(
   userId: string,
   analysis: FeedbackAnalysisData,
 ): Promise<void> {
-  if (analysis.severity_score < HIGH_SEVERITY_THRESHOLD) return;
   const webhooks = await getWebhooks(userId);
   const msg = `🚨 High severity (${analysis.severity_score}/5): ${analysis.summary}`;
   const promises: Promise<void>[] = [];

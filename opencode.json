@@ -3,18 +3,15 @@
   "mcp": {
     "neon": {
       "type": "remote",
-      "url": "https://mcp.neon.tech/mcp",
-      "enabled": true
+      "url": "https://mcp.neon.tech/mcp"
     },
     "sentry": {
       "type": "remote",
-      "url": "https://mcp.sentry.dev/mcp",
-      "enabled": true
+      "url": "https://mcp.sentry.dev/mcp"
     },
     "doppler": {
       "type": "local",
-      "command": ["npx", "-y", "@dopplerhq/mcp-server"],
-      "enabled": true
+      "command": ["npx", "-y", "@dopplerhq/mcp-server"]
     }
   }
 }

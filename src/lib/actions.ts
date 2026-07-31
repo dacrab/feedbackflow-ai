@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -52,7 +53,7 @@ export async function addSource(repo: string, token?: string) {
     config: { repo },
     secretCipher: token ? encrypt(token) : null,
   });
-  runIngest(undefined, undefined, userId).catch(console.error);
+  runIngest(undefined, undefined, userId).catch((e) => Sentry.captureException(e));
   revalidatePath("/settings");
 }
 

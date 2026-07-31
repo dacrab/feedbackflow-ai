@@ -184,7 +184,7 @@ export default async function LandingPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Feature
               icon={<IconBolt className="h-5 w-5" />}
               title="Automated ingestion"

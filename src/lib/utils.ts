@@ -54,8 +54,6 @@ export function timeAgo(date: Date | string): string {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-export const APP_URL = process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000";
-
 export interface RetryOptions {
   retries: number;
   baseDelay: number;

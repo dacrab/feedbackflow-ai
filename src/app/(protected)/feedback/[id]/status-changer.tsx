@@ -28,9 +28,9 @@ export default function StatusChanger({ id, initial }: { id: string; initial: Fe
 
   return (
     <Select value={status} onChange={onChange} disabled={pending} size="xs">
-      {FEEDBACK_STATUS_OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
+      {FEEDBACK_STATUS_OPTIONS.map((s) => (
+        <option key={s} value={s}>
+          {s.toLowerCase()}
         </option>
       ))}
     </Select>

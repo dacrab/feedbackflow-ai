@@ -1,4 +1,4 @@
-import { IconChevronDown, IconLoader2 } from "@tabler/icons-react";
+import { IconChevronDown } from "@tabler/icons-react";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
 import { sentimentColor } from "@/lib/utils";
 
@@ -58,7 +58,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded border border-border bg-card p-4 space-y-4 ${className}`}>
+    <div className={`rounded border border-border bg-card p-4 space-y-4 ${className ?? ""}`}>
       <p className="text-xs text-muted-foreground">// {title}</p>
       {children}
     </div>
@@ -107,9 +107,7 @@ export function Button({
       aria-busy={isLoading || undefined}
       {...props}
     >
-      {isLoading
-        ? (loadingText ?? <IconLoader2 className="h-4 w-4 animate-spin mx-auto" />)
-        : children}
+      {isLoading ? (loadingText ?? "...") : children}
     </button>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, Card, Input, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
-import { PROVIDER_KEY_URLS, PROVIDER_LABELS, PROVIDER_MODELS } from "@/lib/llm-providers";
+import { LLM_PROVIDERS } from "@/lib/llm-providers";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
 
@@ -21,7 +21,7 @@ export function LLMSettingsCard({
   const configured = !!(initialProvider && initialModel);
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "openrouter");
   const [model, setModel] = useState<string>(
-    initialModel ?? PROVIDER_MODELS["openrouter"][0] ?? "openrouter/auto",
+    initialModel ?? LLM_PROVIDERS[0]?.models[0] ?? "openrouter/auto",
   );
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
@@ -43,7 +43,7 @@ export function LLMSettingsCard({
   function handleProviderChange(p: string) {
     if (!isLLMProvider(p)) return;
     setProvider(p);
-    setModel(PROVIDER_MODELS[p][0] ?? "openrouter/auto");
+    setModel(LLM_PROVIDERS.find((x) => x.id === p)?.models[0] ?? "openrouter/auto");
     if (configured) setEditingKey(true);
   }
 
@@ -59,8 +59,8 @@ export function LLMSettingsCard({
             value={provider}
             onChange={(e) => handleProviderChange(e.target.value)}
           >
-            {PROVIDER_LABELS.map((p) => (
-              <option key={p.value} value={p.value}>
+            {LLM_PROVIDERS.map((p) => (
+              <option key={p.id} value={p.id}>
                 {p.label}
               </option>
             ))}
@@ -76,7 +76,7 @@ export function LLMSettingsCard({
             value={model}
             onChange={(e) => setModel(e.target.value)}
           >
-            {PROVIDER_MODELS[provider].map((m) => (
+            {LLM_PROVIDERS.find((x) => x.id === provider)?.models.map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
@@ -94,7 +94,7 @@ export function LLMSettingsCard({
                 <span className="text-xs text-green-500">● key saved</span>
               )}
               <a
-                href={PROVIDER_KEY_URLS[provider]}
+                href={LLM_PROVIDERS.find((x) => x.id === provider)?.keyUrl ?? "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"

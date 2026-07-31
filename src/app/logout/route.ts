@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { APP_URL } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 async function handle() {
-  return NextResponse.redirect(new URL("/login", APP_URL));
+  return NextResponse.redirect(
+    new URL("/login", process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000"),
+  );
 }
 
 export { handle as GET, handle as POST };

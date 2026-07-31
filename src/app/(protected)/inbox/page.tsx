@@ -100,17 +100,17 @@ export default async function InboxPage({
         />
         <Select name="sentiment" defaultValue={sp.get("sentiment") || ""} size="sm">
           <option value="">all sentiment</option>
-          {SENTIMENT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
+          {SENTIMENT_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s}
             </option>
           ))}
         </Select>
         <Select name="status" defaultValue={sp.get("status") || ""} size="sm">
           <option value="">all status</option>
-          {FEEDBACK_STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
+          {FEEDBACK_STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s.toLowerCase()}
             </option>
           ))}
         </Select>

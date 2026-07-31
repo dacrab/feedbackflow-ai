@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   Area,
   AreaChart,
@@ -107,3 +108,12 @@ export function SeverityChart({ data }: { data: { name: string; value: number }[
     </ResponsiveContainer>
   );
 }
+
+export const DynamicTrendChart = dynamic(() => Promise.resolve(TrendChart), { ssr: false });
+export const DynamicSentimentChart = dynamic(() => Promise.resolve(SentimentChart), {
+  ssr: false,
+});
+export const DynamicTopicsChart = dynamic(() => Promise.resolve(TopicsChart), { ssr: false });
+export const DynamicSeverityChart = dynamic(() => Promise.resolve(SeverityChart), {
+  ssr: false,
+});

@@ -24,7 +24,6 @@
     "exactOptionalPropertyTypes": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "noUncheckedSideEffectImports": true,
     "plugins": [
       {
         "name": "next"

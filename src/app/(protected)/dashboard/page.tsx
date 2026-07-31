@@ -4,7 +4,12 @@ import { MetricCard } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getDashboard } from "@/lib/services/dashboard-service";
-import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "./charts-dynamic";
+import {
+  DynamicSentimentChart,
+  DynamicSeverityChart,
+  DynamicTopicsChart,
+  DynamicTrendChart,
+} from "./charts";
 
 function ChartCard({
   label,
@@ -64,7 +69,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-2 lg:grid-cols-2">
         <ChartCard label="trend">
-          <TrendChart data={trendData} />
+          <DynamicTrendChart data={trendData} />
         </ChartCard>
         <ChartCard
           label="sentiment"
@@ -79,13 +84,13 @@ export default async function DashboardPage() {
             </div>
           }
         >
-          <SentimentChart data={sentimentData} />
+          <DynamicSentimentChart data={sentimentData} />
         </ChartCard>
         <ChartCard label="topics">
-          <TopicsChart data={m.topTopics} />
+          <DynamicTopicsChart data={m.topTopics} />
         </ChartCard>
         <ChartCard label="severity distribution">
-          <SeverityChart data={severityData} />
+          <DynamicSeverityChart data={severityData} />
         </ChartCard>
       </div>
     </div>

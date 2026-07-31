@@ -31,11 +31,7 @@ interface GithubIssue {
   created_at: string;
 }
 
-async function fetchGithubPage(
-  repo: string,
-  page: number,
-  token?: string,
-): Promise<{ issues: GithubIssue[]; rawCount: number }> {
+async function fetchGithubPage(repo: string, page: number, token?: string): Promise<GithubIssue[]> {
   const url = `https://api.github.com/repos/${repo}/issues?state=open&type=issues&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
   const res = await fetch(url, {
     headers: {
@@ -48,15 +44,10 @@ async function fetchGithubPage(
   });
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
   const data = await res.json();
-  if (!Array.isArray(data)) return { issues: [], rawCount: 0 };
-  return { issues: data, rawCount: data.length };
+  return Array.isArray(data) ? data : [];
 }
 
-async function fetchGithubPageWithRetry(
-  repo: string,
-  page: number,
-  token?: string,
-): Promise<{ issues: GithubIssue[]; rawCount: number }> {
+async function fetchGithubPageWithRetry(repo: string, page: number, token?: string) {
   return withRetry(() => fetchGithubPage(repo, page, token), {
     retries: GITHUB_MAX_RETRIES,
     baseDelay: GITHUB_RETRY_BASE_DELAY_MS,
@@ -67,10 +58,10 @@ async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIs
   const results: GithubIssue[] = [];
   for (let page = 1; ; page++) {
     try {
-      const { issues, rawCount } = await fetchGithubPageWithRetry(repo, page, token);
-      if (!rawCount) break;
+      const issues = await fetchGithubPageWithRetry(repo, page, token);
+      if (!issues.length) break;
       results.push(...issues);
-      if (rawCount < GITHUB_PER_PAGE) break;
+      if (issues.length < GITHUB_PER_PAGE) break;
     } catch (e) {
       if (page === 1) throw e;
       break;
@@ -81,7 +72,7 @@ async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIs
 
 type LLMOpts = { provider: LLMProvider; model: string; apiKey: string } | undefined;
 
-export type IngestEvent =
+type IngestEvent =
   | { stage: "fetching"; message: string }
   | { stage: "analyzing"; message: string }
   | { stage: "analysis_ok"; message: string }
@@ -247,23 +238,16 @@ export async function runIngest(
     await db.update(userSources).set({ lastChecked: new Date() }).where(eq(userSources.id, src.id));
 
     if (run) {
-      if (hasError) {
-        await db
-          .update(ingestRuns)
-          .set({
-            ok: false,
-            error: "LLM API error - partial analysis",
-            finishedAt: new Date(),
-            inserted: inserted.length,
-            analyzed,
-          })
-          .where(eq(ingestRuns.id, run.id));
-      } else {
-        await db
-          .update(ingestRuns)
-          .set({ ok: true, finishedAt: new Date(), inserted: inserted.length, analyzed })
-          .where(eq(ingestRuns.id, run.id));
-      }
+      await db
+        .update(ingestRuns)
+        .set({
+          ok: !hasError,
+          ...(hasError && { error: "LLM API error - partial analysis" }),
+          finishedAt: new Date(),
+          inserted: inserted.length,
+          analyzed,
+        })
+        .where(eq(ingestRuns.id, run.id));
     }
 
     totals.fetched += issues.length;

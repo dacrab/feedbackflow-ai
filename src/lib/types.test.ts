@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { isFeedbackStatus, isLLMProvider } from "./types";
+import {
+  FEEDBACK_STATUS_OPTIONS,
+  isFeedbackStatus,
+  isLLMProvider,
+  LLM_PROVIDER_IDS,
+} from "./types";
 
 describe("isLLMProvider", () => {
-  it("returns true for valid providers", () => {
-    expect(isLLMProvider("google")).toBe(true);
-    expect(isLLMProvider("openai")).toBe(true);
-    expect(isLLMProvider("anthropic")).toBe(true);
-    expect(isLLMProvider("openrouter")).toBe(true);
+  it.each(LLM_PROVIDER_IDS)("returns true for %s", (id) => {
+    expect(isLLMProvider(id)).toBe(true);
   });
 
   it("returns false for invalid values", () => {
@@ -21,10 +23,8 @@ describe("isLLMProvider", () => {
 });
 
 describe("isFeedbackStatus", () => {
-  it("returns true for valid statuses", () => {
-    expect(isFeedbackStatus("New")).toBe(true);
-    expect(isFeedbackStatus("Acknowledged")).toBe(true);
-    expect(isFeedbackStatus("Actioned")).toBe(true);
+  it.each(FEEDBACK_STATUS_OPTIONS)("returns true for %s", (status) => {
+    expect(isFeedbackStatus(status)).toBe(true);
   });
 
   it("returns false for invalid values", () => {
