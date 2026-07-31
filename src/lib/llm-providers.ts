@@ -62,13 +62,3 @@ export const LLM_PROVIDERS: LLMProviderMeta[] = [
 export const DEFAULT_MODELS = Object.fromEntries(
   LLM_PROVIDERS.map((p) => [p.id, p.defaultModel]),
 ) as Record<LLMProvider, string>;
-
-export const PROVIDER_LABELS = LLM_PROVIDERS.map((p) => ({ value: p.id, label: p.label }));
-
-export const PROVIDER_MODELS = Object.fromEntries(
-  LLM_PROVIDERS.map((p) => [p.id, p.models]),
-) as Record<LLMProvider, string[]>;
-
-export const PROVIDER_KEY_URLS = Object.fromEntries(
-  LLM_PROVIDERS.map((p) => [p.id, p.keyUrl]),
-) as Record<LLMProvider, string>;

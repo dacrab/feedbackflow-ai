@@ -98,12 +98,5 @@ export function apiErrorHandler(context: string) {
 }
 
 function clientIp(req: Request): string {
-  const chain =
-    req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-forwarded-for") ?? "";
-  if (!chain) return "unknown";
-  const hops = chain
-    .split(",")
-    .map((h) => h.trim())
-    .filter(Boolean);
-  return hops[hops.length - 1] ?? "unknown";
+  return req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
 }

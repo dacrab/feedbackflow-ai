@@ -9,13 +9,15 @@ const { encrypt, decrypt, timingSafeEqual } = await import("./crypto");
 
 describe("encrypt/decrypt", () => {
   it("roundtrip preserves plaintext", () => {
-    const plain = "hello world! 🎉";
-    expect(decrypt(encrypt(plain))).toBe(plain);
+    expect(decrypt(encrypt("hello world! 🎉"))).toBe("hello world! 🎉");
+  });
+
+  it("roundtrip preserves empty string", () => {
+    expect(decrypt(encrypt(""))).toBe("");
   });
 
   it("produces unique ciphertext each call (random IV)", () => {
-    const plain = "same input";
-    expect(encrypt(plain)).not.toBe(encrypt(plain));
+    expect(encrypt("same input")).not.toBe(encrypt("same input"));
   });
 
   it("decrypt with invalid data throws", () => {

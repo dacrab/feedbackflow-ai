@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_MODELS,
-  LLM_PROVIDERS,
-  LLMProviderSchema,
-  PROVIDER_KEY_URLS,
-  PROVIDER_LABELS,
-  PROVIDER_MODELS,
-} from "./llm-providers";
+import { DEFAULT_MODELS, LLM_PROVIDERS, LLMProviderSchema } from "./llm-providers";
 import { LLM_PROVIDER_IDS } from "./types";
 
 describe("LLMProviderSchema", () => {
@@ -38,21 +31,10 @@ describe("LLM_PROVIDERS config invariants", () => {
   });
 });
 
-describe("derived provider maps", () => {
+describe("DEFAULT_MODELS", () => {
   it("maps each provider id to its default model", () => {
     for (const p of LLM_PROVIDERS) {
       expect(DEFAULT_MODELS[p.id]).toBe(p.defaultModel);
     }
-  });
-
-  it("maps each provider id to its models and key url", () => {
-    for (const p of LLM_PROVIDERS) {
-      expect(PROVIDER_MODELS[p.id]).toEqual(p.models);
-      expect(PROVIDER_KEY_URLS[p.id]).toBe(p.keyUrl);
-    }
-  });
-
-  it("builds labels preserving provider order", () => {
-    expect(PROVIDER_LABELS).toEqual(LLM_PROVIDERS.map((p) => ({ value: p.id, label: p.label })));
   });
 });

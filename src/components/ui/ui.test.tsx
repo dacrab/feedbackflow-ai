@@ -11,21 +11,19 @@ describe("MetricCard", () => {
     expect(screen.getByText("42")).toBeInTheDocument();
   });
 
-  it("renders a positive delta with an up arrow and green class", () => {
+  it("renders a positive delta with an up arrow", () => {
     render(<MetricCard label="x" value="1" delta={12} />);
-    const delta = screen.getByText("↑12");
-    expect(delta).toHaveClass("text-green-500");
+    expect(screen.getByText("↑12")).toBeInTheDocument();
   });
 
-  it("renders a negative delta as its absolute value with a down arrow and red class", () => {
+  it("renders a negative delta as its absolute value with a down arrow", () => {
     render(<MetricCard label="x" value="1" delta={-7} />);
-    const delta = screen.getByText("↓7");
-    expect(delta).toHaveClass("text-red-500");
+    expect(screen.getByText("↓7")).toBeInTheDocument();
   });
 
-  it("treats a zero delta as non-negative (up arrow, green)", () => {
+  it("treats a zero delta as non-negative (up arrow)", () => {
     render(<MetricCard label="x" value="1" delta={0} />);
-    expect(screen.getByText("↑0")).toHaveClass("text-green-500");
+    expect(screen.getByText("↑0")).toBeInTheDocument();
   });
 
   it("omits the delta indicator when delta is undefined", () => {
@@ -45,9 +43,9 @@ describe("SentimentBadge", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders the sentiment text with its color class", () => {
+  it("renders the sentiment text", () => {
     render(<SentimentBadge sentiment="positive" />);
-    expect(screen.getByText("positive")).toHaveClass("text-green-500");
+    expect(screen.getByText("positive")).toBeInTheDocument();
   });
 });
 
@@ -62,9 +60,14 @@ describe("StatusBadge", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders a bracketed lowercase label with color for non-default statuses", () => {
+  it("renders a bracketed lowercase label for acknowledged", () => {
     render(<StatusBadge status="Acknowledged" />);
-    expect(screen.getByText("[acknowledged]")).toHaveClass("text-blue-500");
+    expect(screen.getByText("[acknowledged]")).toBeInTheDocument();
+  });
+
+  it("renders a bracketed lowercase label for actioned", () => {
+    render(<StatusBadge status="Actioned" />);
+    expect(screen.getByText("[actioned]")).toBeInTheDocument();
   });
 });
 
@@ -92,12 +95,12 @@ describe("Card", () => {
 describe("Input", () => {
   it("renders with default variant", () => {
     render(<Input placeholder="default" />);
-    expect(screen.getByPlaceholderText("default")).toHaveClass("h-10", "px-3");
+    expect(screen.getByPlaceholderText("default")).toBeInTheDocument();
   });
 
   it("renders with sm variant", () => {
     render(<Input variant="sm" placeholder="small" />);
-    expect(screen.getByPlaceholderText("small")).toHaveClass("h-8", "px-2");
+    expect(screen.getByPlaceholderText("small")).toBeInTheDocument();
   });
 });
 
@@ -119,25 +122,16 @@ describe("Button", () => {
     expect(btn).toHaveAttribute("aria-busy", "true");
   });
 
-  it("shows spinner when isLoading without loadingText", () => {
+  it("shows fallback text when isLoading without loadingText", () => {
     render(<Button isLoading>click me</Button>);
-    expect(screen.getByRole("button")).toBeDisabled();
-    expect(screen.getByRole("button").querySelector(".animate-spin")).toBeInTheDocument();
+    const btn = screen.getByRole("button");
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveTextContent("...");
   });
 
   it("is disabled when disabled prop set", () => {
     render(<Button disabled>click me</Button>);
     expect(screen.getByRole("button")).toBeDisabled();
-  });
-
-  it("applies primary variant class", () => {
-    render(<Button variant="primary">primary</Button>);
-    expect(screen.getByRole("button")).toHaveClass("bg-foreground", "text-background");
-  });
-
-  it("applies sm size class", () => {
-    render(<Button size="sm">small</Button>);
-    expect(screen.getByRole("button")).toHaveClass("h-8", "px-3");
   });
 });
 

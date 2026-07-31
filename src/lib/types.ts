@@ -3,17 +3,8 @@ export type FeedbackStatus = "New" | "Acknowledged" | "Actioned";
 export const LLM_PROVIDER_IDS = ["google", "openai", "anthropic", "openrouter"] as const;
 export type LLMProvider = (typeof LLM_PROVIDER_IDS)[number];
 
-export const FEEDBACK_STATUS_OPTIONS: { value: FeedbackStatus; label: string }[] = [
-  { value: "New", label: "new" },
-  { value: "Acknowledged", label: "acknowledged" },
-  { value: "Actioned", label: "actioned" },
-];
-
-export const SENTIMENT_OPTIONS: { value: Sentiment; label: string }[] = [
-  { value: "positive", label: "positive" },
-  { value: "neutral", label: "neutral" },
-  { value: "negative", label: "negative" },
-];
+export const FEEDBACK_STATUS_OPTIONS: FeedbackStatus[] = ["New", "Acknowledged", "Actioned"];
+export const SENTIMENT_OPTIONS: Sentiment[] = ["positive", "neutral", "negative"];
 
 export interface FeedbackAnalysisData {
   sentiment: Sentiment;

@@ -29,4 +29,8 @@ describe("rateLimit", () => {
     expect((await rateLimit("id-a", { maxRequests: 1, windowMs: 1000 })).success).toBe(false);
     expect((await rateLimit("id-b", { maxRequests: 1, windowMs: 1000 })).success).toBe(true);
   });
+
+  it("blocks all requests when maxRequests is 0", async () => {
+    expect((await rateLimit("block-all", { maxRequests: 0, windowMs: 1000 })).success).toBe(false);
+  });
 });

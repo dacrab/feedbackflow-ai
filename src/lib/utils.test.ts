@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cn,
   formatDateUTC,
@@ -24,11 +24,8 @@ describe("cn", () => {
 });
 
 describe("formatDateUTC", () => {
-  it("formats an afternoon time in UTC with 12-hour clock", () => {
+  it("formats date in UTC", () => {
     expect(formatDateUTC("2024-06-15T14:30:00.000Z")).toBe("Jun 15, 2024, 02:30 PM");
-  });
-
-  it("formats midnight as 12:00 AM with zero-padded day", () => {
     expect(formatDateUTC("2024-01-01T00:00:00.000Z")).toBe("Jan 01, 2024, 12:00 AM");
   });
 });
@@ -68,44 +65,40 @@ describe("sentimentColor", () => {
 });
 
 describe("timeAgo", () => {
+  beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it("returns seconds ago", () => {
-    vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-10T12:00:30.000Z"));
     expect(timeAgo(new Date("2024-01-10T12:00:00.000Z"))).toBe("30s ago");
   });
 
   it("returns minutes ago", () => {
-    vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-10T12:05:00.000Z"));
     expect(timeAgo("2024-01-10T12:00:00.000Z")).toBe("5m ago");
   });
 
   it("returns hours ago", () => {
-    vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-10T15:00:00.000Z"));
     expect(timeAgo("2024-01-10T12:00:00.000Z")).toBe("3h ago");
   });
 
   it("returns days ago", () => {
-    vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-15T12:00:00.000Z"));
     expect(timeAgo("2024-01-10T12:00:00.000Z")).toBe("5d ago");
   });
 });
 
 describe("getDateNHoursAgo", () => {
+  beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it("returns ISO string exactly N hours ago", () => {
-    vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
     expect(getDateNHoursAgo(2)).toBe("2024-01-10T10:00:00.000Z");
   });
 
   it("handles 0 hours (now)", () => {
-    vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
     expect(getDateNHoursAgo(0)).toBe("2024-01-10T12:00:00.000Z");
   });
@@ -114,6 +107,7 @@ describe("getDateNHoursAgo", () => {
 describe("handleActionError", () => {
   it("returns the message of an Error instance", () => {
     expect(handleActionError(new Error("boom"))).toBe("boom");
+    expect(handleActionError(new TypeError("type error"))).toBe("type error");
   });
 
   it("returns the default fallback for non-Error values", () => {
@@ -157,5 +151,11 @@ describe("withRetry", () => {
     const fn = vi.fn().mockRejectedValue(new Error("fail"));
     await expect(withRetry(fn, { ...opts, onError })).rejects.toThrow("fail");
     expect(onError).toHaveBeenCalledTimes(3);
+  });
+
+  it("handles zero retries", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error("no retry"));
+    await expect(withRetry(fn, { retries: 0, baseDelay: 0 })).rejects.toThrow("no retry");
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });
