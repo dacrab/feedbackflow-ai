@@ -1,24 +1,18 @@
 # FeedbackFlow AI
 
-Turn GitHub issues into an actionable feedback inbox. Connect a repo, and AI automatically tags each issue with sentiment, severity, and topics.
+Turn GitHub issues into a feedback inbox that reads itself. Connect a repo and every issue gets tagged with sentiment, severity, and topics — so you can focus on what matters.
 
-## Features
+## What you can do
 
-- **Inbox** — all your GitHub issues in one place, filtered by sentiment, topic, severity, or triage status
-- **AI analysis** — sentiment score, severity rating, topic tags, and one-line summary per issue
-- **Dashboard** — sentiment trends, topic breakdown, and severity distribution over time
-- **Slack alerts** — notified when high-severity feedback lands
-- **Triage** — mark issues as New → Acknowledged → Actioned
+- **One inbox** — every GitHub issue in one place, filtered by sentiment, topic, severity, or status
+- **AI tagging** — each issue gets a sentiment score, severity rating, topics, and a one-line summary
+- **Trend dashboard** — see sentiment over time, hot topics, and severity at a glance
+- **Slack alerts** — get pinged when high-severity feedback lands
+- **Simple triage** — New → Acknowledged → Actioned
 
-## Getting started
+## Try it locally
 
-### Prerequisites
-
-- [Bun](https://bun.sh)
-- [Neon](https://neon.tech) Postgres (free tier works)
-- LLM API key — [OpenRouter](https://openrouter.ai/keys) (free, no credit card)
-
-### Setup
+You'll need [Bun](https://bun.sh) and a [Neon](https://neon.tech) Postgres database (free tier is fine).
 
 ```bash
 git clone https://github.com/dacrab/feedbackflow-ai
@@ -26,37 +20,29 @@ cd feedbackflow-ai
 bun install
 ```
 
-Copy `.env.example` to `.env.local`:
+Copy `.env.example` to `.env.local` and fill in the values. You'll need:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | Neon Postgres connection string |
-| `NEXT_PUBLIC_APP_URL` | Yes | App base URL (e.g. `http://localhost:3000`) |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
-| `CLERK_SECRET_KEY` | Yes | Clerk secret key |
-| `CLERK_WEBHOOK_SECRET` | No | Clerk webhook signing secret |
-| `ENCRYPTION_KEY` | Yes | `openssl rand -base64 32` |
-| `OPENROUTER_API_KEY` | No | Recommended free LLM |
-| `OPENAI_API_KEY` | No | OpenAI alternative |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | No | Gemini alternative |
-| `SLACK_WEBHOOK_URL` | No | Slack notifications |
+- Your Postgres connection string
+- Clerk keys (free at clerk.com — create an app to get them)
+- An `ENCRYPTION_KEY` (generate with `openssl rand -hex 32`)
+
+Everything else is optional. LLM keys and Slack webhooks are set up later, right in the app.
 
 ```bash
 bun db:migrate
-bun db:seed       # optional
-bun dev           # http://localhost:3000
+bun dev
 ```
 
-### Deploy to Vercel
+Open http://localhost:3000.
 
-1. Import repo in [Vercel](https://vercel.com)
-2. Add all environment variables
-3. Add a Cron Job pointing to `/api/cron`
+## Deploy
 
-## Tech
+Host it on [Vercel](https://vercel.com):
 
-Bun · Neon Postgres · Drizzle ORM · Clerk · Vercel AI SDK · Tailwind CSS v4 · Recharts
+1. Import the repo
+2. Add the same environment variables
+3. Cron jobs are already configured — nothing else to do
 
-## Contributing
+## Built with
 
-PRs and issues welcome. Include screenshots where relevant.
+Bun · Next.js · Neon Postgres · Drizzle · Clerk · Vercel AI SDK · Tailwind CSS
