@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { z } from "zod";
-import { Input, Select } from "@/components/ui/ui";
-import { getServerSession } from "@/lib/api";
+import { Button, ButtonLink, Input, PageHeader, Select } from "@/components/ui/ui";
+import { getSessionUserId } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
 import { FEEDBACK_STATUS_OPTIONS, SENTIMENT_OPTIONS } from "@/lib/types";
@@ -11,8 +10,8 @@ const DEFAULT_PAGE_SIZE = 20;
 const SORT_OPTIONS = ["created_desc", "severity_desc", "severity_asc"] as const;
 
 const SearchParamsSchema = z.object({
-  sentiment: z.enum(["positive", "neutral", "negative"]).optional(),
-  status: z.enum(["New", "Acknowledged", "Actioned"]).optional(),
+  sentiment: z.enum(SENTIMENT_OPTIONS).optional(),
+  status: z.enum(FEEDBACK_STATUS_OPTIONS).optional(),
   topic: z.string().max(100).optional(),
   q: z.string().max(200).optional(),
   severity_min: z.coerce.number().int().min(1).max(5).optional(),
@@ -27,8 +26,7 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
-  const session = await getServerSession();
-  const userId = session?.user?.id;
+  const userId = await getSessionUserId();
   if (!userId) return null;
 
   const spObj = await searchParams;
@@ -79,10 +77,7 @@ export default async function InboxPage({
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-end justify-between shrink-0">
-        <div>
-          <p className="text-xs text-muted-foreground">// feedback items</p>
-          <h1 className="text-xl font-medium">inbox</h1>
-        </div>
+        <PageHeader eyebrow="feedback items" title="inbox" />
         <p className="text-sm text-muted-foreground">
           {totalCount} {hasFilters ? "filtered" : "total"}
         </p>
@@ -119,19 +114,13 @@ export default async function InboxPage({
           <option value="severity_desc">severity ↓</option>
           <option value="severity_asc">severity ↑</option>
         </Select>
-        <button
-          type="submit"
-          className="h-8 px-3 rounded border border-border text-xs hover:bg-muted transition-colors"
-        >
+        <Button size="sm" variant="outline" type="submit" className="text-xs">
           apply
-        </button>
+        </Button>
         {hasFilters && (
-          <Link
-            href="/inbox"
-            className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors inline-flex items-center animate-fade-in"
-          >
+          <ButtonLink href="/inbox" size="sm" variant="ghost" className="text-xs animate-fade-in">
             clear
-          </Link>
+          </ButtonLink>
         )}
       </form>
 
@@ -146,18 +135,22 @@ export default async function InboxPage({
           </span>
           <div className="flex gap-1">
             {page > 1 ? (
-              <Link href={pageUrl(page - 1)} className="page-btn">
+              <ButtonLink size="xs" href={pageUrl(page - 1)}>
                 ← prev
-              </Link>
+              </ButtonLink>
             ) : (
-              <span className="page-btn page-btn-disabled">← prev</span>
+              <Button size="xs" disabled>
+                ← prev
+              </Button>
             )}
             {page < totalPages ? (
-              <Link href={pageUrl(page + 1)} className="page-btn">
+              <ButtonLink size="xs" href={pageUrl(page + 1)}>
                 next →
-              </Link>
+              </ButtonLink>
             ) : (
-              <span className="page-btn page-btn-disabled">next →</span>
+              <Button size="xs" disabled>
+                next →
+              </Button>
             )}
           </div>
         </div>

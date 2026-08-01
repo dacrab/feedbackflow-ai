@@ -8,9 +8,10 @@ import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
 import { encrypt } from "@/lib/crypto";
+import { LLMProviderSchema } from "@/lib/llm-providers";
 import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
-import type { FeedbackStatus, LLMProvider } from "@/lib/types";
+import { FEEDBACK_STATUS_OPTIONS, type FeedbackStatus, type LLMProvider } from "@/lib/types";
 
 async function uid() {
   const s = await getServerSession();
@@ -34,14 +35,13 @@ const uuidSchema = z.string().uuid();
 const repoSchema = z
   .string()
   .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
-const providerSchema = z.enum(["google", "openai", "anthropic", "openrouter"]);
 const modelSchema = z.string().min(1).max(100);
 const apiKeySchema = z.string().min(8).max(512);
 const webhookSchema = z
   .string()
   .url("must be a valid URL")
   .startsWith("https://", "must start with https://");
-const statusSchema = z.enum(["New", "Acknowledged", "Actioned"]);
+const statusSchema = z.enum(FEEDBACK_STATUS_OPTIONS);
 
 export async function addSource(repo: string, token?: string) {
   parse(repoSchema, repo);
@@ -110,7 +110,7 @@ export async function deleteNotification(id: string) {
 }
 
 export async function saveSettings(provider: LLMProvider, model: string, apiKey: string) {
-  parse(providerSchema, provider);
+  parse(LLMProviderSchema, provider);
   parse(modelSchema, model);
   parse(apiKeySchema, apiKey);
   const userId = await uid();

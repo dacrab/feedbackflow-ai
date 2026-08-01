@@ -36,6 +36,10 @@ export async function requireAuth(): Promise<string> {
   return session.user.id;
 }
 
+export async function getSessionUserId(): Promise<string | null> {
+  return (await getServerSession())?.user?.id ?? null;
+}
+
 function isValidCronRequest(req: Request): boolean {
   const cronSecret = process.env["CRON_SECRET"];
   const authHeader = req.headers.get("authorization");
@@ -77,24 +81,6 @@ export async function rateLimitMiddleware(
       { status: 429, headers: { "Retry-After": "60" } },
     );
   return undefined;
-}
-
-export function apiErrorHandler(context: string) {
-  return (e: unknown) => {
-    const detail =
-      process.env["NODE_ENV"] === "development"
-        ? e instanceof Error
-          ? e.message
-          : "unknown"
-        : undefined;
-    return NextResponse.json(
-      {
-        error: `${context} failed`,
-        ...(detail && { detail }),
-      },
-      { status: 500 },
-    );
-  };
 }
 
 function clientIp(req: Request): string {

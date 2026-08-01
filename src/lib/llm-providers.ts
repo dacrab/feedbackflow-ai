@@ -58,7 +58,3 @@ export const LLM_PROVIDERS: LLMProviderMeta[] = [
     keyUrl: "https://console.anthropic.com/settings/keys",
   },
 ];
-
-export const DEFAULT_MODELS = Object.fromEntries(
-  LLM_PROVIDERS.map((p) => [p.id, p.defaultModel]),
-) as Record<LLMProvider, string>;

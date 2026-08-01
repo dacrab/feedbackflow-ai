@@ -119,30 +119,29 @@ export function SystemHealthCard({
     }
   }
 
+  const runStatus = lastRun ? statusInfo(lastRun.ok) : null;
+
   return (
     <div className="relative">
       <Card title="system" className={className ?? ""}>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded border border-border bg-muted/20 px-3 py-2">
-            <p className="text-xs text-muted-foreground">sources</p>
-            <p className="text-lg font-medium leading-tight">
-              {enabledSources}
-              <span className="text-sm text-muted-foreground">/{totalSources}</span>
-            </p>
-          </div>
-          <div className="rounded border border-border bg-muted/20 px-3 py-2">
-            <p className="text-xs text-muted-foreground">webhooks</p>
-            <p className="text-lg font-medium leading-tight">{enabledHooks}</p>
-          </div>
+          <StatTile
+            label="sources"
+            value={
+              <>
+                {enabledSources}
+                <span className="text-sm text-muted-foreground">/{totalSources}</span>
+              </>
+            }
+          />
+          <StatTile label="webhooks" value={enabledHooks} />
         </div>
 
         {lastRun ? (
           <div className="rounded border border-border bg-muted/20 px-3 py-2 space-y-1.5">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">last run</p>
-              <span className={`text-xs ${statusInfo(lastRun.ok).cls}`}>
-                {statusInfo(lastRun.ok).prefix}
-              </span>
+              <span className={`text-xs ${runStatus?.cls}`}>{runStatus?.prefix}</span>
             </div>
             <p className="text-xs text-muted-foreground">{timeAgo(lastRun.startedAt)}</p>
             <div className="flex gap-3 text-xs">
@@ -186,17 +185,29 @@ export function SystemHealthCard({
           ref={logRef}
           className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 space-y-0.5 shadow-lg animate-slide-down"
         >
-          {logs.map((l) => (
-            <p key={l.id} className={`text-xs font-mono ${statusInfo(l.ok).cls}`}>
-              {statusInfo(l.ok).log}
-              {l.msg}
-            </p>
-          ))}
+          {logs.map((l) => {
+            const { cls, log } = statusInfo(l.ok);
+            return (
+              <p key={l.id} className={`text-xs font-mono ${cls}`}>
+                {log}
+                {l.msg}
+              </p>
+            );
+          })}
           {syncing && (
             <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded border border-border bg-muted/20 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-lg font-medium leading-tight">{value}</p>
     </div>
   );
 }

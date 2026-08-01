@@ -7,6 +7,7 @@ import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
 import { useAction } from "@/lib/use-action";
 import { timeAgo } from "@/lib/utils";
+import { EmptyState, EnabledStatus, ListItem, RowActions } from "./list-item";
 
 type SourceRow = {
   id: string;
@@ -30,16 +31,12 @@ function SourceItem({ source }: { source: SourceRow }) {
   }
 
   return (
-    <div className="rounded border border-border bg-muted/20 px-3 py-2.5 space-y-2">
+    <ListItem>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{source.config.repo}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span
-              className={`text-xs ${source.enabled ? "text-green-500" : "text-muted-foreground"}`}
-            >
-              {source.enabled ? "● enabled" : "○ disabled"}
-            </span>
+            <EnabledStatus enabled={source.enabled} />
             <span className="text-xs text-muted-foreground">github</span>
             {source.lastChecked && (
               <span className="text-xs text-muted-foreground">
@@ -48,31 +45,19 @@ function SourceItem({ source }: { source: SourceRow }) {
             )}
           </div>
         </div>
-        <div className="flex gap-1.5 shrink-0">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              run(
-                () => updateSource(source.id, { enabled: !source.enabled }),
-                source.enabled ? "disabled" : "enabled",
-              )
-            }
-            className="h-7 px-2 rounded border border-border text-xs hover:bg-muted transition-colors disabled:opacity-50"
-          >
-            {source.enabled ? "disable" : "enable"}
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onDelete}
-            className="h-7 px-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-          >
-            delete
-          </button>
-        </div>
+        <RowActions
+          enabled={source.enabled}
+          pending={pending}
+          onToggle={() =>
+            run(
+              () => updateSource(source.id, { enabled: !source.enabled }),
+              source.enabled ? "disabled" : "enabled",
+            )
+          }
+          onDelete={onDelete}
+        />
       </div>
-    </div>
+    </ListItem>
   );
 }
 
@@ -135,12 +120,10 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
       </form>
       <div className="space-y-2 border-t border-border pt-3">
         {sources.length === 0 ? (
-          <div className="text-center py-6 space-y-1">
-            <p className="text-sm text-muted-foreground">no sources configured</p>
-            <p className="text-xs text-muted-foreground">
-              add a github repo above to start ingesting feedback
-            </p>
-          </div>
+          <EmptyState
+            title="no sources configured"
+            hint="add a github repo above to start ingesting feedback"
+          />
         ) : (
           sources.map((s) => <SourceItem key={s.id} source={s} />)
         )}

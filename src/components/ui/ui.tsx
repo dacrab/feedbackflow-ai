@@ -1,6 +1,6 @@
 import { IconChevronDown } from "@tabler/icons-react";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
-import { sentimentColor } from "@/lib/utils";
+import { cn, sentimentColor } from "@/lib/utils";
 
 const statusColor: Record<FeedbackStatus, string> = {
   New: "text-muted-foreground",
@@ -48,6 +48,15 @@ export function StatusBadge({ status }: { status?: FeedbackStatus | null | undef
   return <span className={`text-xs ${statusColor[status]}`}>[{status.toLowerCase()}]</span>;
 }
 
+export function PageHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">// {eyebrow}</p>
+      <h1 className="text-xl font-medium">{title}</h1>
+    </div>
+  );
+}
+
 export function Card({
   title,
   children,
@@ -58,7 +67,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded border border-border bg-card p-4 space-y-4 ${className ?? ""}`}>
+    <div className={cn("rounded border border-border bg-card p-4 space-y-4", className)}>
       <p className="text-xs text-muted-foreground">// {title}</p>
       {children}
     </div>
@@ -73,7 +82,11 @@ export function Input({
   const size = variant === "sm" ? "h-8 px-2" : "h-10 px-3";
   return (
     <input
-      className={`w-full rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors ${size} ${className}`}
+      className={cn(
+        "w-full rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors",
+        size,
+        className,
+      )}
       {...props}
     />
   );
@@ -82,8 +95,9 @@ export function Input({
 const btnVariant = {
   primary: "bg-foreground text-background hover:bg-foreground/90",
   outline: "border border-border hover:bg-muted",
+  ghost: "text-muted-foreground hover:text-foreground hover:bg-muted",
 };
-const btnSize = { default: "h-10 px-4", sm: "h-8 px-3" };
+const btnSize = { default: "h-10 px-4", sm: "h-8 px-3", xs: "h-7 px-2 text-xs" };
 
 export function Button({
   className = "",
@@ -95,14 +109,19 @@ export function Button({
   disabled,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "outline";
-  size?: "default" | "sm";
+  variant?: "primary" | "outline" | "ghost";
+  size?: "default" | "sm" | "xs";
   isLoading?: boolean;
   loadingText?: string;
 }) {
   return (
     <button
-      className={`rounded text-sm transition-colors disabled:opacity-50 ${btnVariant[variant]} ${btnSize[size]} ${className}`}
+      className={cn(
+        "rounded text-sm transition-colors disabled:opacity-50",
+        btnVariant[variant],
+        btnSize[size],
+        className,
+      )}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
       {...props}
@@ -114,6 +133,31 @@ export function Button({
 
 const selectSize = { default: "h-10 px-3", sm: "h-8 px-2", xs: "h-7 px-2 text-xs" };
 
+export function ButtonLink({
+  className = "",
+  variant = "outline",
+  size = "default",
+  children,
+  ...props
+}: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+  variant?: "primary" | "outline" | "ghost";
+  size?: "default" | "sm" | "xs";
+}) {
+  return (
+    <a
+      className={cn(
+        "rounded text-sm transition-colors inline-flex items-center",
+        btnVariant[variant],
+        btnSize[size],
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+}
+
 export function Select({
   className = "",
   size = "default",
@@ -123,9 +167,12 @@ export function Select({
   size?: "default" | "sm" | "xs";
 }) {
   return (
-    <div className={`relative inline-flex items-center ${className}`}>
+    <div className={cn("relative inline-flex items-center", className)}>
       <select
-        className={`w-full appearance-none rounded border border-border bg-card text-foreground text-sm outline-none focus:border-foreground transition-colors pr-7 disabled:opacity-50 ${selectSize[size]}`}
+        className={cn(
+          "w-full appearance-none rounded border border-border bg-card text-foreground text-sm outline-none focus:border-foreground transition-colors pr-7 disabled:opacity-50",
+          selectSize[size],
+        )}
         {...props}
       >
         {children}

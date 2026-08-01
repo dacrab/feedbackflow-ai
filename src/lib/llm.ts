@@ -9,10 +9,11 @@ import {
   LLM_MAX_RETRIES,
   LLM_MAX_TOPICS,
   LLM_RETRY_BASE_DELAY_MS,
-  MAX_LLM_INPUT_LENGTH,
+  MAX_RAW_CONTENT_LENGTH,
 } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
 import type { LLMProvider } from "@/lib/types";
+import { withRetry } from "@/lib/utils";
 
 const AnalysisSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
@@ -43,7 +44,7 @@ function normalize(text: string): string {
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, MAX_LLM_INPUT_LENGTH);
+    .slice(0, MAX_RAW_CONTENT_LENGTH);
 }
 
 export async function analyzeFeedback(
@@ -61,11 +62,10 @@ export async function analyzeFeedback(
   if (!success) throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
 
   const model = getModel(opts);
-  let lastErr: unknown;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    if (signal?.aborted) throw new Error("aborted");
-    try {
+  return withRetry(
+    async () => {
+      if (signal?.aborted) throw new Error("aborted");
       const { output } = await generateText({
         model,
         system: SYSTEM_PROMPT,
@@ -74,13 +74,11 @@ export async function analyzeFeedback(
         ...(signal ? { abortSignal: signal } : {}),
       });
       return output;
-    } catch (err) {
-      lastErr = err;
-      const msg = String(err);
-      if (/rate.?limit|per.?day|quota/i.test(msg)) break;
-      if (attempt < retries)
-        await new Promise((r) => setTimeout(r, LLM_RETRY_BASE_DELAY_MS * (attempt + 1)));
-    }
-  }
-  throw lastErr;
+    },
+    {
+      retries,
+      baseDelay: LLM_RETRY_BASE_DELAY_MS,
+      abortOn: /rate.?limit|per.?day|quota|abort/i,
+    },
+  );
 }

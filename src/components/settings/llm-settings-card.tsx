@@ -7,6 +7,10 @@ import { LLM_PROVIDERS } from "@/lib/llm-providers";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
 
+function defaultModelFor(id: LLMProvider): string {
+  return LLM_PROVIDERS.find((p) => p.id === id)?.defaultModel ?? "";
+}
+
 export function LLMSettingsCard({
   initialProvider,
   initialModel,
@@ -20,9 +24,7 @@ export function LLMSettingsCard({
 }) {
   const configured = !!(initialProvider && initialModel);
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "openrouter");
-  const [model, setModel] = useState<string>(
-    initialModel ?? LLM_PROVIDERS[0]?.models[0] ?? "openrouter/auto",
-  );
+  const [model, setModel] = useState<string>(initialModel ?? defaultModelFor("openrouter"));
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
   const { run, pending } = useAction();
@@ -43,7 +45,7 @@ export function LLMSettingsCard({
   function handleProviderChange(p: string) {
     if (!isLLMProvider(p)) return;
     setProvider(p);
-    setModel(LLM_PROVIDERS.find((x) => x.id === p)?.models[0] ?? "openrouter/auto");
+    setModel(defaultModelFor(p));
     if (configured) setEditingKey(true);
   }
 
@@ -149,8 +151,9 @@ export function LLMSettingsCard({
             </Button>
           )}
           {configured && (
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="ghost"
               disabled={pending}
               onClick={() =>
                 run(async () => {
@@ -159,10 +162,9 @@ export function LLMSettingsCard({
                   setApiKey("");
                 }, "removed")
               }
-              className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >
               remove
-            </button>
+            </Button>
           )}
         </div>
       </div>

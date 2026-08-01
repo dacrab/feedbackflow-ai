@@ -1,5 +1,4 @@
-export const MAX_RAW_CONTENT_LENGTH = 8000; // no point storing more
-export const MAX_LLM_INPUT_LENGTH = MAX_RAW_CONTENT_LENGTH;
+export const MAX_RAW_CONTENT_LENGTH = 8000; // cap stored content and LLM input
 
 export const DEFAULT_FEEDBACK_LIMIT = 100;
 

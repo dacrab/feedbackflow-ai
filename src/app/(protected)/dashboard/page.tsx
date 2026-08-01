@@ -1,7 +1,7 @@
 import "server-only";
 
-import { MetricCard } from "@/components/ui/ui";
-import { getServerSession } from "@/lib/api";
+import { MetricCard, PageHeader } from "@/components/ui/ui";
+import { getSessionUserId } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getDashboard } from "@/lib/services/dashboard-service";
 import {
@@ -30,8 +30,7 @@ function ChartCard({
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession();
-  const userId = session?.user?.id;
+  const userId = await getSessionUserId();
   if (!userId) return null;
   const m = await getDashboard(userId);
 
@@ -51,10 +50,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-xs text-muted-foreground">// overview</p>
-        <h1 className="text-xl font-medium">dashboard</h1>
-      </div>
+      <PageHeader eyebrow="overview" title="dashboard" />
 
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         <MetricCard label="total" value={m.total} delta={m.trendDelta} />
