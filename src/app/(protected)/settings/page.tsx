@@ -3,6 +3,7 @@ import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
 import { SystemHealthCard } from "@/components/settings/system-health-card";
+import { PageHeader } from "@/components/ui/ui";
 import { db } from "@/db/client";
 import { ingestRuns, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
@@ -72,10 +73,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground">// configuration</p>
-          <h1 className="text-xl font-medium">settings</h1>
-        </div>
+        <PageHeader eyebrow="configuration" title="settings" />
         {user && (
           <div className="text-right">
             <p className="text-sm font-medium">{user.name ?? user.email}</p>

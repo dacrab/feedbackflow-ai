@@ -16,6 +16,7 @@ import {
 } from "recharts";
 
 const axisTick = { fontSize: 12 };
+const axisProps = { tick: axisTick, tickLine: false, axisLine: false };
 
 const TOOLTIP_CONTENT_STYLE = {
   background: "hsl(var(--background))",
@@ -24,9 +25,17 @@ const TOOLTIP_CONTENT_STYLE = {
   fontSize: "13px",
 };
 
-export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
+function ChartFrame({ children }: { children: React.ReactNode }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
+      {children}
+    </ResponsiveContainer>
+  );
+}
+
+export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
+  return (
+    <ChartFrame>
       <AreaChart data={data}>
         <defs>
           <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
@@ -34,8 +43,8 @@ export function TrendChart({ data }: { data: { name: string; value: number }[] }
             <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <XAxis dataKey="name" tick={axisTick} tickLine={false} axisLine={false} />
-        <YAxis tick={axisTick} tickLine={false} axisLine={false} width={30} />
+        <XAxis dataKey="name" {...axisProps} />
+        <YAxis {...axisProps} width={30} />
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Area
           type="monotone"
@@ -45,7 +54,7 @@ export function TrendChart({ data }: { data: { name: string; value: number }[] }
           fill="url(#tg)"
         />
       </AreaChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
 
@@ -55,7 +64,7 @@ export function SentimentChart({
   data: { name: string; value: number; color: string }[];
 }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ChartFrame>
       <PieChart>
         <Pie
           data={data}
@@ -72,40 +81,33 @@ export function SentimentChart({
         </Pie>
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
       </PieChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
 
 export function TopicsChart({ data }: { data: { topic: string; value: number }[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ChartFrame>
       <BarChart data={data} layout="vertical" margin={{ left: 0 }}>
-        <XAxis type="number" tick={axisTick} tickLine={false} axisLine={false} />
-        <YAxis
-          type="category"
-          dataKey="topic"
-          tick={axisTick}
-          tickLine={false}
-          axisLine={false}
-          width={100}
-        />
+        <XAxis type="number" {...axisProps} />
+        <YAxis type="category" dataKey="topic" {...axisProps} width={100} />
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Bar dataKey="value" fill="var(--color-chart-2)" radius={[0, 4, 4, 0]} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
 
 export function SeverityChart({ data }: { data: { name: string; value: number }[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ChartFrame>
       <BarChart data={data}>
-        <XAxis dataKey="name" tick={axisTick} tickLine={false} axisLine={false} />
-        <YAxis tick={axisTick} tickLine={false} axisLine={false} width={30} />
+        <XAxis dataKey="name" {...axisProps} />
+        <YAxis {...axisProps} width={30} />
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Bar dataKey="value" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
 

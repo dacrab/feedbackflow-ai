@@ -194,7 +194,7 @@ export async function runIngest(
           .insert(feedbackItems)
           .values(rows)
           .onConflictDoNothing()
-          .returning({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+          .returning({ id: feedbackItems.id })
       : [];
 
     const [run] = await db
@@ -202,33 +202,30 @@ export async function runIngest(
       .values({ userId: src.userId, fetched: issues.length })
       .returning({ id: ingestRuns.id });
 
-    const insertedIds = new Set(inserted.map((i) => i.id));
     const fetchedExternalIds = rows.map((r) => r.externalId);
 
-    let unanalyzed: { id: string; rawContent: string }[] = [];
-    if (fetchedExternalIds.length > 0) {
-      unanalyzed = await db
-        .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
-        .from(feedbackItems)
-        .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
-        .where(
-          and(
-            eq(feedbackItems.userId, src.userId),
-            eq(feedbackItems.source, "github"),
-            inArray(feedbackItems.externalId, fetchedExternalIds),
-            isNull(feedbackAnalyses.id),
-          ),
-        );
-    }
+    const unanalyzed =
+      fetchedExternalIds.length > 0
+        ? await db
+            .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+            .from(feedbackItems)
+            .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
+            .where(
+              and(
+                eq(feedbackItems.userId, src.userId),
+                eq(feedbackItems.source, "github"),
+                inArray(feedbackItems.externalId, fetchedExternalIds),
+                isNull(feedbackAnalyses.id),
+              ),
+            )
+        : [];
 
-    const toAnalyze = [...inserted, ...unanalyzed.filter((u) => !insertedIds.has(u.id))];
-
-    if (toAnalyze.length > 0) {
-      onProgress?.({ stage: "analyzing", message: `analyzing ${toAnalyze.length} items...` });
+    if (unanalyzed.length > 0) {
+      onProgress?.({ stage: "analyzing", message: `analyzing ${unanalyzed.length} items...` });
     }
 
     const { count: analyzed, hasError } = await analyzeAndStore(
-      toAnalyze,
+      unanalyzed,
       src.userId,
       llmOpts,
       onProgress,
@@ -242,7 +239,6 @@ export async function runIngest(
         .update(ingestRuns)
         .set({
           ok: !hasError,
-          ...(hasError && { error: "LLM API error - partial analysis" }),
           finishedAt: new Date(),
           inserted: inserted.length,
           analyzed,

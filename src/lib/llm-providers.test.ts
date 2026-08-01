@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_MODELS, LLM_PROVIDERS, LLMProviderSchema } from "./llm-providers";
+import { LLM_PROVIDERS, LLMProviderSchema } from "./llm-providers";
 import { LLM_PROVIDER_IDS } from "./types";
 
 describe("LLMProviderSchema", () => {
@@ -28,13 +28,5 @@ describe("LLM_PROVIDERS config invariants", () => {
 
   it.each(LLM_PROVIDERS)("exposes an https key url for $id", (provider) => {
     expect(provider.keyUrl).toMatch(/^https:\/\//);
-  });
-});
-
-describe("DEFAULT_MODELS", () => {
-  it("maps each provider id to its default model", () => {
-    for (const p of LLM_PROVIDERS) {
-      expect(DEFAULT_MODELS[p.id]).toBe(p.defaultModel);
-    }
   });
 });

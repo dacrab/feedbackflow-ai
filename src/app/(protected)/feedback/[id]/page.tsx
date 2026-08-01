@@ -2,7 +2,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, SentimentBadge } from "@/components/ui/ui";
-import { getServerSession } from "@/lib/api";
+import { getSessionUserId } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
 import { formatDateUTC, sevColor } from "@/lib/utils";
@@ -15,8 +15,7 @@ function TopicTag({ topic }: { topic: string }) {
 }
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession();
-  const userId = session?.user?.id;
+  const userId = await getSessionUserId();
   const { id } = await params;
   if (!userId) notFound();
   const item = await getFeedbackItem(userId, id).catch(() => null);

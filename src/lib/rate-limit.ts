@@ -20,6 +20,7 @@ export async function rateLimit(
     return { success: false };
   }
   timestamps.push(now);
-  store.set(identifier, timestamps);
+  if (timestamps.length) store.set(identifier, timestamps);
+  else store.delete(identifier);
   return { success: true };
 }

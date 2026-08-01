@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { z } from "zod";
@@ -73,7 +73,7 @@ async function handle(req: Request) {
 
   if (eventType === "user.deleted") {
     const clerkId = data.id;
-    await db.delete(user).where(sql`${user.id} = ${clerkId}`);
+    await db.delete(user).where(eq(user.id, clerkId));
   }
 
   return NextResponse.json({ received: true });
