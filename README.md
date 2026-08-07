@@ -20,7 +20,7 @@ cd feedbackflow-ai
 bun install
 ```
 
-Copy `.env.example` to `.env.local` and fill in the values. You'll need:
+Copy `.env.example` to `.env` and fill in the values (or set up Doppler). You'll need:
 
 - Your Postgres connection string
 - Clerk keys (free at clerk.com — create an app to get them)

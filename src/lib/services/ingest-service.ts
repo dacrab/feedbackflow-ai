@@ -63,8 +63,8 @@ async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIs
       results.push(...issues);
       if (issues.length < GITHUB_PER_PAGE) break;
     } catch (e) {
-      if (page === 1) throw e;
-      break;
+      if (page === 1) throw e; // nothing fetched yet, so fail loudly
+      break; // keep partial results on later-page failures
     }
   }
   return results;

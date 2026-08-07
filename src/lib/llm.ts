@@ -31,6 +31,7 @@ type Analysis = z.infer<typeof AnalysisSchema>;
 function getModel({ provider, model, apiKey }: LLMOptions) {
   if (provider === "openai") return createOpenAI({ apiKey })(model);
   if (provider === "anthropic") return createAnthropic({ apiKey })(model);
+  // OpenRouter exposes an OpenAI-compatible API
   if (provider === "openrouter")
     return createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(model);
   return createGoogleGenerativeAI({ apiKey })(model);
