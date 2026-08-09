@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
-import { Button, Card, Input, Select } from "@/components/ui/ui";
+import { Button, Card, EmptyState, Input, Muted, Select, TextButton } from "@/components/ui/ui";
 import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
-import { useAction } from "@/lib/use-action";
-import { EmptyState, EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
+import { confirmDelete, useAction } from "@/lib/use-action";
+import { EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
 
 type NotificationRow = {
   id: string;
@@ -29,12 +28,9 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
   }
 
   function onDelete() {
-    toast("delete this webhook?", {
-      action: {
-        label: "delete",
-        onClick: () => run(() => deleteNotification(hook.id), "webhook deleted"),
-      },
-    });
+    confirmDelete("delete this webhook?", () =>
+      run(() => deleteNotification(hook.id), "webhook deleted"),
+    );
   }
 
   return (
@@ -58,7 +54,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">alert on severity ≥</span>
+        <Muted>alert on severity ≥</Muted>
         {editingSeverity ? (
           <div className="flex items-center gap-2 animate-slide-down">
             <Select
@@ -73,34 +69,26 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
                 </option>
               ))}
             </Select>
-            <button
-              type="button"
+            <TextButton
+              className="text-green-500 hover:text-green-400"
               disabled={pending}
               onClick={() => {
                 run(() => updateNotification(hook.id, { minSeverity }), "updated");
                 setEditingSeverity(false);
               }}
-              className="text-xs text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
             >
               save
-            </button>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              cancel
-            </button>
+            </TextButton>
+            <TextButton onClick={cancelEdit}>cancel</TextButton>
           </div>
         ) : (
-          <button
-            type="button"
+          <TextButton
+            className="font-medium text-foreground hover:text-muted-foreground"
             onClick={() => setEditingSeverity(true)}
-            className="text-xs font-medium hover:text-muted-foreground transition-colors"
           >
             {hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD}
-            <span className="text-muted-foreground ml-1">edit</span>
-          </button>
+            <Muted className="ml-1">edit</Muted>
+          </TextButton>
         )}
       </div>
     </ListItem>
@@ -129,7 +117,7 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
           onChange={(e) => setSlackUrl(e.target.value)}
           type="url"
         />
-        <p className="text-xs text-muted-foreground">
+        <Muted>
           alerts sent when feedback severity meets the threshold.{" "}
           <a
             href="https://api.slack.com/messaging/webhooks"
@@ -139,7 +127,7 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
           >
             get webhook ↗
           </a>
-        </p>
+        </Muted>
         <Button
           type="submit"
           size="sm"

@@ -4,7 +4,12 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { "@": resolve(__dirname, "src") } },
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "src"),
+      "server-only": resolve(__dirname, "vitest.server-only.ts"),
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],

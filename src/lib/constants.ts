@@ -16,3 +16,17 @@ export const GITHUB_RETRY_BASE_DELAY_MS = 400;
 export const GITHUB_MAX_RETRIES = 3;
 
 export const MAX_SEARCH_TERM_LENGTH = 200;
+
+export const DIGEST_WINDOW_HOURS = 24;
+
+export const SLACK_TIMEOUT_MS = 10_000;
+
+export const DASHBOARD_TOP_TOPICS = 10;
+
+export const RATE_LIMITS = {
+  action: { maxRequests: 20, windowMs: 60_000 },
+  llm: { maxRequests: 15, windowMs: 60_000 },
+  sync: { maxRequests: 5, windowMs: 60_000 },
+  cron: { maxRequests: 10, windowMs: 60_000 },
+  webhook: { maxRequests: 20, windowMs: 60_000 },
+} as const;

@@ -3,10 +3,12 @@
 import * as Sentry from "@sentry/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
-import { getServerSession } from "@/lib/api";
+import { requireAuth } from "@/lib/api";
+import { RATE_LIMITS } from "@/lib/constants";
 import { encrypt } from "@/lib/crypto";
 import { LLMProviderSchema } from "@/lib/llm-providers";
 import { rateLimit } from "@/lib/rate-limit";
@@ -14,10 +16,8 @@ import { runIngest } from "@/lib/services/ingest-service";
 import { FEEDBACK_STATUS_OPTIONS, type FeedbackStatus, type LLMProvider } from "@/lib/types";
 
 async function uid() {
-  const s = await getServerSession();
-  if (!s?.user?.id) throw new Error("unauthorized");
-  const userId = s.user.id;
-  if (!(await rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 })))
+  const userId = await requireAuth();
+  if (!(await rateLimit(`actions:${userId}`, RATE_LIMITS.action)))
     throw new Error("Too many requests. Please try again later.");
   return userId;
 }
@@ -50,7 +50,9 @@ export async function addSource(repo: string, token?: string) {
     config: { repo },
     secretCipher: token ? encrypt(token) : null,
   });
-  runIngest(undefined, undefined, userId).catch((e) => Sentry.captureException(e));
+  after(() => {
+    runIngest(undefined, undefined, userId).catch((e) => Sentry.captureException(e));
+  });
   revalidatePath("/settings");
 }
 

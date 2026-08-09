@@ -1,7 +1,7 @@
 import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, SentimentBadge } from "@/components/ui/ui";
+import { Card, Muted, SentimentBadge } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
@@ -79,7 +79,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
         <div className="space-y-2">
           <Card title="analysis">
             {!a ? (
-              <p className="text-xs text-muted-foreground">no analysis yet</p>
+              <Muted>no analysis yet</Muted>
             ) : (
               <dl className="space-y-3">
                 <Detail label="sentiment">
@@ -120,7 +120,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
                   className="font-mono text-muted-foreground truncate max-w-[120px]"
                   title={item.id}
                 >
-                  {item.id.slice(0, 8)}…
+                  {item.id}
                 </dd>
               </div>
               <div className="flex justify-between">

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Button, ButtonLink, Input, PageHeader, Select } from "@/components/ui/ui";
+import { Button, ButtonLink, Input, Muted, PageHeader, Select } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
@@ -71,15 +71,22 @@ export default async function InboxPage({
     return `/inbox?${params.toString()}`;
   }
 
-  const hasFilters = !!(q || sentiment || status || topic);
+  const hasFilters = !!(
+    q ||
+    sentiment ||
+    status ||
+    topic ||
+    severityMin > 1 ||
+    severityMax < MAX_SEVERITY
+  );
 
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-end justify-between shrink-0">
         <PageHeader eyebrow="feedback items" title="inbox" />
-        <p className="text-sm text-muted-foreground">
+        <Muted className="text-sm">
           {totalCount} {hasFilters ? "filtered" : "total"}
-        </p>
+        </Muted>
       </div>
 
       <form className="grid gap-2 grid-cols-2 sm:flex sm:flex-wrap sm:items-center shrink-0">

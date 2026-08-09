@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import {
   Area,
   AreaChart,
@@ -19,8 +18,8 @@ const axisTick = { fontSize: 12 };
 const axisProps = { tick: axisTick, tickLine: false, axisLine: false };
 
 const TOOLTIP_CONTENT_STYLE = {
-  background: "hsl(var(--background))",
-  border: "1px solid hsl(var(--border))",
+  background: "var(--color-background)",
+  border: "1px solid var(--color-border)",
   borderRadius: "8px",
   fontSize: "13px",
 };
@@ -110,12 +109,3 @@ export function SeverityChart({ data }: { data: { name: string; value: number }[
     </ChartFrame>
   );
 }
-
-function noSSR<P>(Component: React.ComponentType<P>) {
-  return dynamic(() => Promise.resolve(Component), { ssr: false });
-}
-
-export const DynamicTrendChart = noSSR(TrendChart);
-export const DynamicSentimentChart = noSSR(SentimentChart);
-export const DynamicTopicsChart = noSSR(TopicsChart);
-export const DynamicSeverityChart = noSSR(SeverityChart);

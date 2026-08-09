@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Input, Panel, Select } from "@/components/ui/ui";
+import { Button, Card, Input, Muted, Panel, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { LLM_PROVIDERS } from "@/lib/llm-providers";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
@@ -53,7 +53,7 @@ export function LLMSettingsCard({
     <Card title="llm provider" className={className ?? ""}>
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="space-y-1.5" htmlFor="llm-provider">
-          <span className="text-xs text-muted-foreground">provider</span>
+          <Muted>provider</Muted>
           <Select
             id="llm-provider"
             className="w-full"
@@ -70,7 +70,7 @@ export function LLMSettingsCard({
         </label>
 
         <label className="space-y-1.5 sm:col-span-2" htmlFor="llm-model">
-          <span className="text-xs text-muted-foreground">model</span>
+          <Muted>model</Muted>
           <Select
             id="llm-model"
             className="w-full"
@@ -90,7 +90,7 @@ export function LLMSettingsCard({
       <div className="flex gap-3 items-end">
         <div className="flex-1 space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">api key</span>
+            <Muted>api key</Muted>
             <div className="flex items-center gap-2">
               {configured && hasKey && !editingKey && (
                 <span className="text-xs text-green-500">● key saved</span>
@@ -172,9 +172,9 @@ export function LLMSettingsCard({
       {configured && (
         <Panel className="flex items-center gap-2">
           <span className="text-xs text-green-500">●</span>
-          <span className="text-xs text-muted-foreground">
+          <Muted>
             {initialProvider} · {initialModel}
-          </span>
+          </Muted>
         </Panel>
       )}
     </Card>

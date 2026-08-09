@@ -2,17 +2,17 @@
 
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { SentimentBadge, StatusBadge } from "@/components/ui/ui";
+import { EmptyState, SentimentBadge, StatusBadge, statusChip } from "@/components/ui/ui";
 import { bulkUpdateStatus } from "@/lib/actions";
 import type { FeedbackItemWithAnalysis } from "@/lib/types";
-import { formatDateUTC, sevColor, sevLabel } from "@/lib/utils";
+import { cn, formatDateUTC, sevColor, sevLabel } from "@/lib/utils";
+
+const BULK_STATUSES: readonly ("Acknowledged" | "Actioned")[] = ["Acknowledged", "Actioned"];
 
 export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
 
   const allSelected = items.length > 0 && selected.size === items.length;
 
@@ -32,7 +32,6 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
     startTransition(async () => {
       await bulkUpdateStatus(Array.from(selected), status);
       setSelected(new Set());
-      router.refresh();
     });
   }
 
@@ -41,31 +40,26 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
       {selected.size > 0 && (
         <div className="flex items-center gap-3 p-2 rounded border border-border bg-muted text-sm animate-slide-down">
           <span>{selected.size} selected</span>
-          <button
-            type="button"
-            onClick={() => handleBulk("Acknowledged")}
-            disabled={isPending}
-            className="px-2 py-1 rounded bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
-          >
-            Mark Acknowledged
-          </button>
-          <button
-            type="button"
-            onClick={() => handleBulk("Actioned")}
-            disabled={isPending}
-            className="px-2 py-1 rounded bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-colors disabled:opacity-50"
-          >
-            Mark Actioned
-          </button>
+          {BULK_STATUSES.map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => handleBulk(status)}
+              disabled={isPending}
+              className={cn(
+                "px-2 py-1 rounded transition-colors disabled:opacity-50",
+                statusChip[status],
+              )}
+            >
+              Mark {status}
+            </button>
+          ))}
         </div>
       )}
 
       <div className="rounded border border-border bg-card divide-y divide-border">
         {items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            <p>no items found</p>
-            <p className="mt-1">add a data source in settings to get started</p>
-          </div>
+          <EmptyState title="no items found" hint="add a data source in settings to get started" />
         ) : (
           <>
             <div className="flex items-center gap-3 p-3 text-xs text-muted-foreground border-b border-border">
@@ -111,9 +105,7 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                       <StatusBadge status={analysis?.status} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      <span className="truncate max-w-[200px]">
-                        {item.raw_content.slice(0, 120)}
-                      </span>
+                      <span className="truncate max-w-[200px]">{item.raw_content}</span>
                       {analysis?.topics?.[0] && (
                         <>
                           <span>·</span>

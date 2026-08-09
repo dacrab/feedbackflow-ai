@@ -10,6 +10,7 @@ import {
   LLM_MAX_TOPICS,
   LLM_RETRY_BASE_DELAY_MS,
   MAX_RAW_CONTENT_LENGTH,
+  RATE_LIMITS,
 } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
 import type { LLMProvider } from "@/lib/types";
@@ -59,7 +60,7 @@ export async function analyzeFeedback(
     throw new Error("LLM not configured. Set your provider and API key in Settings.");
   const normalized = normalize(text);
   const key = userId ? `llm:${userId}:${opts.provider}` : `llm:${opts.provider}`;
-  if (!(await rateLimit(key, { maxRequests: 15, windowMs: 60_000 })))
+  if (!(await rateLimit(key, RATE_LIMITS.llm)))
     throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
 
   const model = getModel(opts);

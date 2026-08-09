@@ -3,7 +3,7 @@ import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
 import { SystemHealthCard } from "@/components/settings/system-health-card";
-import { PageHeader } from "@/components/ui/ui";
+import { Muted, PageHeader } from "@/components/ui/ui";
 import { db } from "@/db/client";
 import { ingestRuns, userNotifications, userSettings, userSources } from "@/db/schema";
 import { getServerSession } from "@/lib/api";
@@ -77,7 +77,7 @@ export default async function SettingsPage() {
         {user && (
           <div className="text-right">
             <p className="text-sm font-medium">{user.name ?? user.email}</p>
-            {user.name && <p className="text-xs text-muted-foreground">{user.email}</p>}
+            {user.name && <Muted>{user.email}</Muted>}
           </div>
         )}
       </div>

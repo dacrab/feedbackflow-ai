@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { rateLimitMiddleware, requireAuth } from "@/lib/api";
+import { RATE_LIMITS } from "@/lib/constants";
 import { runIngest } from "@/lib/services/ingest-service";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
   }
 
-  const rl = await rateLimitMiddleware(req, `sync:${userId}`, 5);
+  const rl = await rateLimitMiddleware(req, `sync:${userId}`, RATE_LIMITS.sync);
   if (rl) return rl;
 
   const enc = new TextEncoder();

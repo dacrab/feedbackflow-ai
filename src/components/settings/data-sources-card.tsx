@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
-import { Button, Card, Input } from "@/components/ui/ui";
+import { Button, Card, EmptyState, Input, Muted, TextButton } from "@/components/ui/ui";
 import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
-import { useAction } from "@/lib/use-action";
+import { confirmDelete, useAction } from "@/lib/use-action";
 import { timeAgo } from "@/lib/utils";
-import { EmptyState, EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
+import { EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
 
 type SourceRow = {
   id: string;
@@ -22,12 +21,9 @@ function SourceItem({ source }: { source: SourceRow }) {
   const { run, pending } = useAction();
 
   function onDelete() {
-    toast(`delete ${source.config.repo}?`, {
-      action: {
-        label: "delete",
-        onClick: () => run(() => deleteSource(source.id), "source deleted"),
-      },
-    });
+    confirmDelete(`delete ${source.config.repo}?`, () =>
+      run(() => deleteSource(source.id), "source deleted"),
+    );
   }
 
   return (
@@ -37,12 +33,8 @@ function SourceItem({ source }: { source: SourceRow }) {
           <p className="text-sm font-medium truncate">{source.config.repo}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <EnabledStatus enabled={source.enabled} />
-            <span className="text-xs text-muted-foreground">github</span>
-            {source.lastChecked && (
-              <span className="text-xs text-muted-foreground">
-                · checked {timeAgo(source.lastChecked)}
-              </span>
-            )}
+            <Muted>github</Muted>
+            {source.lastChecked && <Muted>· checked {timeAgo(source.lastChecked)}</Muted>}
           </div>
         </div>
         <RowActions
@@ -99,13 +91,7 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
             />
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setShowToken(true)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            + add github token (optional)
-          </button>
+          <TextButton onClick={() => setShowToken(true)}>+ add github token (optional)</TextButton>
         )}
         <Button
           type="submit"

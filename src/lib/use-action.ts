@@ -18,3 +18,12 @@ export function useAction() {
   };
   return { run, pending };
 }
+
+export function confirmDelete(message: string, action: () => void) {
+  toast(message, {
+    action: {
+      label: "delete",
+      onClick: action,
+    },
+  });
+}

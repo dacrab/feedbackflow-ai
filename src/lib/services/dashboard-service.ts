@@ -4,7 +4,8 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
-import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+import { DASHBOARD_TOP_TOPICS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+import { formatShortDate } from "@/lib/utils";
 
 const DASHBOARD_WINDOW_DAYS = 30;
 const DASHBOARD_WINDOW_MS = DASHBOARD_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -120,7 +121,7 @@ export const getDashboard = cache(async (userId: string): Promise<DashboardData>
           AND fi.created_at >= ${since}
         GROUP BY t.topic
         ORDER BY cnt DESC
-        LIMIT 10
+        LIMIT ${DASHBOARD_TOP_TOPICS}
       `),
   ]);
 
@@ -151,7 +152,7 @@ export const getDashboard = cache(async (userId: string): Promise<DashboardData>
     positiveShare,
     highSeverity,
     avgSeverity,
-    trendLabels: trendData.map((r) => r.day),
+    trendLabels: trendData.map((r) => formatShortDate(r.day)),
     trendValues: trendData.map((r) => r.cnt),
     trendDelta: Number(lastTrend?.delta ?? 0),
     topTopics,
