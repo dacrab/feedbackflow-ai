@@ -41,17 +41,25 @@ export const formatDateUTC = (iso: string) =>
     minute: "2-digit",
   });
 
-const HOUR_MS = 3_600_000;
+export const formatShortDate = (isoDate: string) => {
+  const parts = isoDate.split("-");
+  return `${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
+};
+
+const MINUTE_SEC = 60;
+const HOUR_SEC = 60 * MINUTE_SEC;
+const DAY_SEC = 24 * HOUR_SEC;
+const HOUR_MS = HOUR_SEC * 1000;
 
 export const getDateNHoursAgo = (hours: number) =>
   new Date(Date.now() - hours * HOUR_MS).toISOString();
 
 export function timeAgo(date: Date | string): string {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+  if (s < MINUTE_SEC) return `${s}s ago`;
+  if (s < HOUR_SEC) return `${Math.floor(s / MINUTE_SEC)}m ago`;
+  if (s < DAY_SEC) return `${Math.floor(s / HOUR_SEC)}h ago`;
+  return `${Math.floor(s / DAY_SEC)}d ago`;
 }
 
 export interface RetryOptions {

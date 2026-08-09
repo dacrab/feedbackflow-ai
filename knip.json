@@ -3,6 +3,7 @@
   "entry": ["src/db/seed.ts", "src/app/**", "src/components/**", "src/lib/**"],
   "ignoreExportsUsedInFile": true,
   "ignoreBinaries": ["doppler"],
+  "ignore": ["vitest.server-only.ts"],
   "rules": {
     "files": "error",
     "dependencies": "error",

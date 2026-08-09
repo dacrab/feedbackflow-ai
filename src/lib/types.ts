@@ -26,7 +26,6 @@ export interface FeedbackItemWithAnalysis {
   id: string;
   source: string;
   raw_content: string;
-  original_timestamp: string;
   created_at: string;
   feedback_analyses: FeedbackAnalysisData | null;
 }

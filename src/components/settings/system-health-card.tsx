@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button, Card, Panel } from "@/components/ui/ui";
+import { Button, Card, EmptyState, Muted, Panel } from "@/components/ui/ui";
 import { handleActionError, timeAgo } from "@/lib/utils";
 
 type LastRun = {
@@ -38,7 +38,7 @@ async function parseSSE(response: Response, onEvent: (e: SyncEvent) => void): Pr
     buffer = blocks.pop() ?? "";
     for (const block of blocks) {
       if (!block.startsWith("data: ")) continue;
-      onEvent(JSON.parse(block.slice(6)) as SyncEvent);
+      onEvent(JSON.parse(block.slice("data: ".length)) as SyncEvent);
     }
   }
 }
@@ -101,7 +101,8 @@ export function SystemHealthCard({
           return [...prev, { id: logId.current++, msg, ...(ok !== undefined && { ok }) }];
         });
 
-        logRef.current?.scrollTo({ top: 9999, behavior: "smooth" });
+        const el = logRef.current;
+        el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
         if (stage === "complete") toast.success(msg);
         if (stage === "error") {
           toast.error(msg);
@@ -130,7 +131,7 @@ export function SystemHealthCard({
             value={
               <>
                 {enabledSources}
-                <span className="text-sm text-muted-foreground">/{totalSources}</span>
+                <Muted className="text-sm">/{totalSources}</Muted>
               </>
             }
           />
@@ -140,27 +141,27 @@ export function SystemHealthCard({
         {lastRun ? (
           <Panel className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">last run</p>
+              <Muted>last run</Muted>
               <span className={`text-xs ${runStatus?.cls}`}>{runStatus?.prefix}</span>
             </div>
-            <p className="text-xs text-muted-foreground">{timeAgo(lastRun.startedAt)}</p>
+            <Muted>{timeAgo(lastRun.startedAt)}</Muted>
             <div className="flex gap-3 text-xs">
               <span>
                 <span className="text-foreground font-medium">{lastRun.fetched ?? 0}</span>{" "}
-                <span className="text-muted-foreground">fetched</span>
+                <Muted>fetched</Muted>
               </span>
               <span>
                 <span className="text-foreground font-medium">{lastRun.inserted ?? 0}</span>{" "}
-                <span className="text-muted-foreground">new</span>
+                <Muted>new</Muted>
               </span>
               <span>
                 <span className="text-foreground font-medium">{lastRun.analyzed ?? 0}</span>{" "}
-                <span className="text-muted-foreground">analyzed</span>
+                <Muted>analyzed</Muted>
               </span>
             </div>
           </Panel>
         ) : (
-          <p className="text-xs text-muted-foreground text-center py-2">no runs yet</p>
+          <EmptyState title="no runs yet" />
         )}
 
         {syncing ? (
@@ -188,7 +189,7 @@ export function SystemHealthCard({
           {logs.map((l) => {
             const { cls, log } = statusInfo(l.ok);
             return (
-              <p key={l.id} className={`text-xs font-mono ${cls}`}>
+              <p key={l.id} className={`text-xs font-mono truncate ${cls}`}>
                 {log}
                 {l.msg}
               </p>
@@ -206,7 +207,7 @@ export function SystemHealthCard({
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Panel>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <Muted>{label}</Muted>
       <p className="text-lg font-medium leading-tight">{value}</p>
     </Panel>
   );

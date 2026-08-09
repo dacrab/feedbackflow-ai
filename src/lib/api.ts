@@ -7,7 +7,7 @@ import { cache } from "react";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
 import { timingSafeEqual } from "@/lib/crypto";
-import { rateLimit } from "@/lib/rate-limit";
+import { type RateLimitConfig, rateLimit } from "@/lib/rate-limit";
 
 export const getServerSession = cache(async () => {
   const { userId } = await auth();
@@ -32,7 +32,7 @@ function isValidCronRequest(req: Request): boolean {
   if (
     cronSecret &&
     authHeader?.startsWith("Bearer ") &&
-    timingSafeEqual(authHeader.slice(7), cronSecret)
+    timingSafeEqual(authHeader.slice("Bearer ".length), cronSecret)
   ) {
     return true;
   }
@@ -54,14 +54,14 @@ export async function requireCronOrAuth(req: Request): Promise<Response | undefi
 export async function rateLimitMiddleware(
   req: Request,
   prefix: string,
-  maxRequests = 10,
+  config: RateLimitConfig,
 ): Promise<Response | undefined> {
   const ip = clientIp(req);
-  const ok = await rateLimit(`${prefix}:${ip}`, { maxRequests, windowMs: 60_000 });
+  const ok = await rateLimit(`${prefix}:${ip}`, config);
   if (!ok)
     return NextResponse.json(
       { error: "too many requests" },
-      { status: 429, headers: { "Retry-After": "60" } },
+      { status: 429, headers: { "Retry-After": String(config.windowMs / 1000) } },
     );
   return undefined;
 }

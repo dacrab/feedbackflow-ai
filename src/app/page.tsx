@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Eyebrow, MetricCard } from "@/components/ui/ui";
+import { Eyebrow, MetricCard, Muted } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { sentimentColor, sevColor } from "@/lib/utils";
 
@@ -116,7 +116,7 @@ export default async function LandingPage() {
                 ))}
               </div>
               <div className="flex-1 flex justify-center">
-                <span className="text-xs text-muted-foreground">feedbackflow / dashboard</span>
+                <Muted>feedbackflow / dashboard</Muted>
               </div>
             </div>
 

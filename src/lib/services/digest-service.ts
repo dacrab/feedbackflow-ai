@@ -4,11 +4,12 @@ import * as Sentry from "@sentry/nextjs";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
+import { DIGEST_WINDOW_HOURS } from "@/lib/constants";
 import { sendDailyDigest } from "@/lib/services/notification-service";
 import { getDateNHoursAgo } from "@/lib/utils";
 
 export async function runDigest(): Promise<{ total: number; high: number }> {
-  const since = getDateNHoursAgo(24);
+  const since = getDateNHoursAgo(DIGEST_WINDOW_HOURS);
   const userIds = await db
     .selectDistinct({ userId: userNotifications.userId })
     .from(userNotifications)

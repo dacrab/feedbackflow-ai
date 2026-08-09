@@ -138,3 +138,13 @@ export const userNotifications = pgTable(
   },
   (t) => [index("user_notifications_user_id_idx").on(t.userId)],
 );
+
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    key: text("key").primaryKey(),
+    windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull(),
+    count: integer("count").notNull(),
+  },
+  (t) => [index("rate_limits_window_idx").on(t.windowStartedAt)],
+);

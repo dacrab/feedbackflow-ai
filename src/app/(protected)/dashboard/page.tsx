@@ -1,15 +1,10 @@
 import "server-only";
 
-import { Eyebrow, MetricCard, PageHeader } from "@/components/ui/ui";
+import { Card, MetricCard, PageHeader } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getDashboard } from "@/lib/services/dashboard-service";
-import {
-  DynamicSentimentChart,
-  DynamicSeverityChart,
-  DynamicTopicsChart,
-  DynamicTrendChart,
-} from "./charts";
+import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "./charts";
 
 function ChartCard({
   label,
@@ -21,11 +16,10 @@ function ChartCard({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="rounded border border-border bg-card p-4 min-w-0 overflow-hidden">
-      <Eyebrow className="mb-3">{label}</Eyebrow>
+    <Card title={label} className="min-w-0 overflow-hidden">
       <div className="h-48 w-full min-w-0">{children}</div>
       {footer}
-    </div>
+    </Card>
   );
 }
 
@@ -34,7 +28,7 @@ export default async function DashboardPage() {
   const m = await getDashboard(userId);
 
   const trendData = m.trendLabels.map((label, i) => ({
-    name: label.slice(5),
+    name: label,
     value: m.trendValues[i] ?? 0,
   }));
   const sentimentData = [
@@ -64,7 +58,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-2 lg:grid-cols-2">
         <ChartCard label="trend">
-          <DynamicTrendChart data={trendData} />
+          <TrendChart data={trendData} />
         </ChartCard>
         <ChartCard
           label="sentiment"
@@ -79,13 +73,13 @@ export default async function DashboardPage() {
             </div>
           }
         >
-          <DynamicSentimentChart data={sentimentData} />
+          <SentimentChart data={sentimentData} />
         </ChartCard>
         <ChartCard label="topics">
-          <DynamicTopicsChart data={m.topTopics} />
+          <TopicsChart data={m.topTopics} />
         </ChartCard>
         <ChartCard label="severity distribution">
-          <DynamicSeverityChart data={severityData} />
+          <SeverityChart data={severityData} />
         </ChartCard>
       </div>
     </div>

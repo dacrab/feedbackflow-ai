@@ -2,10 +2,15 @@ import { IconChevronDown } from "@tabler/icons-react";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
 import { cn, sentimentColor } from "@/lib/utils";
 
-const statusColor: Record<FeedbackStatus, string> = {
+export const statusColor: Record<FeedbackStatus, string> = {
   New: "text-muted-foreground",
   Acknowledged: "text-blue-500",
   Actioned: "text-purple-500",
+};
+
+export const statusChip: Record<"Acknowledged" | "Actioned", string> = {
+  Acknowledged: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
+  Actioned: "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20",
 };
 
 export function SentimentBadge({ sentiment }: { sentiment?: Sentiment | null | undefined }) {
@@ -38,7 +43,7 @@ export function MetricCard({
           </span>
         )}
       </div>
-      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+      {note && <Muted>{note}</Muted>}
     </div>
   );
 }
@@ -73,9 +78,9 @@ export function CenteredState({
   return (
     <div className={cn("flex min-h-screen items-center justify-center p-4 font-mono", className)}>
       <div className="text-center space-y-4">
-        {eyebrow && <p className="text-sm text-muted-foreground">{eyebrow}</p>}
+        {eyebrow && <Muted className="text-sm">{eyebrow}</Muted>}
         <h1 className="text-xl font-medium">{title}</h1>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <Muted className="text-sm">{description}</Muted>
         {action}
       </div>
     </div>
@@ -90,6 +95,35 @@ export function Eyebrow({
   className?: string;
 }) {
   return <p className={cn("text-xs text-muted-foreground", className)}>// {children}</p>;
+}
+
+export function Muted({ className = "", ...props }: React.HTMLAttributes<HTMLSpanElement>) {
+  return <span className={cn("text-xs text-muted-foreground", className)} {...props} />;
+}
+
+export function TextButton({
+  className = "",
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="text-center py-6 space-y-1">
+      <Muted className="text-sm">{title}</Muted>
+      {hint && <Muted>{hint}</Muted>}
+    </div>
+  );
 }
 
 export function Card({

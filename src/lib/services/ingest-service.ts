@@ -129,9 +129,7 @@ async function analyzeAndStore(
       if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
         await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
     } catch (err) {
-      const msg = String(err)
-        .replace(/^Error:\s*/, "")
-        .slice(0, 200);
+      const msg = String(err).replace(/^Error:\s*/, "");
       Sentry.captureException(err, { extra: { context: "ingest-analyze", itemId: item.id } });
       onProgress?.({ stage: "analysis_error", message: `failed: ${msg}` });
       if (/credits|quota|per.?day|unauthorized|invalid.api.key/i.test(msg)) {

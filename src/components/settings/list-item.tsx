@@ -38,12 +38,3 @@ export function RowActions({
     </div>
   );
 }
-
-export function EmptyState({ title, hint }: { title: string; hint: string }) {
-  return (
-    <div className="text-center py-6 space-y-1">
-      <p className="text-sm text-muted-foreground">{title}</p>
-      <p className="text-xs text-muted-foreground">{hint}</p>
-    </div>
-  );
-}

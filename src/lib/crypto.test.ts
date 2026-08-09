@@ -27,9 +27,9 @@ describe("encrypt/decrypt", () => {
 
   it("decrypt with tampered ciphertext throws", () => {
     const cipher = encrypt("secret");
-    const buf = Buffer.from(cipher, "base64");
+    const buf = Buffer.from(cipher.replace(/^v1:/, ""), "base64");
     buf.writeUInt8(buf.readUInt8(buf.length - 1) ^ 0xff, buf.length - 1);
-    expect(() => decrypt(buf.toString("base64"))).toThrow();
+    expect(() => decrypt(`v1:${buf.toString("base64")}`)).toThrow();
   });
 });
 

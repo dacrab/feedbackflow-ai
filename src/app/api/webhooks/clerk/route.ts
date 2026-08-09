@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
 import { rateLimitMiddleware } from "@/lib/api";
+import { RATE_LIMITS } from "@/lib/constants";
 
 const webhookSecret = process.env["CLERK_WEBHOOK_SECRET"];
 
@@ -25,7 +26,7 @@ async function handle(req: Request) {
     return NextResponse.json({ error: "CLERK_WEBHOOK_SECRET not configured" }, { status: 500 });
   }
 
-  const rl = await rateLimitMiddleware(req, "clerk-webhook", 20);
+  const rl = await rateLimitMiddleware(req, "clerk-webhook", RATE_LIMITS.webhook);
   if (rl) return rl;
 
   const svix_id = req.headers.get("svix-id");

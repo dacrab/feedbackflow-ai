@@ -43,6 +43,13 @@
       "when": 1785604689632,
       "tag": "0005_fearless_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786261401662,
+      "tag": "0006_wise_venom",
+      "breakpoints": true
     }
   ]
 }

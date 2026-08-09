@@ -11,7 +11,6 @@ type FeedbackRow = {
   id: string;
   source: string;
   raw_content: string;
-  original_timestamp: Date;
   created_at: Date;
   sentiment: Sentiment | null;
   topics: string[] | null;
@@ -47,7 +46,6 @@ const feedbackSelect = {
   id: feedbackItems.id,
   source: feedbackItems.source,
   raw_content: feedbackItems.rawContent,
-  original_timestamp: feedbackItems.originalTimestamp,
   created_at: feedbackItems.createdAt,
   sentiment: feedbackAnalyses.sentiment,
   topics: feedbackAnalyses.topics,
@@ -98,7 +96,6 @@ function mapFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
     id: row.id,
     source: row.source,
     raw_content: row.raw_content,
-    original_timestamp: row.original_timestamp.toISOString(),
     created_at: row.created_at.toISOString(),
     feedback_analyses: row.sentiment
       ? {
