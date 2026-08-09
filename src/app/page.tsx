@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { MetricCard } from "@/components/ui/ui";
+import { Eyebrow, MetricCard } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
 import { sentimentColor, sevColor } from "@/lib/utils";
 
@@ -85,12 +85,9 @@ export default async function LandingPage() {
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-all"
-              >
+              <CtaLink href="/signup" className="w-full sm:w-auto">
                 start for free <IconArrowRight className="h-4 w-4" />
-              </Link>
+              </CtaLink>
               <a
                 href="https://github.com/dacrab/feedbackflow-ai"
                 target="_blank"
@@ -114,9 +111,9 @@ export default async function LandingPage() {
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5 dark:shadow-black/20">
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/30">
               <div className="flex gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
-                <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
-                <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+                ))}
               </div>
               <div className="flex-1 flex justify-center">
                 <span className="text-xs text-muted-foreground">feedbackflow / dashboard</span>
@@ -125,7 +122,7 @@ export default async function LandingPage() {
 
             <div className="p-4 sm:p-6 space-y-4">
               <div>
-                <p className="text-xs text-muted-foreground mb-2">// overview</p>
+                <Eyebrow className="mb-2">overview</Eyebrow>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <MetricCard label="total" value="1,247" delta={38} />
                   <MetricCard label="positive" value="64%" />
@@ -135,36 +132,11 @@ export default async function LandingPage() {
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground mb-2">// feedback items</p>
+                <Eyebrow className="mb-2">feedback items</Eyebrow>
                 <div className="rounded border border-border divide-y divide-border">
-                  <FeedbackRow
-                    summary="Build fails with turbopack on monorepo"
-                    sentiment="negative"
-                    severity={5}
-                    topics={["bug", "turbopack"]}
-                    time="2h"
-                  />
-                  <FeedbackRow
-                    summary="Request: partial prerendering in pages router"
-                    sentiment="neutral"
-                    severity={2}
-                    topics={["feature-request"]}
-                    time="5h"
-                  />
-                  <FeedbackRow
-                    summary="Amazing DX improvements in v15.1 release"
-                    sentiment="positive"
-                    severity={1}
-                    topics={["praise", "dx"]}
-                    time="8h"
-                  />
-                  <FeedbackRow
-                    summary="Memory leak in dev server after repeated HMR"
-                    sentiment="negative"
-                    severity={4}
-                    topics={["bug", "performance"]}
-                    time="1d"
-                  />
+                  {SAMPLE_FEEDBACK.map((f) => (
+                    <FeedbackRow key={f.summary} {...f} />
+                  ))}
                 </div>
               </div>
             </div>
@@ -175,7 +147,7 @@ export default async function LandingPage() {
       <section className="py-20 border-t border-border">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl mb-12">
-            <p className="text-xs text-muted-foreground mb-2">// capabilities</p>
+            <Eyebrow className="mb-2">capabilities</Eyebrow>
             <h2 className="text-3xl font-semibold tracking-tight">
               Everything to go from noise to signal
             </h2>
@@ -185,36 +157,9 @@ export default async function LandingPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Feature
-              icon={<IconBolt className="h-5 w-5" />}
-              title="Automated ingestion"
-              desc="Connect GitHub repos. New issues are fetched on a schedule, deduplicated, and queued for analysis."
-            />
-            <Feature
-              icon={<IconMoodSmile className="h-5 w-5" />}
-              title="Multi-model AI analysis"
-              desc="Use OpenRouter (free), OpenAI, Anthropic, or Google. Each item gets sentiment, severity, topics, and a summary."
-            />
-            <Feature
-              icon={<IconFilter className="h-5 w-5" />}
-              title="Filterable inbox"
-              desc="Sort by severity, filter by sentiment or topic, search by keyword. Find what needs attention fast."
-            />
-            <Feature
-              icon={<IconChartBar className="h-5 w-5" />}
-              title="Trend dashboard"
-              desc="Visualize sentiment over time, topic distribution, and severity breakdown at a glance."
-            />
-            <Feature
-              icon={<IconShieldCheck className="h-5 w-5" />}
-              title="Per-user isolation"
-              desc="All data is scoped to your account. Row-level security ensures complete data separation."
-            />
-            <Feature
-              icon={<IconBrandGithub className="h-5 w-5" />}
-              title="Slack alerts"
-              desc="Get notified instantly when high-severity feedback lands. Configure per-source thresholds."
-            />
+            {FEATURES.map((f) => (
+              <Feature key={f.title} {...f} />
+            ))}
           </div>
         </div>
       </section>
@@ -228,12 +173,9 @@ export default async function LandingPage() {
             Let AI handle the triage. You handle the decisions.
           </p>
           <div className="mt-8">
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 rounded bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-all"
-            >
+            <CtaLink href="/signup">
               get started free <IconArrowRight className="h-4 w-4" />
-            </Link>
+            </CtaLink>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Free tier available · No credit card required
@@ -291,6 +233,76 @@ function FeedbackRow({
   );
 }
 
+const SAMPLE_FEEDBACK: {
+  summary: string;
+  sentiment: "positive" | "neutral" | "negative";
+  severity: number;
+  topics: string[];
+  time: string;
+}[] = [
+  {
+    summary: "Build fails with turbopack on monorepo",
+    sentiment: "negative",
+    severity: 5,
+    topics: ["bug", "turbopack"],
+    time: "2h",
+  },
+  {
+    summary: "Request: partial prerendering in pages router",
+    sentiment: "neutral",
+    severity: 2,
+    topics: ["feature-request"],
+    time: "5h",
+  },
+  {
+    summary: "Amazing DX improvements in v15.1 release",
+    sentiment: "positive",
+    severity: 1,
+    topics: ["praise", "dx"],
+    time: "8h",
+  },
+  {
+    summary: "Memory leak in dev server after repeated HMR",
+    sentiment: "negative",
+    severity: 4,
+    topics: ["bug", "performance"],
+    time: "1d",
+  },
+];
+
+const FEATURES = [
+  {
+    icon: <IconBolt className="h-5 w-5" />,
+    title: "Automated ingestion",
+    desc: "Connect GitHub repos. New issues are fetched on a schedule, deduplicated, and queued for analysis.",
+  },
+  {
+    icon: <IconMoodSmile className="h-5 w-5" />,
+    title: "Multi-model AI analysis",
+    desc: "Use OpenRouter (free), OpenAI, Anthropic, or Google. Each item gets sentiment, severity, topics, and a summary.",
+  },
+  {
+    icon: <IconFilter className="h-5 w-5" />,
+    title: "Filterable inbox",
+    desc: "Sort by severity, filter by sentiment or topic, search by keyword. Find what needs attention fast.",
+  },
+  {
+    icon: <IconChartBar className="h-5 w-5" />,
+    title: "Trend dashboard",
+    desc: "Visualize sentiment over time, topic distribution, and severity breakdown at a glance.",
+  },
+  {
+    icon: <IconShieldCheck className="h-5 w-5" />,
+    title: "Per-user isolation",
+    desc: "All data is scoped to your account. Row-level security ensures complete data separation.",
+  },
+  {
+    icon: <IconBrandGithub className="h-5 w-5" />,
+    title: "Slack alerts",
+    desc: "Get notified instantly when high-severity feedback lands. Configure per-source thresholds.",
+  },
+];
+
 function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
     <div className="rounded border border-border bg-card p-5 hover:border-muted-foreground/30 transition-colors">
@@ -300,5 +312,24 @@ function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; 
       <h3 className="font-medium tracking-tight text-sm">{title}</h3>
       <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{desc}</p>
     </div>
+  );
+}
+
+function CtaLink({
+  href,
+  className = "",
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center justify-center gap-2 rounded bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-all ${className}`}
+    >
+      {children}
+    </Link>
   );
 }

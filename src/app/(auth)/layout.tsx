@@ -1,6 +1,14 @@
 import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { Eyebrow } from "@/components/ui/ui";
+
+const FEATURES = [
+  "ingest GitHub issues automatically, deduplicated daily",
+  "AI extracts sentiment, severity (1–5), and topic tags",
+  "filter and triage your inbox by what actually matters",
+  "Slack alerts for critical feedback, free via OpenRouter",
+];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,24 +22,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="flex-1 flex items-center">
           <div className="w-full space-y-6">
             <div>
-              <p className="text-background/50 text-xs mb-4">// what you get</p>
+              <Eyebrow className="text-background/50 mb-4">what you get</Eyebrow>
               <div className="space-y-4 text-sm">
-                <div className="flex items-start gap-3">
-                  <span className="text-green-400 mt-0.5">→</span>
-                  <span>ingest GitHub issues automatically, deduplicated daily</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-green-400 mt-0.5">→</span>
-                  <span>AI extracts sentiment, severity (1–5), and topic tags</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-green-400 mt-0.5">→</span>
-                  <span>filter and triage your inbox by what actually matters</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-green-400 mt-0.5">→</span>
-                  <span>Slack alerts for critical feedback, free via OpenRouter</span>
-                </div>
+                {FEATURES.map((feature) => (
+                  <div key={feature} className="flex items-start gap-3">
+                    <span className="text-green-400 mt-0.5">→</span>
+                    <span>{feature}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

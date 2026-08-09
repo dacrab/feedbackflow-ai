@@ -59,8 +59,8 @@ export async function analyzeFeedback(
     throw new Error("LLM not configured. Set your provider and API key in Settings.");
   const normalized = normalize(text);
   const key = userId ? `llm:${userId}:${opts.provider}` : `llm:${opts.provider}`;
-  const { success } = await rateLimit(key, { maxRequests: 15, windowMs: 60_000 });
-  if (!success) throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
+  if (!(await rateLimit(key, { maxRequests: 15, windowMs: 60_000 })))
+    throw new Error(`LLM rate limit exceeded for ${opts.provider}. Try again later.`);
 
   const model = getModel(opts);
 

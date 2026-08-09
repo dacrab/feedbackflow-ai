@@ -1,9 +1,11 @@
-import { Button } from "@/components/ui/ui";
+import { Button, Panel } from "@/components/ui/ui";
 
 export function ListItem({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded border border-border bg-muted/20 px-3 py-2.5 space-y-2">{children}</div>
-  );
+  return <Panel className="py-2.5 space-y-2">{children}</Panel>;
+}
+
+export function ListSection({ children }: { children: React.ReactNode }) {
+  return <div className="space-y-2 border-t border-border pt-3">{children}</div>;
 }
 
 export function EnabledStatus({ enabled }: { enabled: boolean }) {

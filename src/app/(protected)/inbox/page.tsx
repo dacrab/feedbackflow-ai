@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Button, ButtonLink, Input, PageHeader, Select } from "@/components/ui/ui";
-import { getSessionUserId } from "@/lib/api";
+import { requireAuth } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
 import { FEEDBACK_STATUS_OPTIONS, SENTIMENT_OPTIONS } from "@/lib/types";
@@ -26,8 +26,7 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 }) {
-  const userId = await getSessionUserId();
-  if (!userId) return null;
+  const userId = await requireAuth();
 
   const spObj = await searchParams;
   const sp = new URLSearchParams(

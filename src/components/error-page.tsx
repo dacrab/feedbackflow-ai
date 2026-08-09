@@ -1,13 +1,16 @@
 "use client";
 
+import { CenteredState } from "@/components/ui/ui";
+
 export function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center p-8 font-mono">
-      <div className="text-center space-y-4">
-        <h1 className="text-xl font-medium">something went wrong</h1>
-        <p className="text-sm text-muted-foreground">
-          {process.env.NODE_ENV === "development" ? error.message : "an unexpected error occurred"}
-        </p>
+    <CenteredState
+      className="min-h-[50vh] p-8"
+      title="something went wrong"
+      description={
+        process.env.NODE_ENV === "development" ? error.message : "an unexpected error occurred"
+      }
+      action={
         <button
           type="button"
           onClick={reset}
@@ -15,7 +18,7 @@ export function ErrorPage({ error, reset }: { error: Error; reset: () => void })
         >
           try again
         </button>
-      </div>
-    </div>
+      }
+    />
   );
 }

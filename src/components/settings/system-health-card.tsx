@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button, Card } from "@/components/ui/ui";
+import { Button, Card, Panel } from "@/components/ui/ui";
 import { handleActionError, timeAgo } from "@/lib/utils";
 
 type LastRun = {
@@ -138,7 +138,7 @@ export function SystemHealthCard({
         </div>
 
         {lastRun ? (
-          <div className="rounded border border-border bg-muted/20 px-3 py-2 space-y-1.5">
+          <Panel className="space-y-1.5">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">last run</p>
               <span className={`text-xs ${runStatus?.cls}`}>{runStatus?.prefix}</span>
@@ -158,7 +158,7 @@ export function SystemHealthCard({
                 <span className="text-muted-foreground">analyzed</span>
               </span>
             </div>
-          </div>
+          </Panel>
         ) : (
           <p className="text-xs text-muted-foreground text-center py-2">no runs yet</p>
         )}
@@ -205,9 +205,9 @@ export function SystemHealthCard({
 
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded border border-border bg-muted/20 px-3 py-2">
+    <Panel>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-lg font-medium leading-tight">{value}</p>
-    </div>
+    </Panel>
   );
 }

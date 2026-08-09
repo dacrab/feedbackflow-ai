@@ -7,7 +7,7 @@ import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
 import { useAction } from "@/lib/use-action";
 import { timeAgo } from "@/lib/utils";
-import { EmptyState, EnabledStatus, ListItem, RowActions } from "./list-item";
+import { EmptyState, EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
 
 type SourceRow = {
   id: string;
@@ -118,7 +118,7 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
           add source
         </Button>
       </form>
-      <div className="space-y-2 border-t border-border pt-3">
+      <ListSection>
         {sources.length === 0 ? (
           <EmptyState
             title="no sources configured"
@@ -127,7 +127,7 @@ export function DataSourcesCard({ sources }: { sources: SourceRow[] }) {
         ) : (
           sources.map((s) => <SourceItem key={s.id} source={s} />)
         )}
-      </div>
+      </ListSection>
     </Card>
   );
 }
