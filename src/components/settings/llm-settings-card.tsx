@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Input, Select } from "@/components/ui/ui";
+import { Button, Card, Input, Panel, Select } from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { LLM_PROVIDERS } from "@/lib/llm-providers";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
-
-function defaultModelFor(id: LLMProvider): string {
-  return LLM_PROVIDERS.find((p) => p.id === id)?.defaultModel ?? "";
-}
 
 export function LLMSettingsCard({
   initialProvider,
@@ -24,10 +20,14 @@ export function LLMSettingsCard({
 }) {
   const configured = !!(initialProvider && initialModel);
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "openrouter");
-  const [model, setModel] = useState<string>(initialModel ?? defaultModelFor("openrouter"));
+  const [model, setModel] = useState<string>(
+    initialModel ?? LLM_PROVIDERS.find((p) => p.id === "openrouter")?.defaultModel ?? "",
+  );
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
   const { run, pending } = useAction();
+
+  const providerMeta = LLM_PROVIDERS.find((p) => p.id === provider);
 
   function handleSave() {
     if (configured && !editingKey) {
@@ -45,7 +45,7 @@ export function LLMSettingsCard({
   function handleProviderChange(p: string) {
     if (!isLLMProvider(p)) return;
     setProvider(p);
-    setModel(defaultModelFor(p));
+    setModel(LLM_PROVIDERS.find((x) => x.id === p)?.defaultModel ?? "");
     if (configured) setEditingKey(true);
   }
 
@@ -78,7 +78,7 @@ export function LLMSettingsCard({
             value={model}
             onChange={(e) => setModel(e.target.value)}
           >
-            {LLM_PROVIDERS.find((x) => x.id === provider)?.models.map((m) => (
+            {providerMeta?.models.map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
@@ -96,7 +96,7 @@ export function LLMSettingsCard({
                 <span className="text-xs text-green-500">● key saved</span>
               )}
               <a
-                href={LLM_PROVIDERS.find((x) => x.id === provider)?.keyUrl ?? "#"}
+                href={providerMeta?.keyUrl ?? "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
@@ -170,12 +170,12 @@ export function LLMSettingsCard({
       </div>
 
       {configured && (
-        <div className="flex items-center gap-2 rounded border border-border bg-muted/20 px-3 py-2">
+        <Panel className="flex items-center gap-2">
           <span className="text-xs text-green-500">●</span>
           <span className="text-xs text-muted-foreground">
             {initialProvider} · {initialModel}
           </span>
-        </div>
+        </Panel>
       )}
     </Card>
   );

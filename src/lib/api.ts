@@ -9,17 +9,7 @@ import { user } from "@/db/schema";
 import { timingSafeEqual } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 
-interface SessionUser {
-  id: string;
-  email: string;
-  name: string;
-}
-
-interface Session {
-  user: SessionUser;
-}
-
-export const getServerSession = cache(async (): Promise<Session | null> => {
+export const getServerSession = cache(async () => {
   const { userId } = await auth();
   if (!userId) return null;
   const [row] = await db
@@ -34,10 +24,6 @@ export async function requireAuth(): Promise<string> {
   const session = await getServerSession();
   if (!session?.user?.id) throw new Error("unauthorized");
   return session.user.id;
-}
-
-export async function getSessionUserId(): Promise<string | null> {
-  return (await getServerSession())?.user?.id ?? null;
 }
 
 function isValidCronRequest(req: Request): boolean {
@@ -71,11 +57,8 @@ export async function rateLimitMiddleware(
   maxRequests = 10,
 ): Promise<Response | undefined> {
   const ip = clientIp(req);
-  const { success } = await rateLimit(`${prefix}:${ip}`, {
-    maxRequests,
-    windowMs: 60_000,
-  });
-  if (!success)
+  const ok = await rateLimit(`${prefix}:${ip}`, { maxRequests, windowMs: 60_000 });
+  if (!ok)
     return NextResponse.json(
       { error: "too many requests" },
       { status: 429, headers: { "Retry-After": "60" } },

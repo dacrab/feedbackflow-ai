@@ -1,7 +1,7 @@
 import "server-only";
 
-import { MetricCard, PageHeader } from "@/components/ui/ui";
-import { getSessionUserId } from "@/lib/api";
+import { Eyebrow, MetricCard, PageHeader } from "@/components/ui/ui";
+import { requireAuth } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getDashboard } from "@/lib/services/dashboard-service";
 import {
@@ -22,7 +22,7 @@ function ChartCard({
 }) {
   return (
     <div className="rounded border border-border bg-card p-4 min-w-0 overflow-hidden">
-      <p className="text-xs text-muted-foreground mb-3">// {label}</p>
+      <Eyebrow className="mb-3">{label}</Eyebrow>
       <div className="h-48 w-full min-w-0">{children}</div>
       {footer}
     </div>
@@ -30,8 +30,7 @@ function ChartCard({
 }
 
 export default async function DashboardPage() {
-  const userId = await getSessionUserId();
-  if (!userId) return null;
+  const userId = await requireAuth();
   const m = await getDashboard(userId);
 
   const trendData = m.trendLabels.map((label, i) => ({

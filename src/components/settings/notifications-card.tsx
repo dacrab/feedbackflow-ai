@@ -7,7 +7,7 @@ import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { useAction } from "@/lib/use-action";
-import { EmptyState, EnabledStatus, ListItem, RowActions } from "./list-item";
+import { EmptyState, EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
 
 type NotificationRow = {
   id: string;
@@ -152,7 +152,7 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
         </Button>
       </form>
 
-      <div className="space-y-2 border-t border-border pt-3">
+      <ListSection>
         {hooks.length === 0 ? (
           <EmptyState
             title="no webhooks configured"
@@ -161,7 +161,7 @@ export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
         ) : (
           hooks.map((h) => <WebhookItem key={h.id} hook={h} />)
         )}
-      </div>
+      </ListSection>
     </Card>
   );
 }

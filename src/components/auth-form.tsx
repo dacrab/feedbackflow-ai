@@ -2,6 +2,7 @@
 
 import { SignIn, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/ui";
 
 const clerkAppearance = {
   elements: {
@@ -18,12 +19,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   return (
     <div className="space-y-6 font-mono">
-      <div className="space-y-1">
-        <p className="text-sm text-muted-foreground">
-          {isSignup ? "// new user" : "// authentication"}
-        </p>
-        <h1 className="text-xl font-medium">{mode}</h1>
-      </div>
+      <PageHeader eyebrow={isSignup ? "new user" : "authentication"} title={mode} />
 
       {isSignup ? (
         <SignUp

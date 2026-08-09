@@ -17,11 +17,8 @@ async function uid() {
   const s = await getServerSession();
   if (!s?.user?.id) throw new Error("unauthorized");
   const userId = s.user.id;
-  const { success } = await rateLimit(`actions:${userId}`, {
-    maxRequests: 20,
-    windowMs: 60_000,
-  });
-  if (!success) throw new Error("Too many requests. Please try again later.");
+  if (!(await rateLimit(`actions:${userId}`, { maxRequests: 20, windowMs: 60_000 })))
+    throw new Error("Too many requests. Please try again later.");
   return userId;
 }
 

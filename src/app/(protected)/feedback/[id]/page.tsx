@@ -2,7 +2,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, SentimentBadge } from "@/components/ui/ui";
-import { getSessionUserId } from "@/lib/api";
+import { requireAuth } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
 import { formatDateUTC, sevColor } from "@/lib/utils";
@@ -14,10 +14,18 @@ function TopicTag({ topic }: { topic: string }) {
   );
 }
 
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5">{children}</dd>
+    </div>
+  );
+}
+
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const userId = await getSessionUserId();
+  const userId = await requireAuth();
   const { id } = await params;
-  if (!userId) notFound();
   const item = await getFeedbackItem(userId, id).catch(() => null);
   if (!item) notFound();
   const a = item.feedback_analyses;
@@ -74,38 +82,31 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
               <p className="text-xs text-muted-foreground">no analysis yet</p>
             ) : (
               <dl className="space-y-3">
-                <div>
-                  <dt className="text-xs text-muted-foreground">sentiment</dt>
-                  <dd className="mt-0.5">
-                    <SentimentBadge sentiment={a.sentiment} />
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">severity</dt>
-                  <dd className={`mt-0.5 text-2xl font-medium leading-none ${severityColor}`}>
+                <Detail label="sentiment">
+                  <SentimentBadge sentiment={a.sentiment} />
+                </Detail>
+                <Detail label="severity">
+                  <span className={`text-2xl font-medium leading-none ${severityColor}`}>
                     {a.severity_score}
                     <span className="text-sm font-normal text-muted-foreground">
                       /{MAX_SEVERITY}
                     </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">status</dt>
-                  <dd className="mt-0.5 text-sm">{a.status.toLowerCase()}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">source</dt>
-                  <dd className="mt-0.5 text-sm">{item.source}</dd>
-                </div>
+                  </span>
+                </Detail>
+                <Detail label="status">
+                  <span className="text-sm">{a.status.toLowerCase()}</span>
+                </Detail>
+                <Detail label="source">
+                  <span className="text-sm">{item.source}</span>
+                </Detail>
                 {a.topics && a.topics.length > 0 && (
-                  <div>
-                    <dt className="text-xs text-muted-foreground">topics</dt>
-                    <dd className="mt-1 flex flex-wrap gap-1">
+                  <Detail label="topics">
+                    <div className="flex flex-wrap gap-1">
                       {a.topics.map((t) => (
                         <TopicTag key={t} topic={t} />
                       ))}
-                    </dd>
-                  </div>
+                    </div>
+                  </Detail>
                 )}
               </dl>
             )}

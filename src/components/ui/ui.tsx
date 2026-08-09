@@ -26,7 +26,7 @@ export function MetricCard({
 }) {
   return (
     <div className="rounded border border-border bg-card px-4 py-3 space-y-1">
-      <p className="text-xs text-muted-foreground">// {label}</p>
+      <Eyebrow>{label}</Eyebrow>
       <div className="flex items-end justify-between gap-2">
         <p className="text-2xl font-medium leading-none">{value}</p>
         {delta !== undefined && (
@@ -51,10 +51,45 @@ export function StatusBadge({ status }: { status?: FeedbackStatus | null | undef
 export function PageHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">// {eyebrow}</p>
+      <Eyebrow>{eyebrow}</Eyebrow>
       <h1 className="text-xl font-medium">{title}</h1>
     </div>
   );
+}
+
+export function CenteredState({
+  eyebrow,
+  title,
+  description,
+  action,
+  className = "",
+}: {
+  eyebrow?: string;
+  title: string;
+  description: string;
+  action: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex min-h-screen items-center justify-center p-4 font-mono", className)}>
+      <div className="text-center space-y-4">
+        {eyebrow && <p className="text-sm text-muted-foreground">{eyebrow}</p>}
+        <h1 className="text-xl font-medium">{title}</h1>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+export function Eyebrow({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <p className={cn("text-xs text-muted-foreground", className)}>// {children}</p>;
 }
 
 export function Card({
@@ -68,9 +103,24 @@ export function Card({
 }) {
   return (
     <div className={cn("rounded border border-border bg-card p-4 space-y-4", className)}>
-      <p className="text-xs text-muted-foreground">// {title}</p>
+      <Eyebrow>{title}</Eyebrow>
       {children}
     </div>
+  );
+}
+
+export function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={cn("animate-pulse rounded border border-border bg-muted/30", className)} />
+  );
+}
+
+export function Panel({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("rounded border border-border bg-muted/20 px-3 py-2", className)}
+      {...props}
+    />
   );
 }
 
@@ -98,6 +148,22 @@ const btnVariant = {
   ghost: "text-muted-foreground hover:text-foreground hover:bg-muted",
 };
 const btnSize = { default: "h-10 px-4", sm: "h-8 px-3", xs: "h-7 px-2 text-xs" };
+const selectSize = { default: "h-10 px-3", sm: "h-8 px-2", xs: "h-7 px-2 text-xs" };
+
+function buttonClass(
+  variant: keyof typeof btnVariant,
+  size: keyof typeof btnSize,
+  extra: string,
+  className: string,
+) {
+  return cn(
+    "rounded text-sm transition-colors",
+    btnVariant[variant],
+    btnSize[size],
+    extra,
+    className,
+  );
+}
 
 export function Button({
   className = "",
@@ -116,12 +182,7 @@ export function Button({
 }) {
   return (
     <button
-      className={cn(
-        "rounded text-sm transition-colors disabled:opacity-50",
-        btnVariant[variant],
-        btnSize[size],
-        className,
-      )}
+      className={buttonClass(variant, size, "disabled:opacity-50", className)}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
       {...props}
@@ -130,8 +191,6 @@ export function Button({
     </button>
   );
 }
-
-const selectSize = { default: "h-10 px-3", sm: "h-8 px-2", xs: "h-7 px-2 text-xs" };
 
 export function ButtonLink({
   className = "",
@@ -144,15 +203,7 @@ export function ButtonLink({
   size?: "default" | "sm" | "xs";
 }) {
   return (
-    <a
-      className={cn(
-        "rounded text-sm transition-colors inline-flex items-center",
-        btnVariant[variant],
-        btnSize[size],
-        className,
-      )}
-      {...props}
-    >
+    <a className={buttonClass(variant, size, "inline-flex items-center", className)} {...props}>
       {children}
     </a>
   );
