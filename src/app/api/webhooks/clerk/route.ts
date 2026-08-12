@@ -54,11 +54,18 @@ async function handle(req: Request) {
   }
 
   const eventType = evt.type;
+
+  // Clerk sends many event types (session.*, organization.*, ...). Only the
+  // user.* events carry the shape we care about — acknowledge the rest.
+  if (!eventType.startsWith("user.")) {
+    return NextResponse.json({ received: true });
+  }
+
   const data = ClerkUserSchema.parse(evt.data);
 
   if (eventType === "user.created" || eventType === "user.updated") {
     const clerkId = data.id;
-    const email = data.email_addresses?.[0]?.email_address ?? "";
+    const email = data.email_addresses?.[0]?.email_address ?? `${clerkId}@users.clerk.local`;
     const firstName = data.first_name ?? "";
     const lastName = data.last_name ?? "";
     const name = [firstName, lastName].filter(Boolean).join(" ") || email.split("@")[0] || "User";

@@ -41,14 +41,9 @@ function isValidCronRequest(req: Request): boolean {
   return !!(cronToken && token && timingSafeEqual(token, cronToken));
 }
 
-export async function requireCronOrAuth(req: Request): Promise<Response | undefined> {
-  if (isValidCronRequest(req)) return;
-  try {
-    await requireAuth();
-  } catch {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  return undefined;
+export function requireCron(req: Request): Response | undefined {
+  if (isValidCronRequest(req)) return undefined;
+  return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 }
 
 export async function rateLimitMiddleware(
@@ -67,5 +62,10 @@ export async function rateLimitMiddleware(
 }
 
 function clientIp(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
+  // On Vercel (and behind most reverse proxies) the leftmost value of
+  // x-forwarded-for is the original client IP; rightmost values are appended
+  // by each proxy. Taking the last entry is both wrong and spoofable.
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (forwarded) return forwarded;
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
 }

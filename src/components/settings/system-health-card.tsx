@@ -3,44 +3,14 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, EmptyState, Muted, Panel } from "@/components/ui/ui";
+import { parseSSEStream } from "@/lib/sse";
+import type { IngestRunSummary } from "@/lib/types";
 import { handleActionError, timeAgo } from "@/lib/utils";
-
-type LastRun = {
-  startedAt: Date;
-  finishedAt: Date | null;
-  ok: boolean | null;
-  fetched: number | null;
-  inserted: number | null;
-  analyzed: number | null;
-} | null;
-
-interface SyncEvent {
-  stage: string;
-  message: string;
-}
 
 function stageToStatus(stage: string): boolean | undefined {
   if (stage === "complete" || stage === "analysis_ok") return true;
   if (stage === "error" || stage === "analysis_error") return false;
   return undefined;
-}
-
-async function parseSSE(response: Response, onEvent: (e: SyncEvent) => void): Promise<void> {
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("no reader");
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const blocks = buffer.split("\n\n");
-    buffer = blocks.pop() ?? "";
-    for (const block of blocks) {
-      if (!block.startsWith("data: ")) continue;
-      onEvent(JSON.parse(block.slice("data: ".length)) as SyncEvent);
-    }
-  }
 }
 
 function statusInfo(ok: boolean | null | undefined): { cls: string; prefix: string; log: string } {
@@ -59,7 +29,7 @@ export function SystemHealthCard({
   enabledSources: number;
   totalSources: number;
   enabledHooks: number;
-  lastRun: LastRun;
+  lastRun: IngestRunSummary | null;
   className?: string;
 }) {
   const [syncing, setSyncing] = useState(false);
@@ -86,7 +56,7 @@ export function SystemHealthCard({
       const response = await fetch("/api/sync", { signal: ctrl.signal });
       if (!response.ok) throw new Error("sync request failed");
 
-      await parseSSE(response, (data) => {
+      await parseSSEStream(response, (data) => {
         const stage = data.stage;
         const ok = stageToStatus(stage);
         const msg = data.message;

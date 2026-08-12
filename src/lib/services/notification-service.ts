@@ -1,9 +1,10 @@
 import "server-only";
 
 import * as Sentry from "@sentry/nextjs";
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
+import { highSeverityAnalyses } from "@/db/views";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY, SLACK_TIMEOUT_MS } from "@/lib/constants";
 import { decrypt } from "@/lib/crypto";
 import type { FeedbackAnalysisData } from "@/lib/types";
@@ -68,31 +69,40 @@ export async function sendDailyDigest(
   userId: string,
   sinceISO: string,
 ): Promise<{ total: number; high: number }> {
-  const [analyses, webhooks] = await Promise.all([
+  const [rows, webhooks] = await Promise.all([
     db
-      .select({ summary: feedbackAnalyses.summary, severityScore: feedbackAnalyses.severityScore })
-      .from(feedbackAnalyses)
+      .select({
+        summary: highSeverityAnalyses.summary,
+        severityScore: highSeverityAnalyses.severityScore,
+      })
+      .from(highSeverityAnalyses)
       .where(
         and(
-          eq(feedbackAnalyses.userId, userId),
-          gte(feedbackAnalyses.createdAt, new Date(sinceISO)),
+          eq(highSeverityAnalyses.userId, userId),
+          gte(highSeverityAnalyses.createdAt, new Date(sinceISO)),
         ),
       )
-      .orderBy(desc(feedbackAnalyses.severityScore)),
+      .orderBy(desc(highSeverityAnalyses.severityScore)),
     getWebhooks(userId),
   ]);
 
-  if (!analyses.length || !webhooks.length) return { total: analyses.length, high: 0 };
+  const total = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(feedbackAnalyses)
+    .where(
+      and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, new Date(sinceISO))),
+    )
+    .then((r) => Number(r[0]?.count ?? 0));
 
-  const high = analyses.filter((a) => a.severityScore >= HIGH_SEVERITY_THRESHOLD);
+  if (!rows.length || !webhooks.length) return { total, high: 0 };
 
   const lines = [
-    `📊 *Daily Digest* — ${analyses.length} items in last 24h, ${high.length} high severity`,
-    ...high.map((a) => `• [sev ${a.severityScore}] ${a.summary}`),
+    `🔥 *Daily Digest* — ${total} items in last 24h, ${rows.length} high severity`,
+    ...rows.map((a) => `• [sev ${a.severityScore}] ${a.summary}`),
   ];
   const msg = lines.join("\n");
 
   await Promise.all(webhooks.map(({ url }) => notifySlack(msg, url)));
 
-  return { total: analyses.length, high: high.length };
+  return { total, high: rows.length };
 }

@@ -13,4 +13,4 @@ async function handle() {
   );
 }
 
-export { handle as GET, handle as POST };
+export { handle as POST };

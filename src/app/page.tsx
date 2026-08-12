@@ -8,7 +8,7 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+import { Brand, Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Eyebrow, MetricCard, Muted } from "@/components/ui/ui";
 import { getServerSession } from "@/lib/api";
@@ -22,10 +22,7 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-background font-mono selection:bg-foreground/10">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2 text-sm">
-            <Logo />
-            <span className="font-medium tracking-tight">feedbackflow</span>
-          </Link>
+          <Brand href="/" className="font-medium tracking-tight" />
           <div className="flex items-center gap-4 text-sm">
             <ThemeToggle />
             {loggedIn ? (
@@ -294,7 +291,7 @@ const FEATURES = [
   {
     icon: <IconShieldCheck className="h-5 w-5" />,
     title: "Per-user isolation",
-    desc: "All data is scoped to your account. Row-level security ensures complete data separation.",
+    desc: "All data is scoped to your account. Every query is filtered by your user id for complete separation.",
   },
   {
     icon: <IconBrandGithub className="h-5 w-5" />,

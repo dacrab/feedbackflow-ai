@@ -3,6 +3,15 @@ export type FeedbackStatus = "New" | "Acknowledged" | "Actioned";
 export const LLM_PROVIDER_IDS = ["google", "openai", "anthropic", "openrouter"] as const;
 export type LLMProvider = (typeof LLM_PROVIDER_IDS)[number];
 
+export interface IngestRunSummary {
+  startedAt: Date;
+  finishedAt: Date | null;
+  ok: boolean | null;
+  fetched: number | null;
+  inserted: number | null;
+  analyzed: number | null;
+}
+
 export const FEEDBACK_STATUS_OPTIONS = [
   "New",
   "Acknowledged",

@@ -26,7 +26,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireAuth();
   const { id } = await params;
-  const item = await getFeedbackItem(userId, id).catch(() => null);
+  const item = await getFeedbackItem(userId, id);
   if (!item) notFound();
   const a = item.feedback_analyses;
 

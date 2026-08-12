@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -93,7 +94,10 @@ export const ingestRuns = pgTable(
     inserted: integer("inserted"),
     analyzed: integer("analyzed"),
   },
-  (t) => [index("ingest_runs_user_id_idx").on(t.userId)],
+  (t) => [
+    index("ingest_runs_user_id_idx").on(t.userId),
+    uniqueIndex("ingest_runs_active_user_idx").on(t.userId).where(sql`${t.finishedAt} is null`),
+  ],
 );
 
 export const userSettings = pgTable("user_settings", {

@@ -1,9 +1,9 @@
 import "server-only";
 
-import { and, eq, gte, sql } from "drizzle-orm";
-import { cache } from "react";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
+import { feedbackTopics, feedbackTrend } from "@/db/views";
 import { DASHBOARD_TOP_TOPICS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { formatShortDate } from "@/lib/utils";
 
@@ -33,12 +33,6 @@ interface SummaryRow {
   cnt: number;
   highCnt: number;
   avgSev: string;
-}
-
-interface TrendRow {
-  day: string;
-  cnt: number;
-  delta: number;
 }
 
 function aggregateSummary(rows: SummaryRow[]) {
@@ -72,11 +66,11 @@ function buildSeverityHist(rows: Array<{ score: number; cnt: number }>): Record<
   return hist;
 }
 
-export const getDashboard = cache(async (userId: string): Promise<DashboardData> => {
+export async function getDashboard(userId: string): Promise<DashboardData> {
   const since = new Date(Date.now() - DASHBOARD_WINDOW_MS);
   const base = and(eq(feedbackItems.userId, userId), gte(feedbackItems.createdAt, since));
 
-  const [summaryRows, severityRows, trendResult, topicResult] = await Promise.all([
+  const [summaryRows, severityRows, trendRows, topicRows] = await Promise.all([
     db
       .select({
         sentiment: feedbackAnalyses.sentiment,
@@ -99,30 +93,25 @@ export const getDashboard = cache(async (userId: string): Promise<DashboardData>
       .where(base)
       .groupBy(feedbackAnalyses.severityScore),
 
-    db.execute(sql`
-        SELECT
-          DATE(fi.created_at) AS day,
-          COUNT(*) AS cnt,
-          COUNT(*) - LAG(COUNT(*), 1, COUNT(*)) OVER (ORDER BY DATE(fi.created_at)) AS delta
-        FROM feedback_items fi
-        INNER JOIN feedback_analyses fa ON fa.feedback_item_id = fi.id
-        WHERE fi.user_id = ${userId}
-          AND fi.created_at >= ${since}
-        GROUP BY DATE(fi.created_at)
-        ORDER BY DATE(fi.created_at)
-      `),
+    db
+      .select({
+        day: feedbackTrend.day,
+        cnt: feedbackTrend.cnt,
+        delta: feedbackTrend.delta,
+      })
+      .from(feedbackTrend)
+      .where(and(eq(feedbackTrend.userId, userId), gte(feedbackTrend.day, sql`${since}::date`)))
+      .orderBy(feedbackTrend.day),
 
-    db.execute(sql`
-        SELECT t.topic, COUNT(*) AS cnt
-        FROM feedback_items fi
-        INNER JOIN feedback_analyses fa ON fa.feedback_item_id = fi.id
-        CROSS JOIN LATERAL jsonb_array_elements_text(fa.topics) AS t(topic)
-        WHERE fi.user_id = ${userId}
-          AND fi.created_at >= ${since}
-        GROUP BY t.topic
-        ORDER BY cnt DESC
-        LIMIT ${DASHBOARD_TOP_TOPICS}
-      `),
+    db
+      .select({
+        topic: feedbackTopics.topic,
+        cnt: feedbackTopics.cnt,
+      })
+      .from(feedbackTopics)
+      .where(eq(feedbackTopics.userId, userId))
+      .orderBy(desc(feedbackTopics.cnt))
+      .limit(DASHBOARD_TOP_TOPICS),
   ]);
 
   const { total, positive, neutral, negative, highSeverity, avgSeverity, positiveShare } =
@@ -130,16 +119,14 @@ export const getDashboard = cache(async (userId: string): Promise<DashboardData>
 
   const severityHist = buildSeverityHist(severityRows);
 
-  const trendRows = (trendResult.rows ?? []) as Array<Record<string, unknown>>;
-  const trendData: TrendRow[] = trendRows.map((r) => ({
-    day: String(r["day"]),
-    cnt: Number(r["cnt"]),
-    delta: Number(r["delta"]),
+  const trendData = trendRows.map((r) => ({
+    day: r.day,
+    cnt: Number(r.cnt),
+    delta: Number(r.delta),
   }));
-  const topicRows = (topicResult.rows ?? []) as Array<Record<string, unknown>>;
   const topTopics = topicRows.map((r) => ({
-    topic: String(r["topic"]),
-    value: Number(r["cnt"]),
+    topic: r.topic,
+    value: Number(r.cnt),
   }));
 
   const lastTrend = trendData.at(-1);
@@ -152,10 +139,10 @@ export const getDashboard = cache(async (userId: string): Promise<DashboardData>
     positiveShare,
     highSeverity,
     avgSeverity,
-    trendLabels: trendData.map((r) => formatShortDate(r.day)),
+    trendLabels: trendData.map((r) => formatShortDate(r.day.toISOString().slice(0, 10))),
     trendValues: trendData.map((r) => r.cnt),
     trendDelta: Number(lastTrend?.delta ?? 0),
     topTopics,
     severityHist,
   };
-});
+}
