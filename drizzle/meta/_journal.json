@@ -50,6 +50,13 @@
       "when": 1786261401662,
       "tag": "0006_wise_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786449592105,
+      "tag": "0007_sour_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

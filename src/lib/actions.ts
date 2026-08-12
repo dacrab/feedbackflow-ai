@@ -91,7 +91,15 @@ export async function updateNotification(
   const userId = await uid();
   const setData: Partial<typeof userNotifications.$inferInsert> = {};
   if (data.enabled !== undefined) setData.enabled = data.enabled;
-  if (data.minSeverity !== undefined) setData.config = { minSeverity: data.minSeverity };
+  if (data.minSeverity !== undefined) {
+    // Merge instead of replacing so unrelated config keys are preserved.
+    const [existing] = await db
+      .select({ config: userNotifications.config })
+      .from(userNotifications)
+      .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)))
+      .limit(1);
+    setData.config = { ...existing?.config, minSeverity: data.minSeverity };
+  }
   await db
     .update(userNotifications)
     .set(setData)
@@ -157,4 +165,5 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
     .set({ status: s })
     .where(and(eq(feedbackAnalyses.userId, userId), inArray(feedbackAnalyses.feedbackItemId, ids)));
   revalidatePath("/inbox");
+  for (const id of ids) revalidatePath(`/feedback/${id}`);
 }

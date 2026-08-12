@@ -1,5 +1,4 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import * as Sentry from "@sentry/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -24,9 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             enableSystem
             disableTransitionOnChange
           >
-            <Sentry.ErrorBoundary fallback={<p>An error occurred</p>}>
-              {children}
-            </Sentry.ErrorBoundary>
+            {children}
             <Toaster position="bottom-right" richColors closeButton />
           </ThemeProvider>
         </ClerkProvider>

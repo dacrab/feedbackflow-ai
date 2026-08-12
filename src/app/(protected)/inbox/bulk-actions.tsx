@@ -2,17 +2,18 @@
 
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { EmptyState, SentimentBadge, StatusBadge, statusChip } from "@/components/ui/ui";
+import { useState } from "react";
+import { Button, EmptyState, SentimentBadge, StatusBadge, statusChip } from "@/components/ui/ui";
 import { bulkUpdateStatus } from "@/lib/actions";
 import type { FeedbackItemWithAnalysis } from "@/lib/types";
+import { useAction } from "@/lib/use-action";
 import { cn, formatDateUTC, sevColor, sevLabel } from "@/lib/utils";
 
 const BULK_STATUSES: readonly ("Acknowledged" | "Actioned")[] = ["Acknowledged", "Actioned"];
 
 export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [isPending, startTransition] = useTransition();
+  const { run, pending: isPending } = useAction();
 
   const allSelected = items.length > 0 && selected.size === items.length;
 
@@ -29,9 +30,9 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
   }
 
   function handleBulk(status: string) {
-    startTransition(async () => {
-      await bulkUpdateStatus(Array.from(selected), status);
-      setSelected(new Set());
+    // Only clear the selection on success; failures surface via toast.
+    run(() => bulkUpdateStatus(Array.from(selected), status), "status updated").then((ok) => {
+      if (ok) setSelected(new Set());
     });
   }
 
@@ -41,25 +42,27 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
         <div className="flex items-center gap-3 p-2 rounded border border-border bg-muted text-sm animate-slide-down">
           <span>{selected.size} selected</span>
           {BULK_STATUSES.map((status) => (
-            <button
+            <Button
               key={status}
+              size="xs"
+              variant="ghost"
               type="button"
               onClick={() => handleBulk(status)}
               disabled={isPending}
-              className={cn(
-                "px-2 py-1 rounded transition-colors disabled:opacity-50",
-                statusChip[status],
-              )}
+              className={cn(statusChip[status])}
             >
               Mark {status}
-            </button>
+            </Button>
           ))}
         </div>
       )}
 
       <div className="rounded border border-border bg-card divide-y divide-border">
         {items.length === 0 ? (
-          <EmptyState title="no items found" hint="add a data source in settings to get started" />
+          <EmptyState
+            title="no items found"
+            hint="feedback appears here once it has been ingested and analyzed"
+          />
         ) : (
           <>
             <div className="flex items-center gap-3 p-3 text-xs text-muted-foreground border-b border-border">

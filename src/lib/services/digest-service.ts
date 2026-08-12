@@ -15,16 +15,21 @@ export async function runDigest(): Promise<{ total: number; high: number }> {
     .from(userNotifications)
     .where(eq(userNotifications.enabled, true));
 
+  const results = await Promise.allSettled(
+    userIds.map(({ userId }) =>
+      sendDailyDigest(userId, since).catch((e) => {
+        Sentry.captureException(e, { extra: { context: "digest", userId } });
+        return { total: 0, high: 0 };
+      }),
+    ),
+  );
+
   let total = 0;
   let high = 0;
-  for (const { userId } of userIds) {
-    try {
-      const r = await sendDailyDigest(userId, since);
-      total += r.total;
-      high += r.high;
-    } catch (e) {
-      Sentry.captureException(e, { extra: { context: "digest", userId } });
-    }
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    total += r.value.total;
+    high += r.value.high;
   }
   return { total, high };
 }

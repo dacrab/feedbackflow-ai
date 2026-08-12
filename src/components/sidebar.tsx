@@ -85,17 +85,19 @@ export function Sidebar({
               <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
           )}
-          <Link
-            href="/logout"
-            title="logout"
-            aria-label="logout"
-            className={cn(
-              "rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
-              collapsed ? "p-1.5" : "p-1",
-            )}
-          >
-            <IconLogout className="h-3.5 w-3.5" />
-          </Link>
+          <form action="/logout" method="POST">
+            <button
+              type="submit"
+              title="logout"
+              aria-label="logout"
+              className={cn(
+                "rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+                collapsed ? "p-1.5" : "p-1",
+              )}
+            >
+              <IconLogout className="h-3.5 w-3.5" />
+            </button>
+          </form>
         </div>
       </div>
 

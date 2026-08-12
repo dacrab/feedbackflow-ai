@@ -4,6 +4,7 @@ import { RATE_LIMITS } from "@/lib/constants";
 import { runIngest } from "@/lib/services/ingest-service";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(req: Request) {
   let userId: string;

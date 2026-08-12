@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimitMiddleware, requireCronOrAuth } from "@/lib/api";
+import { rateLimitMiddleware, requireCron } from "@/lib/api";
 import { RATE_LIMITS } from "@/lib/constants";
 import { runDigest } from "@/lib/services/digest-service";
 import { runIngest } from "@/lib/services/ingest-service";
@@ -8,11 +8,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
+  // Vercel cron attaches `Authorization: Bearer $CRON_SECRET` automatically.
+  // Fail closed: without a matching secret (or x-cron-token) this endpoint
+  // refuses to run, so an authenticated user can no longer trigger a
+  // platform-wide ingest/digest for every tenant.
+  const authError = requireCron(req);
+  if (authError) return authError;
+
   const rl = await rateLimitMiddleware(req, "cron", RATE_LIMITS.cron);
   if (rl) return rl;
-
-  const authError = await requireCronOrAuth(req);
-  if (authError) return authError;
 
   const [ingest, digest] = await Promise.allSettled([runIngest(), runDigest()]);
 

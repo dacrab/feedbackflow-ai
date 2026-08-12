@@ -1,7 +1,7 @@
 import "server-only";
 
 import * as Sentry from "@sentry/nextjs";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   feedbackAnalyses,
@@ -21,8 +21,10 @@ import {
 import { decrypt } from "@/lib/crypto";
 import { analyzeFeedback } from "@/lib/llm";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
-import { isLLMProvider, type LLMProvider } from "@/lib/types";
+import { type FeedbackAnalysisData, isLLMProvider, type LLMProvider } from "@/lib/types";
 import { withRetry } from "@/lib/utils";
+
+const ACTIVE_RUN_WINDOW_MS = 10 * 60 * 1000;
 
 interface GithubIssue {
   id: number;
@@ -106,9 +108,21 @@ async function analyzeAndStore(
   llmOpts: LLMOpts,
   onProgress?: OnProgress,
   signal?: AbortSignal,
-): Promise<{ count: number; hasError: boolean }> {
+): Promise<{ count: number; hasError: boolean; highSeverity: FeedbackAnalysisData[] }> {
+  // Bail out once instead of looping every unanalyzed item with a
+  // per-item "LLM not configured" error.
+  if (!llmOpts?.apiKey) {
+    onProgress?.({
+      stage: "analysis_error",
+      message: "LLM not configured. Set your provider and API key in Settings.",
+    });
+    return { count: 0, hasError: true, highSeverity: [] };
+  }
+
   let count = 0;
   let hasError = false;
+  const highSeverity: FeedbackAnalysisData[] = [];
+
   for (const item of items) {
     if (signal?.aborted) break;
     onProgress?.({ stage: "analyzing", message: `analyzing ${count + 1}/${items.length}...` });
@@ -126,8 +140,9 @@ async function analyzeAndStore(
         .onConflictDoUpdate({ target: feedbackAnalyses.feedbackItemId, set: analysisData });
       count++;
       onProgress?.({ stage: "analysis_ok", message: `analyzed ${count}/${items.length}` });
-      if (a.severity_score >= HIGH_SEVERITY_THRESHOLD)
-        await notifyHighSeverityFeedback(userId, { ...a, status: "New" });
+      if (a.severity_score >= HIGH_SEVERITY_THRESHOLD) {
+        highSeverity.push({ ...a, status: "New" });
+      }
     } catch (err) {
       const msg = String(err).replace(/^Error:\s*/, "");
       Sentry.captureException(err, { extra: { context: "ingest-analyze", itemId: item.id } });
@@ -138,7 +153,7 @@ async function analyzeAndStore(
       }
     }
   }
-  return { count, hasError };
+  return { count, hasError, highSeverity };
 }
 
 export async function runIngest(
@@ -162,90 +177,146 @@ export async function runIngest(
     );
 
   const sources = await query;
-  const totals = { fetched: 0, inserted: 0, analyzed: 0 };
-  const llmOptsCache = new Map<string, LLMOpts>();
-
+  const githubByUser = new Map<string, Array<(typeof sources)[number]>>();
   for (const src of sources) {
-    if (signal?.aborted) break;
     if (src.type !== "github") continue;
+    const list = githubByUser.get(src.userId) ?? [];
+    list.push(src);
+    githubByUser.set(src.userId, list);
+  }
 
-    if (!llmOptsCache.has(src.userId))
-      llmOptsCache.set(src.userId, await getUserLLMOpts(src.userId));
-    const llmOpts = llmOptsCache.get(src.userId);
+  const totals = { fetched: 0, inserted: 0, analyzed: 0 };
 
-    const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
-    onProgress?.({ stage: "fetching", message: `fetching from ${src.config.repo}...` });
+  for (const [userId, userSourceList] of githubByUser) {
+    if (signal?.aborted) break;
 
-    const issues = await fetchGithubIssues(src.config.repo, token);
-    onProgress?.({ stage: "fetching", message: `fetched ${issues.length} items` });
-
-    const rows = issues.map((i) => ({
-      userId: src.userId,
-      source: "github" as const,
-      externalId: String(i.id),
-      rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, MAX_RAW_CONTENT_LENGTH),
-      originalTimestamp: new Date(i.created_at),
-    }));
-
-    const inserted = rows.length
-      ? await db
-          .insert(feedbackItems)
-          .values(rows)
-          .onConflictDoNothing()
-          .returning({ id: feedbackItems.id })
-      : [];
-
-    const [run] = await db
-      .insert(ingestRuns)
-      .values({ userId: src.userId, fetched: issues.length })
-      .returning({ id: ingestRuns.id });
-
-    const fetchedExternalIds = rows.map((r) => r.externalId);
-
-    const unanalyzed =
-      fetchedExternalIds.length > 0
-        ? await db
-            .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
-            .from(feedbackItems)
-            .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
-            .where(
-              and(
-                eq(feedbackItems.userId, src.userId),
-                eq(feedbackItems.source, "github"),
-                inArray(feedbackItems.externalId, fetchedExternalIds),
-                isNull(feedbackAnalyses.id),
-              ),
-            )
-        : [];
-
-    if (unanalyzed.length > 0) {
-      onProgress?.({ stage: "analyzing", message: `analyzing ${unanalyzed.length} items...` });
+    // Concurrency guard: skip if a run for this user is still active (covers
+    // overlapping cron + manual sync + addSource-triggered ingests). The
+    // unique partial index on active runs is the authoritative backstop for
+    // the check-then-insert race.
+    const [active] = await db
+      .select({ id: ingestRuns.id })
+      .from(ingestRuns)
+      .where(
+        and(
+          eq(ingestRuns.userId, userId),
+          isNull(ingestRuns.finishedAt),
+          gte(ingestRuns.startedAt, new Date(Date.now() - ACTIVE_RUN_WINDOW_MS)),
+        ),
+      )
+      .limit(1);
+    if (active) {
+      onProgress?.({ stage: "error", message: "a sync is already running — try again shortly" });
+      continue;
     }
 
-    const { count: analyzed, hasError } = await analyzeAndStore(
-      unanalyzed,
-      src.userId,
-      llmOpts,
-      onProgress,
-      signal,
-    );
-
-    await db.update(userSources).set({ lastChecked: new Date() }).where(eq(userSources.id, src.id));
-
-    if (run) {
-      await db
-        .update(ingestRuns)
-        .set({
-          ok: !hasError,
-          finishedAt: new Date(),
-          inserted: inserted.length,
-          analyzed,
-        })
-        .where(eq(ingestRuns.id, run.id));
+    let runId: string | null = null;
+    try {
+      const [run] = await db
+        .insert(ingestRuns)
+        .values({ userId, fetched: 0 })
+        .returning({ id: ingestRuns.id });
+      runId = run?.id ?? null;
+    } catch {
+      // Unique violation on the active-run index means another sync slipped
+      // in between the check and insert. Skip this user instead of failing.
+      onProgress?.({ stage: "error", message: "a sync is already running — try again shortly" });
+      continue;
     }
 
-    totals.fetched += issues.length;
-    totals.inserted += inserted.length;
+    const llmOpts = await getUserLLMOpts(userId);
+
+    let fetched = 0;
+    let inserted = 0;
+    let analyzed = 0;
+    let hasError = false;
+
+    try {
+      for (const src of userSourceList) {
+        if (signal?.aborted) break;
+
+        const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
+        onProgress?.({ stage: "fetching", message: `fetching from ${src.config.repo}...` });
+
+        const issues = await fetchGithubIssues(src.config.repo, token);
+        onProgress?.({ stage: "fetching", message: `fetched ${issues.length} items` });
+        fetched += issues.length;
+
+        const rows = issues.map((i) => ({
+          userId: src.userId,
+          source: "github" as const,
+          externalId: String(i.id),
+          rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, MAX_RAW_CONTENT_LENGTH),
+          originalTimestamp: new Date(i.created_at),
+        }));
+
+        const insertedRows = rows.length
+          ? await db
+              .insert(feedbackItems)
+              .values(rows)
+              .onConflictDoNothing()
+              .returning({ id: feedbackItems.id })
+          : [];
+        inserted += insertedRows.length;
+
+        const fetchedExternalIds = rows.map((r) => r.externalId);
+
+        const unanalyzed =
+          fetchedExternalIds.length > 0
+            ? await db
+                .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+                .from(feedbackItems)
+                .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
+                .where(
+                  and(
+                    eq(feedbackItems.userId, src.userId),
+                    eq(feedbackItems.source, "github"),
+                    inArray(feedbackItems.externalId, fetchedExternalIds),
+                    isNull(feedbackAnalyses.id),
+                  ),
+                )
+            : [];
+
+        if (unanalyzed.length > 0) {
+          onProgress?.({ stage: "analyzing", message: `analyzing ${unanalyzed.length} items...` });
+        }
+
+        const {
+          count,
+          hasError: itemError,
+          highSeverity,
+        } = await analyzeAndStore(unanalyzed, src.userId, llmOpts, onProgress, signal);
+        analyzed += count;
+        if (itemError) hasError = true;
+
+        // Fire notifications in one batched pass after the per-item loop so a
+        // slow Slack webhook can't stall analysis of subsequent items.
+        if (highSeverity.length > 0) {
+          await Promise.allSettled(highSeverity.map((a) => notifyHighSeverityFeedback(userId, a)));
+        }
+
+        await db
+          .update(userSources)
+          .set({ lastChecked: new Date() })
+          .where(eq(userSources.id, src.id));
+      }
+    } finally {
+      if (runId) {
+        await db
+          .update(ingestRuns)
+          .set({
+            ok: !hasError,
+            finishedAt: new Date(),
+            fetched,
+            inserted,
+            analyzed,
+          })
+          .where(eq(ingestRuns.id, runId));
+      }
+    }
+
+    totals.fetched += fetched;
+    totals.inserted += inserted;
     totals.analyzed += analyzed;
   }
   return totals;
