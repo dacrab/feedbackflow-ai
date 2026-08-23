@@ -1,19 +1,23 @@
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, type SQL, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications, userSettings, userSources } from "@/db/schema";
 import { requireAuth } from "@/lib/api";
-import { RATE_LIMITS } from "@/lib/constants";
+import { ADD_SOURCE_INGEST_LIMIT, RATE_LIMITS } from "@/lib/constants";
 import { encrypt } from "@/lib/crypto";
-import { LLMProviderSchema } from "@/lib/llm-providers";
 import { rateLimit } from "@/lib/rate-limit";
 import { runIngest } from "@/lib/services/ingest-service";
-import { FEEDBACK_STATUS_OPTIONS, type FeedbackStatus, type LLMProvider } from "@/lib/types";
+import {
+  type FeedbackStatus,
+  FeedbackStatusSchema,
+  type LLMProvider,
+  LLMProviderSchema,
+} from "@/lib/types";
 
 async function uid() {
   const userId = await requireAuth();
@@ -38,26 +42,34 @@ const webhookSchema = z
   .string()
   .url("must be a valid URL")
   .startsWith("https://", "must start with https://");
-const statusSchema = z.enum(FEEDBACK_STATUS_OPTIONS);
 
 export async function addSource(repo: string, token?: string) {
   parse(repoSchema, repo);
   if (token) parse(z.string().min(1).max(512), token);
   const userId = await uid();
-  await db.insert(userSources).values({
-    userId,
-    type: "github",
-    config: { repo },
-    secretCipher: token ? encrypt(token) : null,
-  });
+  const [source] = await db
+    .insert(userSources)
+    .values({
+      userId,
+      type: "github",
+      config: { repo },
+      secretCipher: token ? encrypt(token) : null,
+    })
+    .returning({ id: userSources.id });
+  if (!source) throw new Error("failed to add source");
   after(() => {
-    runIngest(undefined, undefined, userId).catch((e) => Sentry.captureException(e));
+    // Ingest just the new source with a small analysis cap so the detached
+    // callback finishes well within function limits; cron covers the rest.
+    runIngest({ userId, sourceId: source.id, maxItems: ADD_SOURCE_INGEST_LIMIT }).catch((e) =>
+      Sentry.captureException(e),
+    );
   });
   revalidatePath("/settings");
 }
 
 export async function updateSource(id: string, data: { enabled?: boolean }) {
   parse(uuidSchema, id);
+  if (typeof data.enabled !== "boolean") return;
   const userId = await uid();
   await db
     .update(userSources)
@@ -89,16 +101,13 @@ export async function updateNotification(
   parse(uuidSchema, id);
   if (data.minSeverity !== undefined) parse(z.number().int().min(1).max(5), data.minSeverity);
   const userId = await uid();
-  const setData: Partial<typeof userNotifications.$inferInsert> = {};
+  const setData: { enabled?: boolean; config?: SQL } = {};
   if (data.enabled !== undefined) setData.enabled = data.enabled;
   if (data.minSeverity !== undefined) {
-    // Merge instead of replacing so unrelated config keys are preserved.
-    const [existing] = await db
-      .select({ config: userNotifications.config })
-      .from(userNotifications)
-      .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)))
-      .limit(1);
-    setData.config = { ...existing?.config, minSeverity: data.minSeverity };
+    // Merge in SQL so concurrent updates can't clobber each other's keys.
+    setData.config = sql`${userNotifications.config} || ${JSON.stringify({
+      minSeverity: data.minSeverity,
+    })}::jsonb`;
   }
   await db
     .update(userNotifications)
@@ -144,7 +153,7 @@ export async function deleteSettings() {
 
 export async function updateFeedbackStatus(feedbackItemId: string, status: FeedbackStatus) {
   parse(uuidSchema, feedbackItemId);
-  parse(statusSchema, status);
+  parse(FeedbackStatusSchema, status);
   const userId = await uid();
   await db
     .update(feedbackAnalyses)
@@ -158,12 +167,12 @@ export async function updateFeedbackStatus(feedbackItemId: string, status: Feedb
 
 export async function bulkUpdateStatus(ids: string[], status: string) {
   parse(z.array(uuidSchema).min(1).max(200), ids);
-  const s = parse(statusSchema, status);
+  const s = parse(FeedbackStatusSchema, status);
   const userId = await uid();
   await db
     .update(feedbackAnalyses)
     .set({ status: s })
     .where(and(eq(feedbackAnalyses.userId, userId), inArray(feedbackAnalyses.feedbackItemId, ids)));
   revalidatePath("/inbox");
-  for (const id of ids) revalidatePath(`/feedback/${id}`);
+  revalidatePath("/feedback/[id]", "page");
 }

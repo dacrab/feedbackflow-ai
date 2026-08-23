@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/db/seed.ts", "src/app/**", "src/components/**", "src/lib/**"],
+  "entry": ["src/db/seed.ts", "src/app/**", "src/components/**"],
   "ignoreExportsUsedInFile": true,
   "ignoreBinaries": ["doppler"],
   "ignore": ["vitest.server-only.ts"],

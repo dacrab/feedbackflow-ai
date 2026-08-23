@@ -1,7 +1,7 @@
 import "server-only";
 
 import * as Sentry from "@sentry/nextjs";
-import { and, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   feedbackAnalyses,
@@ -33,8 +33,13 @@ interface GithubIssue {
   created_at: string;
 }
 
+function isRealIssue(issue: GithubIssue): boolean {
+  // The issues endpoint also returns pull requests (they carry this key).
+  return !("pull_request" in issue);
+}
+
 async function fetchGithubPage(repo: string, page: number, token?: string): Promise<GithubIssue[]> {
-  const url = `https://api.github.com/repos/${repo}/issues?state=open&type=issues&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
+  const url = `https://api.github.com/repos/${repo}/issues?state=open&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
   const res = await fetch(url, {
     headers: {
       "User-Agent": "feedbackflow-ai",
@@ -62,7 +67,7 @@ async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIs
     try {
       const issues = await fetchGithubPageWithRetry(repo, page, token);
       if (!issues.length) break;
-      results.push(...issues);
+      results.push(...issues.filter(isRealIssue));
       if (issues.length < GITHUB_PER_PAGE) break;
     } catch (e) {
       if (page === 1) throw e; // nothing fetched yet, so fail loudly
@@ -156,12 +161,23 @@ async function analyzeAndStore(
   return { count, hasError, highSeverity };
 }
 
+export interface RunIngestOptions {
+  onProgress?: OnProgress;
+  signal?: AbortSignal;
+  userId?: string;
+  sourceId?: string;
+  maxItems?: number;
+}
+
 export async function runIngest(
-  onProgress?: OnProgress,
-  signal?: AbortSignal,
-  scopedUserId?: string,
+  options: RunIngestOptions = {},
 ): Promise<{ fetched: number; inserted: number; analyzed: number }> {
-  const query = db
+  const { onProgress, signal, userId: scopedUserId, sourceId, maxItems } = options;
+  const conditions = [eq(userSources.enabled, true)];
+  if (scopedUserId) conditions.push(eq(userSources.userId, scopedUserId));
+  if (sourceId) conditions.push(eq(userSources.id, sourceId));
+
+  const sources = await db
     .select({
       id: userSources.id,
       userId: userSources.userId,
@@ -170,13 +186,7 @@ export async function runIngest(
       secretCipher: userSources.secretCipher,
     })
     .from(userSources)
-    .where(
-      scopedUserId
-        ? and(eq(userSources.enabled, true), eq(userSources.userId, scopedUserId))
-        : eq(userSources.enabled, true),
-    );
-
-  const sources = await query;
+    .where(and(...conditions));
   const githubByUser = new Map<string, Array<(typeof sources)[number]>>();
   for (const src of sources) {
     if (src.type !== "github") continue;
@@ -190,6 +200,20 @@ export async function runIngest(
   for (const [userId, userSourceList] of githubByUser) {
     if (signal?.aborted) break;
 
+    // Reclaim runs abandoned by killed invocations first: their unfinished
+    // rows would otherwise trip the partial unique index forever. Only then
+    // does an unfinished row reliably mean a live concurrent sync.
+    await db
+      .update(ingestRuns)
+      .set({ finishedAt: new Date(), ok: false })
+      .where(
+        and(
+          eq(ingestRuns.userId, userId),
+          isNull(ingestRuns.finishedAt),
+          lt(ingestRuns.startedAt, new Date(Date.now() - ACTIVE_RUN_WINDOW_MS)),
+        ),
+      );
+
     // Concurrency guard: skip if a run for this user is still active (covers
     // overlapping cron + manual sync + addSource-triggered ingests). The
     // unique partial index on active runs is the authoritative backstop for
@@ -197,13 +221,7 @@ export async function runIngest(
     const [active] = await db
       .select({ id: ingestRuns.id })
       .from(ingestRuns)
-      .where(
-        and(
-          eq(ingestRuns.userId, userId),
-          isNull(ingestRuns.finishedAt),
-          gte(ingestRuns.startedAt, new Date(Date.now() - ACTIVE_RUN_WINDOW_MS)),
-        ),
-      )
+      .where(and(eq(ingestRuns.userId, userId), isNull(ingestRuns.finishedAt)))
       .limit(1);
     if (active) {
       onProgress?.({ stage: "error", message: "a sync is already running — try again shortly" });
@@ -277,15 +295,19 @@ export async function runIngest(
                 )
             : [];
 
-        if (unanalyzed.length > 0) {
-          onProgress?.({ stage: "analyzing", message: `analyzing ${unanalyzed.length} items...` });
+        // Cap the per-invocation analysis workload (used by the detached
+        // addSource ingest); leftovers are picked up by cron/manual sync.
+        const toAnalyze = maxItems !== undefined ? unanalyzed.slice(0, maxItems) : unanalyzed;
+
+        if (toAnalyze.length > 0) {
+          onProgress?.({ stage: "analyzing", message: `analyzing ${toAnalyze.length} items...` });
         }
 
         const {
           count,
           hasError: itemError,
           highSeverity,
-        } = await analyzeAndStore(unanalyzed, src.userId, llmOpts, onProgress, signal);
+        } = await analyzeAndStore(toAnalyze, src.userId, llmOpts, onProgress, signal);
         analyzed += count;
         if (itemError) hasError = true;
 

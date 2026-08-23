@@ -2,20 +2,13 @@
 
 import { useState } from "react";
 import { Button, Card, EmptyState, Input, Muted, Select, TextButton } from "@/components/ui/ui";
-import type { SlackNotificationConfig } from "@/db/schema";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+import type { HookRow } from "@/lib/services/settings-service";
 import { confirmDelete, useAction } from "@/lib/use-action";
 import { EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
 
-type NotificationRow = {
-  id: string;
-  type: "slack";
-  config: SlackNotificationConfig;
-  enabled: boolean;
-};
-
-function WebhookItem({ hook }: { hook: NotificationRow }) {
+function WebhookItem({ hook }: { hook: HookRow }) {
   const [editingSeverity, setEditingSeverity] = useState(false);
   const [minSeverity, setMinSeverity] = useState(
     hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
@@ -95,7 +88,7 @@ function WebhookItem({ hook }: { hook: NotificationRow }) {
   );
 }
 
-export function NotificationsCard({ hooks }: { hooks: NotificationRow[] }) {
+export function NotificationsCard({ hooks }: { hooks: HookRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
   const { run, pending } = useAction();
 

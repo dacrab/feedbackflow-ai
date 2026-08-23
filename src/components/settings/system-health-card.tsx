@@ -53,7 +53,7 @@ export function SystemHealthCard({
     setLogs([{ id: logId.current++, msg: "connecting..." }]);
 
     try {
-      const response = await fetch("/api/sync", { signal: ctrl.signal });
+      const response = await fetch("/api/sync", { method: "POST", signal: ctrl.signal });
       if (!response.ok) throw new Error("sync request failed");
 
       await parseSSEStream(response, (data) => {

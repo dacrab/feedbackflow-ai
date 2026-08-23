@@ -31,10 +31,5 @@ export function useAction() {
 }
 
 export function confirmDelete(message: string, action: () => void) {
-  toast(message, {
-    action: {
-      label: "delete",
-      onClick: action,
-    },
-  });
+  if (window.confirm(message)) action();
 }

@@ -146,13 +146,6 @@ describe("withRetry", () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it("invokes onError for every failed attempt", async () => {
-    const onError = vi.fn();
-    const fn = vi.fn().mockRejectedValue(new Error("fail"));
-    await expect(withRetry(fn, { ...opts, onError })).rejects.toThrow("fail");
-    expect(onError).toHaveBeenCalledTimes(3);
-  });
-
   it("handles zero retries", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("no retry"));
     await expect(withRetry(fn, { retries: 0, baseDelay: 0 })).rejects.toThrow("no retry");

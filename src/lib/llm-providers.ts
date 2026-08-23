@@ -1,7 +1,4 @@
-import { z } from "zod";
-import { LLM_PROVIDER_IDS, type LLMProvider } from "@/lib/types";
-
-export const LLMProviderSchema = z.enum(LLM_PROVIDER_IDS);
+import type { LLMProvider } from "@/lib/types";
 
 export interface LLMProviderMeta {
   id: LLMProvider;

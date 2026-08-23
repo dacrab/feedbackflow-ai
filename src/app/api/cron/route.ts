@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const rl = await rateLimitMiddleware(req, "cron", RATE_LIMITS.cron);
   if (rl) return rl;
 
-  const [ingest, digest] = await Promise.allSettled([runIngest(), runDigest()]);
+  const [ingest, digest] = await Promise.allSettled([runIngest({}), runDigest()]);
 
   return NextResponse.json({
     ok: true,

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type Sentiment = "positive" | "neutral" | "negative";
 export type FeedbackStatus = "New" | "Acknowledged" | "Actioned";
 export const LLM_PROVIDER_IDS = ["google", "openai", "anthropic", "openrouter"] as const;
@@ -23,6 +25,9 @@ export const SENTIMENT_OPTIONS = [
   "negative",
 ] as const satisfies readonly Sentiment[];
 
+export const LLMProviderSchema = z.enum(LLM_PROVIDER_IDS);
+export const FeedbackStatusSchema = z.enum(FEEDBACK_STATUS_OPTIONS);
+
 export interface FeedbackAnalysisData {
   sentiment: Sentiment;
   topics: Array<string>;
@@ -40,9 +45,9 @@ export interface FeedbackItemWithAnalysis {
 }
 
 export function isLLMProvider(val: unknown): val is LLMProvider {
-  return typeof val === "string" && (LLM_PROVIDER_IDS as readonly string[]).includes(val);
+  return LLMProviderSchema.safeParse(val).success;
 }
 
 export function isFeedbackStatus(val: unknown): val is FeedbackStatus {
-  return typeof val === "string" && (FEEDBACK_STATUS_OPTIONS as readonly string[]).includes(val);
+  return FeedbackStatusSchema.safeParse(val).success;
 }

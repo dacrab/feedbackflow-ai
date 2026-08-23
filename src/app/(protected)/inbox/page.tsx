@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { Button, ButtonLink, Input, Muted, PageHeader, Select } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
-import { MAX_SEVERITY } from "@/lib/constants";
-import { getFeedbackCount, getFeedbackItems } from "@/lib/services/feedback-service";
+import { getFeedbackItems } from "@/lib/services/feedback-service";
 import { FEEDBACK_STATUS_OPTIONS, SENTIMENT_OPTIONS } from "@/lib/types";
 import { InboxBulkActions } from "./bulk-actions";
 
@@ -14,11 +13,8 @@ const SearchParamsSchema = z.object({
   status: z.enum(FEEDBACK_STATUS_OPTIONS).optional(),
   topic: z.string().max(100).optional(),
   q: z.string().max(200).optional(),
-  severity_min: z.coerce.number().int().min(1).max(5).optional(),
-  severity_max: z.coerce.number().int().min(1).max(5).optional(),
   sort: z.enum(SORT_OPTIONS).optional(),
   page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(100).optional(),
 });
 
 export default async function InboxPage({
@@ -40,45 +36,33 @@ export default async function InboxPage({
   const status = spv.status;
   const topic = spv.topic;
   const q = spv.q;
-  const severityMin = spv.severity_min ?? 1;
-  const severityMax = spv.severity_max ?? MAX_SEVERITY;
   const sort = spv.sort ?? "created_desc";
   const page = spv.page ?? 1;
-  const pageSize = spv.pageSize ?? DEFAULT_PAGE_SIZE;
-  const offset = (page - 1) * pageSize;
+  const offset = (page - 1) * DEFAULT_PAGE_SIZE;
 
   const filters = {
     ...(sentiment && { sentiment }),
     ...(status && { status }),
     ...(topic && { topic }),
     ...(q && { q }),
-    ...(severityMin > 1 && { severityMin }),
-    ...(severityMax < MAX_SEVERITY && { severityMax }),
     sort,
   };
 
-  const [items, totalCount] = await Promise.all([
-    getFeedbackItems(userId, { limit: pageSize, offset, filters }),
-    getFeedbackCount(userId, filters),
-  ]);
+  const { items, total: totalCount } = await getFeedbackItems(userId, {
+    limit: DEFAULT_PAGE_SIZE,
+    offset,
+    filters,
+  });
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalCount / DEFAULT_PAGE_SIZE));
 
   function pageUrl(p: number) {
     const params = new URLSearchParams(sp);
     params.set("page", String(p));
-    params.set("pageSize", String(pageSize));
     return `/inbox?${params.toString()}`;
   }
 
-  const hasFilters = !!(
-    q ||
-    sentiment ||
-    status ||
-    topic ||
-    severityMin > 1 ||
-    severityMax < MAX_SEVERITY
-  );
+  const hasFilters = !!(q || sentiment || status || topic);
 
   return (
     <div className="flex flex-col h-full gap-4">

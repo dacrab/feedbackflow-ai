@@ -2,20 +2,11 @@
 
 import { useState } from "react";
 import { Button, Card, EmptyState, Input, Muted, TextButton } from "@/components/ui/ui";
-import type { GitHubSourceConfig } from "@/db/schema";
 import { addSource, deleteSource, updateSource } from "@/lib/actions";
+import type { SourceRow } from "@/lib/services/settings-service";
 import { confirmDelete, useAction } from "@/lib/use-action";
 import { timeAgo } from "@/lib/utils";
 import { EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
-
-type SourceRow = {
-  id: string;
-  type: "github";
-  config: GitHubSourceConfig;
-  enabled: boolean;
-  lastChecked: Date | null;
-  createdAt: Date;
-};
 
 function SourceItem({ source }: { source: SourceRow }) {
   const { run, pending } = useAction();

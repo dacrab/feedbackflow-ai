@@ -2,8 +2,7 @@ import "server-only";
 
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { feedbackAnalyses, feedbackItems } from "@/db/schema";
-import { feedbackTopics, feedbackTrend } from "@/db/views";
+import { feedbackAnalyses, feedbackItems, feedbackTopics, feedbackTrend } from "@/db/schema";
 import { DASHBOARD_TOP_TOPICS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { formatShortDate } from "@/lib/utils";
 
@@ -95,7 +94,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
 
     db
       .select({
-        day: feedbackTrend.day,
+        day: sql<string>`${feedbackTrend.day}::text`,
         cnt: feedbackTrend.cnt,
         delta: feedbackTrend.delta,
       })
@@ -139,7 +138,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     positiveShare,
     highSeverity,
     avgSeverity,
-    trendLabels: trendData.map((r) => formatShortDate(r.day.toISOString().slice(0, 10))),
+    trendLabels: trendData.map((r) => formatShortDate(r.day)),
     trendValues: trendData.map((r) => r.cnt),
     trendDelta: Number(lastTrend?.delta ?? 0),
     topTopics,

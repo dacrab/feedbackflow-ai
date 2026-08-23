@@ -28,5 +28,7 @@ export const RATE_LIMITS = {
   llm: { maxRequests: 15, windowMs: 60_000 },
   sync: { maxRequests: 5, windowMs: 60_000 },
   cron: { maxRequests: 10, windowMs: 60_000 },
-  webhook: { maxRequests: 20, windowMs: 60_000 },
 } as const;
+
+// Cap for the fire-and-forget ingest kicked off after adding a source.
+export const ADD_SOURCE_INGEST_LIMIT = 20;
