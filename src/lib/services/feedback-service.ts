@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { DEFAULT_FEEDBACK_LIMIT, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
@@ -30,19 +30,20 @@ const feedbackDetailQuery = (userId: string, itemId: string) =>
 
 type FeedbackRow = Awaited<ReturnType<typeof feedbackDetailQuery>>[number];
 
+// Escape LIKE wildcards so user input is matched literally.
+function escapeLike(term: string): string {
+  return term.replace(/[\\%_]/g, "\\$&");
+}
+
 function buildFilterConditions(filters: FeedbackFilters, userId: string) {
   const conditions = [eq(feedbackItems.userId, userId)];
   if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
   if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
-  if (filters.severityMin !== undefined)
-    conditions.push(gte(feedbackAnalyses.severityScore, filters.severityMin));
-  if (filters.severityMax !== undefined)
-    conditions.push(lte(feedbackAnalyses.severityScore, filters.severityMax));
   if (filters.q) {
-    const q = `%${filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase()}%`;
+    const q = `%${escapeLike(filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase())}%`;
     const cond = or(
-      sql`LOWER(${feedbackItems.rawContent}) LIKE ${q}`,
-      sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q}`,
+      sql`LOWER(${feedbackItems.rawContent}) LIKE ${q} ESCAPE '\\'`,
+      sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q} ESCAPE '\\'`,
     );
     if (cond) conditions.push(cond);
   }
@@ -58,17 +59,14 @@ export type FeedbackFilters = {
   status?: FeedbackStatus;
   topic?: string;
   q?: string;
-  severityMin?: number;
-  severityMax?: number;
   sort?: "created_desc" | "severity_desc" | "severity_asc";
 };
 
 export async function getFeedbackItems(
   userId: string,
   options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
-): Promise<FeedbackItemWithAnalysis[]> {
+): Promise<{ items: FeedbackItemWithAnalysis[]; total: number }> {
   const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
-  const conditions = buildFilterConditions(filters, userId);
 
   const orderBy =
     filters.sort === "severity_desc"
@@ -77,15 +75,16 @@ export async function getFeedbackItems(
         ? asc(feedbackAnalyses.severityScore)
         : desc(feedbackItems.createdAt);
 
+  // Window count returns the filtered total alongside the page in one query.
   const rows = await db
-    .select(feedbackSelect)
+    .select({ ...feedbackSelect, total: sql<number>`count(*) OVER ()` })
     .from(feedbackItems)
     .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(and(...conditions))
+    .where(and(...buildFilterConditions(filters, userId)))
     .orderBy(orderBy)
     .limit(limit)
     .offset(offset);
-  return rows.map(mapFeedbackRow);
+  return { items: rows.map(mapFeedbackRow), total: Number(rows[0]?.total ?? 0) };
 }
 
 function mapFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
@@ -104,20 +103,6 @@ function mapFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
         }
       : null,
   };
-}
-
-export async function getFeedbackCount(
-  userId: string,
-  filters: FeedbackFilters = {},
-): Promise<number> {
-  const conditions = buildFilterConditions(filters, userId);
-
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(feedbackItems)
-    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(and(...conditions));
-  return Number(row?.count ?? 0);
 }
 
 export async function getFeedbackItem(

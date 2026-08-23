@@ -17,7 +17,10 @@ export const getServerSession = cache(async () => {
     .from(user)
     .where(eq(user.id, userId))
     .limit(1);
-  return { user: { id: userId, email: row?.email ?? "", name: row?.name ?? "" } };
+  if (!row) {
+    throw new Error("account is being provisioned — please try again in a moment");
+  }
+  return { user: { id: userId, email: row.email, name: row.name } };
 });
 
 export async function requireAuth(): Promise<string> {
@@ -62,10 +65,11 @@ export async function rateLimitMiddleware(
 }
 
 function clientIp(req: Request): string {
-  // On Vercel (and behind most reverse proxies) the leftmost value of
-  // x-forwarded-for is the original client IP; rightmost values are appended
-  // by each proxy. Taking the last entry is both wrong and spoofable.
-  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (forwarded) return forwarded;
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
+  // Platform-set headers are trusted. In x-forwarded-for the leftmost values
+  // come from the client and are trivially spoofable; only the rightmost entry
+  // is appended by the trusted proxy, so fall back to that.
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  const lastForwarded = req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
+  return lastForwarded || "unknown";
 }

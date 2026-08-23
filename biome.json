@@ -1,19 +1,81 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "ignoreUnknown": true, "includes": ["**", "!drizzle"] },
   "css": { "parser": { "tailwindDirectives": true } },
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "assist": {
+    "actions": {
+      "source": { "organizeImports": "on" }
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
       "preset": "recommended",
-      "complexity": { "useLiteralKeys": "off" },
-      "style": { "useComponentExportOnlyModules": "off" },
+      "a11y": {
+        "noSvgWithoutTitle": "off",
+        "useButtonType": "warn"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": { "maxAllowedComplexity": 15 }
+        },
+        "noForEach": "off",
+        "noUselessUndefined": "error",
+        "useLiteralKeys": "off",
+        "useSimplifiedLogicExpression": "warn"
+      },
+      "correctness": {
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "error"
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn",
+        "noDelete": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
+      },
       "suspicious": {
+        "noArrayIndexKey": "warn",
+        "noCommentText": "off",
+        "noConsole": "warn",
+        "noDebugger": "error",
+        "noConfusingVoidType": "error",
+        "noDoubleEquals": "error",
         "noExplicitAny": "error",
-        "noCommentText": "off"
+        "noImplicitAnyLet": "warn",
+        "noMisleadingInstantiator": "error",
+        "noRedeclare": "error",
+        "noSelfCompare": "error",
+        "noVar": "error"
+      },
+      "style": {
+        "noNonNullAssertion": "warn",
+        "noParameterAssign": "error",
+        "noUselessElse": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useCollapsedElseIf": "warn",
+        "useConsistentArrayType": "warn",
+        "useConsistentBuiltinInstantiation": "error",
+        "useConst": "error",
+        "useDefaultParameterLast": "error",
+        "useImportType": "error",
+        "useSelfClosingElements": "warn",
+        "useShorthandAssign": "error",
+        "useSingleVarDeclarator": "error",
+        "useTemplate": "error",
+        "useThrowOnlyError": "error"
       }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
     }
-  },
-  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 }
+  }
 }

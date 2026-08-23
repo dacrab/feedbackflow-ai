@@ -66,7 +66,6 @@ export interface RetryOptions {
   retries: number;
   baseDelay: number;
   abortOn?: RegExp;
-  onError?: (err: unknown) => void;
 }
 
 export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions): Promise<T> {
@@ -76,7 +75,6 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions): Pr
       return await fn();
     } catch (err) {
       lastErr = err;
-      opts.onError?.(err);
       if (opts.abortOn?.test(String(err))) break;
       if (attempt < opts.retries)
         await new Promise((r) => setTimeout(r, opts.baseDelay * (attempt + 1)));

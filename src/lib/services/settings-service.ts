@@ -2,9 +2,18 @@ import "server-only";
 
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import type { GitHubSourceConfig, SlackNotificationConfig } from "@/db/schema";
 import { ingestRuns, userNotifications, userSettings, userSources } from "@/db/schema";
 import { type IngestRunSummary, isLLMProvider, type LLMProvider } from "@/lib/types";
+
+export type SourceRow = Pick<
+  typeof userSources.$inferSelect,
+  "id" | "type" | "config" | "enabled" | "lastChecked" | "createdAt"
+>;
+
+export type HookRow = Pick<
+  typeof userNotifications.$inferSelect,
+  "id" | "type" | "config" | "enabled"
+>;
 
 export interface SettingsData {
   settings: {
@@ -12,20 +21,8 @@ export interface SettingsData {
     model: string | null;
     hasKey: boolean;
   } | null;
-  sources: Array<{
-    id: string;
-    type: "github";
-    config: GitHubSourceConfig;
-    enabled: boolean;
-    lastChecked: Date | null;
-    createdAt: Date;
-  }>;
-  hooks: Array<{
-    id: string;
-    type: "slack";
-    config: SlackNotificationConfig;
-    enabled: boolean;
-  }>;
+  sources: SourceRow[];
+  hooks: HookRow[];
   lastRun: IngestRunSummary | null;
 }
 

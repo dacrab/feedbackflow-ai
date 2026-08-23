@@ -15,8 +15,14 @@ import { getServerSession } from "@/lib/api";
 import { sentimentColor, sevColor } from "@/lib/utils";
 
 export default async function LandingPage() {
-  const session = await getServerSession();
-  const loggedIn = !!session?.user?.id;
+  // Public marketing page: tolerate transient identity-provisioning errors.
+  let loggedIn = false;
+  try {
+    const session = await getServerSession();
+    loggedIn = !!session?.user?.id;
+  } catch {
+    loggedIn = false;
+  }
 
   return (
     <div className="min-h-screen bg-background font-mono selection:bg-foreground/10">

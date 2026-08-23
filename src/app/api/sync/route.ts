@@ -6,7 +6,7 @@ import { runIngest } from "@/lib/services/ingest-service";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   let userId: string;
   try {
     userId = await requireAuth();
@@ -34,11 +34,11 @@ export async function GET(req: Request) {
 
       try {
         send("fetching", "connecting...");
-        const { fetched, inserted, analyzed } = await runIngest(
-          (event) => send(event.stage, event.message),
-          abortCtrl.signal,
+        const { fetched, inserted, analyzed } = await runIngest({
+          onProgress: (event) => send(event.stage, event.message),
+          signal: abortCtrl.signal,
           userId,
-        );
+        });
         if (!abortCtrl.signal.aborted) {
           send("complete", `done — ${fetched} fetched, ${inserted} new, ${analyzed} analyzed`);
         }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { LLM_PROVIDERS, LLMProviderSchema } from "./llm-providers";
-import { LLM_PROVIDER_IDS } from "./types";
+import { LLM_PROVIDERS } from "./llm-providers";
+import { LLM_PROVIDER_IDS, LLMProviderSchema } from "./types";
 
 describe("LLMProviderSchema", () => {
   it.each([...LLM_PROVIDER_IDS])("accepts the valid provider %s", (id) => {

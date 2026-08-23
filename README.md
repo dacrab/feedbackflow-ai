@@ -43,6 +43,23 @@ Host it on [Vercel](https://vercel.com):
 2. Add the same environment variables
 3. Cron jobs are already configured — nothing else to do
 
+## How ingestion works
+
+- **Sync** — a daily cron (07:00 UTC) ingests every enabled source, and "Sync now" in Settings streams live progress over SSE from `POST /api/sync`.
+- **Add-a-repo** — adding a source kicks off a scoped background ingest for just that repo (first 20 issues analyzed); the next cron covers the rest.
+- **Self-healing runs** — each ingest takes an exclusive per-user lock. Runs abandoned by a crashed invocation are automatically reclaimed after 10 minutes, so a dead sync can never wedge your inbox.
+- **Issues only** — GitHub pull requests returned by the issues endpoint are filtered out before anything is stored.
+- **Deduplicated** — items are keyed by repo + issue id; re-syncs never duplicate.
+
+## Security notes
+
+- **Strict CSP** — a per-request nonce CSP (`script-src 'nonce-…' 'strict-dynamic'`) is generated in `src/proxy.ts` and stamped onto every script tag, including Clerk's loader and the theme bootstrap.
+- **Rate limits** — sync/cron endpoints are IP-limited using the platform-set `x-real-ip` (falling back to the last `x-forwarded-for` entry), so spoofed headers can't rotate limits.
+- **Webhooks** — the Clerk webhook is authenticated solely by its svix signature and is intentionally not rate-limited.
+- **Secrets at rest** — LLM keys, GitHub tokens, and Slack webhooks are AES-256-GCM encrypted with `ENCRYPTION_KEY`.
+
+If you sign in before your account record has synced, you'll see an "account is being provisioned" error — refresh a moment later.
+
 ## Built with
 
 Bun · Next.js · Neon Postgres · Drizzle · Clerk · Vercel AI SDK · Tailwind CSS
