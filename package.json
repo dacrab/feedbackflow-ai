@@ -19,7 +19,7 @@
     "db:studio": "doppler run -- drizzle-kit studio"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.95",
+    "@ai-sdk/anthropic": "^4.0.0",
     "@ai-sdk/google": "^4.0.0",
     "@ai-sdk/openai": "^3.0.82",
     "@clerk/nextjs": "^7.5.14",
