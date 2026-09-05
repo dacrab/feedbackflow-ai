@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { rateLimitMiddleware, requireCron } from "@/lib/api";
 import { RATE_LIMITS } from "@/lib/constants";
+import { sweepExpired } from "@/lib/rate-limit";
 import { runDigest } from "@/lib/services/digest-service";
 import { runIngest } from "@/lib/services/ingest-service";
 
@@ -17,6 +18,10 @@ export async function GET(req: Request) {
 
   const rl = await rateLimitMiddleware(req, "cron", RATE_LIMITS.cron);
   if (rl) return rl;
+
+  // Deterministic eviction of rate-limit rows orphaned by one-off visitors;
+  // the random 1% sweep in rateLimit() only fires on traffic.
+  await sweepExpired();
 
   const [ingest, digest] = await Promise.allSettled([runIngest({}), runDigest()]);
 

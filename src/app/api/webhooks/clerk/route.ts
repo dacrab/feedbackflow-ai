@@ -56,7 +56,13 @@ async function handle(req: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const data = ClerkUserSchema.parse(evt.data);
+  const parsed = ClerkUserSchema.safeParse(evt.data);
+  if (!parsed.success) {
+    // A user.* event with an unexpected shape (e.g. a new Clerk event type)
+    // must not 500 — ack it so Clerk stops retrying.
+    return NextResponse.json({ received: true });
+  }
+  const data = parsed.data;
 
   if (eventType === "user.created" || eventType === "user.updated") {
     const clerkId = data.id;

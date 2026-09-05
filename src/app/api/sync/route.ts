@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import { rateLimitMiddleware, requireAuth } from "@/lib/api";
+import { rateLimitMiddleware, requireAuth, UnauthorizedError } from "@/lib/api";
 import { RATE_LIMITS } from "@/lib/constants";
 import { runIngest } from "@/lib/services/ingest-service";
 
@@ -10,8 +10,11 @@ export async function POST(req: Request) {
   let userId: string;
   try {
     userId = await requireAuth();
-  } catch {
-    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+  } catch (err) {
+    if (err instanceof UnauthorizedError) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+    }
+    throw err;
   }
 
   const rl = await rateLimitMiddleware(req, `sync:${userId}`, RATE_LIMITS.sync);
