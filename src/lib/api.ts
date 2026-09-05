@@ -9,6 +9,15 @@ import { user } from "@/db/schema";
 import { timingSafeEqual } from "@/lib/crypto";
 import { type RateLimitConfig, rateLimit } from "@/lib/rate-limit";
 
+// Typed so route handlers can distinguish auth failures from other errors
+// (e.g. a DB provisioning error) instead of matching on message text.
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("unauthorized");
+    this.name = "UnauthorizedError";
+  }
+}
+
 export const getServerSession = cache(async () => {
   const { userId } = await auth();
   if (!userId) return null;
@@ -25,7 +34,7 @@ export const getServerSession = cache(async () => {
 
 export async function requireAuth(): Promise<string> {
   const session = await getServerSession();
-  if (!session?.user?.id) throw new Error("unauthorized");
+  if (!session?.user?.id) throw new UnauthorizedError();
   return session.user.id;
 }
 

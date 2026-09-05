@@ -3,6 +3,7 @@ import "server-only";
 import { lt, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { rateLimits } from "@/db/schema";
+import { RATE_LIMITS } from "@/lib/constants";
 
 export interface RateLimitConfig {
   maxRequests: number;
@@ -10,6 +11,19 @@ export interface RateLimitConfig {
 }
 
 const CLEANUP_P = 0.01;
+
+// Rows older than the longest configured window can never count again,
+// regardless of which bucket they belong to.
+const MAX_WINDOW_MS = Math.max(...Object.values(RATE_LIMITS).map((config) => config.windowMs));
+
+// Delete rows whose window has fully elapsed. The random 1% sweep in
+// rateLimit() is defense in depth only: it needs traffic to fire, so cron
+// calls this deterministically to evict keys orphaned by one-off visitors.
+export async function sweepExpired(): Promise<void> {
+  await db
+    .delete(rateLimits)
+    .where(lt(rateLimits.windowStartedAt, new Date(Date.now() - MAX_WINDOW_MS)));
+}
 
 export async function rateLimit(
   identifier: string,

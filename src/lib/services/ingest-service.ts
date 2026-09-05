@@ -26,6 +26,11 @@ import { withRetry } from "@/lib/utils";
 
 const ACTIVE_RUN_WINDOW_MS = 10 * 60 * 1000;
 
+// Upper bound on pages fetched per repo so a huge backlog can't pin the
+// user-triggered sync (and its SSE stream) for the whole maxDuration window.
+// The cap exits like a normal completion: partial results are kept.
+const GITHUB_MAX_PAGES = 10;
+
 interface GithubIssue {
   id: number;
   title: string;
@@ -63,7 +68,7 @@ async function fetchGithubPageWithRetry(repo: string, page: number, token?: stri
 
 async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIssue[]> {
   const results: GithubIssue[] = [];
-  for (let page = 1; ; page++) {
+  for (let page = 1; page <= GITHUB_MAX_PAGES; page++) {
     try {
       const issues = await fetchGithubPageWithRetry(repo, page, token);
       if (!issues.length) break;
