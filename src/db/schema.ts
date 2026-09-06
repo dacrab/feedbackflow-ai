@@ -68,7 +68,7 @@ export const feedbackAnalyses = pgTable(
       .unique()
       .references(() => feedbackItems.id, { onDelete: "cascade" }),
     sentiment: sentimentEnum("sentiment").notNull(),
-    topics: jsonb("topics").$type<Array<string>>().notNull(),
+    topics: jsonb("topics").$type<string[]>().notNull(),
     severityScore: integer("severity_score").notNull(),
     summary: text("summary").notNull(),
     status: analysisStatusEnum("status").notNull().default("New"),

@@ -56,7 +56,7 @@ export async function analyzeFeedback(
   userId?: string,
   signal?: AbortSignal,
 ): Promise<Analysis> {
-  if (!opts?.apiKey || !opts?.provider)
+  if (!(opts?.apiKey && opts?.provider))
     throw new Error("LLM not configured. Set your provider and API key in Settings.");
   const normalized = normalize(text);
   const key = userId ? `llm:${userId}:${opts.provider}` : `llm:${opts.provider}`;

@@ -17,8 +17,8 @@ interface ComputedMetrics {
   positiveShare: number;
   highSeverity: number;
   avgSeverity: string;
-  trendLabels: Array<string>;
-  trendValues: Array<number>;
+  trendLabels: string[];
+  trendValues: number[];
   trendDelta: number;
   topTopics: Array<{ topic: string; value: number }>;
 }
