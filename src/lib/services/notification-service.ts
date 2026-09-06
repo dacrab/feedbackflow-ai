@@ -93,7 +93,7 @@ export async function sendDailyDigest(
     )
     .then((r) => Number(r[0]?.count ?? 0));
 
-  if (!rows.length || !webhooks.length) return { total, high: 0 };
+  if (!(rows.length && webhooks.length)) return { total, high: 0 };
 
   const lines = [
     `🔥 *Daily Digest* — ${total} items in last 24h, ${rows.length} high severity`,

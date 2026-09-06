@@ -17,14 +17,7 @@ const SearchParamsSchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
 });
 
-export default async function InboxPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | Array<string> | undefined>>;
-}) {
-  const userId = await requireAuth();
-
-  const spObj = await searchParams;
+function parseInboxParams(spObj: Record<string, string | string[] | undefined>) {
   const sp = new URLSearchParams(
     Object.entries(spObj).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : [])),
   );
@@ -38,7 +31,6 @@ export default async function InboxPage({
   const q = spv.q;
   const sort = spv.sort ?? "created_desc";
   const page = spv.page ?? 1;
-  const offset = (page - 1) * DEFAULT_PAGE_SIZE;
 
   const filters = {
     ...(sentiment && { sentiment }),
@@ -47,6 +39,23 @@ export default async function InboxPage({
     ...(q && { q }),
     sort,
   };
+
+  const hasFilters = !!(q || sentiment || status || topic);
+
+  return { sp, filters, sort, page, hasFilters };
+}
+
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const userId = await requireAuth();
+
+  const spObj = await searchParams;
+  const { sp, filters, page, hasFilters } = parseInboxParams(spObj);
+
+  const offset = (page - 1) * DEFAULT_PAGE_SIZE;
 
   const { items, total: totalCount } = await getFeedbackItems(userId, {
     limit: DEFAULT_PAGE_SIZE,
@@ -61,8 +70,6 @@ export default async function InboxPage({
     params.set("page", String(p));
     return `/inbox?${params.toString()}`;
   }
-
-  const hasFilters = !!(q || sentiment || status || topic);
 
   return (
     <div className="flex flex-col h-full gap-4">

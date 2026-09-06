@@ -104,7 +104,7 @@ async function getUserLLMOpts(userId: string): Promise<LLMOpts> {
     .from(userSettings)
     .where(eq(userSettings.userId, userId))
     .limit(1);
-  if (!s || !isLLMProvider(s.provider) || !s.apiKeyCipher || !s.model) return undefined;
+  if (!(s && isLLMProvider(s.provider) && s.apiKeyCipher && s.model)) return undefined;
   return {
     provider: s.provider,
     apiKey: decrypt(s.apiKeyCipher),
@@ -166,6 +166,193 @@ async function analyzeAndStore(
   return { count, hasError, highSeverity };
 }
 
+type GithubSourceRow = {
+  id: string;
+  userId: string;
+  type: string;
+  config: { repo: string };
+  secretCipher: string | null;
+};
+
+function groupGithubSourcesByUser(
+  sources: Array<{
+    id: string;
+    userId: string;
+    type: string;
+    config: { repo: string };
+    secretCipher: string | null;
+  }>,
+): Map<string, GithubSourceRow[]> {
+  const githubByUser = new Map<string, GithubSourceRow[]>();
+  for (const src of sources) {
+    if (src.type !== "github") continue;
+    const list = githubByUser.get(src.userId) ?? [];
+    list.push(src);
+    githubByUser.set(src.userId, list);
+  }
+  return githubByUser;
+}
+
+/** Reclaim runs abandoned by killed invocations so their unfinished rows
+ * don't trip the partial unique index forever. */
+async function reclaimStaleRuns(userId: string) {
+  await db
+    .update(ingestRuns)
+    .set({ finishedAt: new Date(), ok: false })
+    .where(
+      and(
+        eq(ingestRuns.userId, userId),
+        isNull(ingestRuns.finishedAt),
+        lt(ingestRuns.startedAt, new Date(Date.now() - ACTIVE_RUN_WINDOW_MS)),
+      ),
+    );
+}
+
+/**
+ * Concurrency guard: returns an existing active run for the user, if any.
+ * The unique partial index on active runs is the authoritative backstop for
+ * the check-then-insert race.
+ */
+async function findActiveRun(userId: string) {
+  const [active] = await db
+    .select({ id: ingestRuns.id })
+    .from(ingestRuns)
+    .where(and(eq(ingestRuns.userId, userId), isNull(ingestRuns.finishedAt)))
+    .limit(1);
+  return active ?? null;
+}
+
+async function insertRun(userId: string): Promise<string | null> {
+  try {
+    const [run] = await db
+      .insert(ingestRuns)
+      .values({ userId, fetched: 0 })
+      .returning({ id: ingestRuns.id });
+    return run?.id ?? null;
+  } catch {
+    // Unique violation on the active-run index means another sync slipped
+    // in between the check and insert. Skip this user instead of failing.
+    return null;
+  }
+}
+
+async function finalizeRun(
+  runId: string | null,
+  stats: { ok: boolean; fetched: number; inserted: number; analyzed: number },
+) {
+  if (!runId) return;
+  await db
+    .update(ingestRuns)
+    .set({
+      ok: stats.ok,
+      finishedAt: new Date(),
+      fetched: stats.fetched,
+      inserted: stats.inserted,
+      analyzed: stats.analyzed,
+    })
+    .where(eq(ingestRuns.id, runId));
+}
+
+async function fetchAndInsertIssues(
+  src: GithubSourceRow,
+  token: string | undefined,
+  onProgress?: OnProgress,
+) {
+  onProgress?.({ stage: "fetching", message: `fetching from ${src.config.repo}...` });
+
+  const issues = await fetchGithubIssues(src.config.repo, token);
+  onProgress?.({ stage: "fetching", message: `fetched ${issues.length} items` });
+
+  const rows = issues.map((i) => ({
+    userId: src.userId,
+    source: "github" as const,
+    externalId: String(i.id),
+    rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, MAX_RAW_CONTENT_LENGTH),
+    originalTimestamp: new Date(i.created_at),
+  }));
+
+  const insertedRows = rows.length
+    ? await db
+        .insert(feedbackItems)
+        .values(rows)
+        .onConflictDoNothing()
+        .returning({ id: feedbackItems.id })
+    : [];
+
+  return { fetched: issues.length, inserted: insertedRows.length, rows };
+}
+
+async function selectUnanalyzed(src: GithubSourceRow, fetchedExternalIds: string[]) {
+  if (fetchedExternalIds.length === 0) return [];
+  return db
+    .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
+    .from(feedbackItems)
+    .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
+    .where(
+      and(
+        eq(feedbackItems.userId, src.userId),
+        eq(feedbackItems.source, "github"),
+        inArray(feedbackItems.externalId, fetchedExternalIds),
+        isNull(feedbackAnalyses.id),
+      ),
+    );
+}
+
+/** Mutable per-user sync counters, shared so the caller's finally block can
+ * finalize the run row with partial counts if the sync throws partway. */
+type SyncStats = { fetched: number; inserted: number; analyzed: number; hasError: boolean };
+
+/** Sync all of one user's sources inside an existing run row. */
+async function syncUserSources(
+  userId: string,
+  userSourceList: GithubSourceRow[],
+  llmOpts: LLMOpts,
+  options: {
+    signal?: AbortSignal | undefined;
+    maxItems?: number | undefined;
+    onProgress?: OnProgress | undefined;
+  },
+  stats: SyncStats,
+): Promise<void> {
+  const { signal, maxItems, onProgress } = options;
+
+  for (const src of userSourceList) {
+    if (signal?.aborted) break;
+
+    const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
+    const done = await fetchAndInsertIssues(src, token, onProgress);
+    stats.fetched += done.fetched;
+    stats.inserted += done.inserted;
+
+    const fetchedExternalIds = done.rows.map((r) => r.externalId);
+    const unanalyzed = await selectUnanalyzed(src, fetchedExternalIds);
+
+    // Cap the per-invocation analysis workload (used by the detached
+    // addSource ingest); leftovers are picked up by cron/manual sync.
+    const toAnalyze = maxItems !== undefined ? unanalyzed.slice(0, maxItems) : unanalyzed;
+
+    if (toAnalyze.length > 0) {
+      onProgress?.({ stage: "analyzing", message: `analyzing ${toAnalyze.length} items...` });
+    }
+
+    const {
+      count,
+      hasError: itemError,
+      highSeverity,
+    } = await analyzeAndStore(toAnalyze, src.userId, llmOpts, onProgress, signal);
+    stats.analyzed += count;
+    if (itemError) stats.hasError = true;
+
+    // Fire notifications in one batched pass after the per-item loop so a
+    // slow Slack webhook can't stall analysis of subsequent items.
+    if (highSeverity.length > 0) {
+      await Promise.allSettled(highSeverity.map((a) => notifyHighSeverityFeedback(userId, a)));
+    }
+
+    await db.update(userSources).set({ lastChecked: new Date() }).where(eq(userSources.id, src.id));
+  }
+}
+
 export interface RunIngestOptions {
   onProgress?: OnProgress;
   signal?: AbortSignal;
@@ -192,13 +379,7 @@ export async function runIngest(
     })
     .from(userSources)
     .where(and(...conditions));
-  const githubByUser = new Map<string, Array<(typeof sources)[number]>>();
-  for (const src of sources) {
-    if (src.type !== "github") continue;
-    const list = githubByUser.get(src.userId) ?? [];
-    list.push(src);
-    githubByUser.set(src.userId, list);
-  }
+  const githubByUser = groupGithubSourcesByUser(sources);
 
   const totals = { fetched: 0, inserted: 0, analyzed: 0 };
 
@@ -208,143 +389,37 @@ export async function runIngest(
     // Reclaim runs abandoned by killed invocations first: their unfinished
     // rows would otherwise trip the partial unique index forever. Only then
     // does an unfinished row reliably mean a live concurrent sync.
-    await db
-      .update(ingestRuns)
-      .set({ finishedAt: new Date(), ok: false })
-      .where(
-        and(
-          eq(ingestRuns.userId, userId),
-          isNull(ingestRuns.finishedAt),
-          lt(ingestRuns.startedAt, new Date(Date.now() - ACTIVE_RUN_WINDOW_MS)),
-        ),
-      );
+    await reclaimStaleRuns(userId);
 
-    // Concurrency guard: skip if a run for this user is still active (covers
-    // overlapping cron + manual sync + addSource-triggered ingests). The
-    // unique partial index on active runs is the authoritative backstop for
-    // the check-then-insert race.
-    const [active] = await db
-      .select({ id: ingestRuns.id })
-      .from(ingestRuns)
-      .where(and(eq(ingestRuns.userId, userId), isNull(ingestRuns.finishedAt)))
-      .limit(1);
-    if (active) {
+    if (await findActiveRun(userId)) {
       onProgress?.({ stage: "error", message: "a sync is already running — try again shortly" });
       continue;
     }
 
-    let runId: string | null = null;
-    try {
-      const [run] = await db
-        .insert(ingestRuns)
-        .values({ userId, fetched: 0 })
-        .returning({ id: ingestRuns.id });
-      runId = run?.id ?? null;
-    } catch {
-      // Unique violation on the active-run index means another sync slipped
-      // in between the check and insert. Skip this user instead of failing.
+    const runId = await insertRun(userId);
+    if (!runId) {
       onProgress?.({ stage: "error", message: "a sync is already running — try again shortly" });
       continue;
     }
 
     const llmOpts = await getUserLLMOpts(userId);
 
-    let fetched = 0;
-    let inserted = 0;
-    let analyzed = 0;
-    let hasError = false;
-
+    const stats: SyncStats = { fetched: 0, inserted: 0, analyzed: 0, hasError: false };
     try {
-      for (const src of userSourceList) {
-        if (signal?.aborted) break;
-
-        const token = src.secretCipher ? decrypt(src.secretCipher) : undefined;
-        onProgress?.({ stage: "fetching", message: `fetching from ${src.config.repo}...` });
-
-        const issues = await fetchGithubIssues(src.config.repo, token);
-        onProgress?.({ stage: "fetching", message: `fetched ${issues.length} items` });
-        fetched += issues.length;
-
-        const rows = issues.map((i) => ({
-          userId: src.userId,
-          source: "github" as const,
-          externalId: String(i.id),
-          rawContent: `${i.title}\n\n${i.body ?? ""}`.slice(0, MAX_RAW_CONTENT_LENGTH),
-          originalTimestamp: new Date(i.created_at),
-        }));
-
-        const insertedRows = rows.length
-          ? await db
-              .insert(feedbackItems)
-              .values(rows)
-              .onConflictDoNothing()
-              .returning({ id: feedbackItems.id })
-          : [];
-        inserted += insertedRows.length;
-
-        const fetchedExternalIds = rows.map((r) => r.externalId);
-
-        const unanalyzed =
-          fetchedExternalIds.length > 0
-            ? await db
-                .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
-                .from(feedbackItems)
-                .leftJoin(feedbackAnalyses, eq(feedbackItems.id, feedbackAnalyses.feedbackItemId))
-                .where(
-                  and(
-                    eq(feedbackItems.userId, src.userId),
-                    eq(feedbackItems.source, "github"),
-                    inArray(feedbackItems.externalId, fetchedExternalIds),
-                    isNull(feedbackAnalyses.id),
-                  ),
-                )
-            : [];
-
-        // Cap the per-invocation analysis workload (used by the detached
-        // addSource ingest); leftovers are picked up by cron/manual sync.
-        const toAnalyze = maxItems !== undefined ? unanalyzed.slice(0, maxItems) : unanalyzed;
-
-        if (toAnalyze.length > 0) {
-          onProgress?.({ stage: "analyzing", message: `analyzing ${toAnalyze.length} items...` });
-        }
-
-        const {
-          count,
-          hasError: itemError,
-          highSeverity,
-        } = await analyzeAndStore(toAnalyze, src.userId, llmOpts, onProgress, signal);
-        analyzed += count;
-        if (itemError) hasError = true;
-
-        // Fire notifications in one batched pass after the per-item loop so a
-        // slow Slack webhook can't stall analysis of subsequent items.
-        if (highSeverity.length > 0) {
-          await Promise.allSettled(highSeverity.map((a) => notifyHighSeverityFeedback(userId, a)));
-        }
-
-        await db
-          .update(userSources)
-          .set({ lastChecked: new Date() })
-          .where(eq(userSources.id, src.id));
-      }
+      await syncUserSources(
+        userId,
+        userSourceList,
+        llmOpts,
+        { signal, maxItems, onProgress },
+        stats,
+      );
     } finally {
-      if (runId) {
-        await db
-          .update(ingestRuns)
-          .set({
-            ok: !hasError,
-            finishedAt: new Date(),
-            fetched,
-            inserted,
-            analyzed,
-          })
-          .where(eq(ingestRuns.id, runId));
-      }
+      await finalizeRun(runId, { ...stats, ok: !stats.hasError });
     }
 
-    totals.fetched += fetched;
-    totals.inserted += inserted;
-    totals.analyzed += analyzed;
+    totals.fetched += stats.fetched;
+    totals.inserted += stats.inserted;
+    totals.analyzed += stats.analyzed;
   }
   return totals;
 }

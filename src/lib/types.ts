@@ -30,7 +30,7 @@ export const FeedbackStatusSchema = z.enum(FEEDBACK_STATUS_OPTIONS);
 
 export interface FeedbackAnalysisData {
   sentiment: Sentiment;
-  topics: Array<string>;
+  topics: string[];
   severity_score: number;
   summary: string;
   status: FeedbackStatus;

@@ -13,7 +13,7 @@ import {
 
 describe("cn", () => {
   it("merges classes", () => expect(cn("foo", "bar")).toBe("foo bar"));
-  it("drops falsy values", () => expect(cn("foo", false && "bar", "baz")).toBe("foo baz"));
+  it("drops falsy values", () => expect(cn("foo", false, "baz")).toBe("foo baz"));
   it("drops 0", () => expect(cn("foo", 0, "bar")).toBe("foo bar"));
   it("drops null and undefined", () => expect(cn("a", null, undefined, "b")).toBe("a b"));
   it("returns empty string for all falsy", () => expect(cn(false, null, undefined, 0)).toBe(""));

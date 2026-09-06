@@ -28,7 +28,7 @@ async function handle(req: Request) {
   const svix_timestamp = req.headers.get("svix-timestamp");
   const svix_signature = req.headers.get("svix-signature");
 
-  if (!svix_id || !svix_timestamp || !svix_signature) {
+  if (!(svix_id && svix_timestamp && svix_signature)) {
     return NextResponse.json({ error: "missing svix headers" }, { status: 400 });
   }
 
