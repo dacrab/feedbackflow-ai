@@ -2,6 +2,7 @@ import "server-only";
 
 import * as Sentry from "@sentry/nextjs";
 import { and, eq, inArray, isNull, lt } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db/client";
 import {
   feedbackAnalyses,
@@ -31,16 +32,19 @@ const ACTIVE_RUN_WINDOW_MS = 10 * 60 * 1000;
 // The cap exits like a normal completion: partial results are kept.
 const GITHUB_MAX_PAGES = 10;
 
-interface GithubIssue {
-  id: number;
-  title: string;
-  body: string | null;
-  created_at: string;
-}
+const GithubIssueSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  body: z.string().nullable().optional(),
+  created_at: z.string(),
+  // The issues endpoint also returns pull requests; they carry this key.
+  pull_request: z.unknown().optional(),
+});
+type GithubIssue = z.infer<typeof GithubIssueSchema>;
 
 function isRealIssue(issue: GithubIssue): boolean {
   // The issues endpoint also returns pull requests (they carry this key).
-  return !("pull_request" in issue);
+  return !issue.pull_request;
 }
 
 async function fetchGithubPage(repo: string, page: number, token?: string): Promise<GithubIssue[]> {
@@ -55,8 +59,10 @@ async function fetchGithubPage(repo: string, page: number, token?: string): Prom
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  const data: unknown = await res.json();
+  // Parse failure throws here and surfaces as a fetch error, so the existing
+  // withRetry / partial-results logic handles API drift.
+  return z.array(GithubIssueSchema).parse(data);
 }
 
 async function fetchGithubPageWithRetry(repo: string, page: number, token?: string) {

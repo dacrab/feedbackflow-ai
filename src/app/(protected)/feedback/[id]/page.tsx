@@ -5,6 +5,7 @@ import { Card, Muted, SentimentBadge } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
+import { uuidSchema } from "@/lib/types";
 import { formatDateUTC, sevColor } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
@@ -25,8 +26,10 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireAuth();
-  const { id } = await params;
-  const item = await getFeedbackItem(userId, id);
+  const { id: rawId } = await params;
+  const parsedId = uuidSchema.safeParse(rawId);
+  if (!parsedId.success) notFound();
+  const item = await getFeedbackItem(userId, parsedId.data);
   if (!item) notFound();
   const a = item.feedback_analyses;
 

@@ -27,6 +27,7 @@ export const SENTIMENT_OPTIONS = [
 
 export const LLMProviderSchema = z.enum(LLM_PROVIDER_IDS);
 export const FeedbackStatusSchema = z.enum(FEEDBACK_STATUS_OPTIONS);
+export const uuidSchema = z.string().uuid();
 
 export interface FeedbackAnalysisData {
   sentiment: Sentiment;
