@@ -1,6 +1,17 @@
-export interface SSEMessage {
-  stage: string;
-  message: string;
+import { z } from "zod";
+
+export const SSEMessageSchema = z.object({ stage: z.string(), message: z.string() });
+export type SSEMessage = z.infer<typeof SSEMessageSchema>;
+
+/** Parse one `data: ` block; returns null for malformed or wrong-shape
+ * payloads so the stream keeps flowing instead of aborting. */
+function parseSSEBlock(block: string): SSEMessage | null {
+  try {
+    const parsed = SSEMessageSchema.safeParse(JSON.parse(block.slice("data: ".length)));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function parseSSEStream(
@@ -21,11 +32,8 @@ export async function parseSSEStream(
     buffer = blocks.pop() ?? "";
     for (const block of blocks) {
       if (!block.startsWith("data: ")) continue;
-      try {
-        onEvent(JSON.parse(block.slice("data: ".length)) as SSEMessage);
-      } catch {
-        // Skip malformed events instead of aborting the whole stream.
-      }
+      const event = parseSSEBlock(block);
+      if (event) onEvent(event);
     }
   }
 }

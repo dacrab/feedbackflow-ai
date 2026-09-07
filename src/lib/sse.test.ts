@@ -39,6 +39,20 @@ describe("parseSSEStream", () => {
     expect(events).toEqual([{ stage: "ok", message: "fine" }]);
   });
 
+  it("skips valid JSON with the wrong shape", async () => {
+    const events: Array<{ stage: string; message: string }> = [];
+    await parseSSEStream(
+      streamOf([
+        'data: {"stage":123}\n\n',
+        "data: {}\n\n",
+        'data: ["fetching"]\n\n',
+        'data: {"stage":"ok","message":"fine"}\n\n',
+      ]),
+      (e) => events.push(e),
+    );
+    expect(events).toEqual([{ stage: "ok", message: "fine" }]);
+  });
+
   it("ignores non-data blocks", async () => {
     const events: Array<{ stage: string; message: string }> = [];
     await parseSSEStream(streamOf([": keep-alive\nevent: x\n\n"]), (e) => events.push(e));

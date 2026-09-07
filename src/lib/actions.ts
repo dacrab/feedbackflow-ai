@@ -17,6 +17,7 @@ import {
   FeedbackStatusSchema,
   type LLMProvider,
   LLMProviderSchema,
+  uuidSchema,
 } from "@/lib/types";
 
 async function uid() {
@@ -32,7 +33,6 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.data;
 }
 
-const uuidSchema = z.string().uuid();
 const repoSchema = z
   .string()
   .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "invalid repo format (owner/repo)");
