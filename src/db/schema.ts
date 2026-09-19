@@ -186,6 +186,8 @@ export const feedbackTopics = pgView("feedback_topics").as((qb) =>
     .groupBy(feedbackItems.userId, sql`t.topic`),
 );
 
+// The `>= 4` literal is baked into the view by its migration and must stay in
+// step with HIGH_SEVERITY_THRESHOLD in src/lib/constants.ts.
 export const highSeverityAnalyses = pgView("high_severity_analyses").as((qb) =>
   qb
     .select({
