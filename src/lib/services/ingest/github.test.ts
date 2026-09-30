@@ -44,7 +44,7 @@ describe("fetchGithubIssues", () => {
 
     await fetchGithubIssues("acme/repo");
 
-    // 2 results < GITHUB_PER_PAGE, so exactly one request.
+    // 2 results < PER_PAGE, so exactly one request.
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -86,7 +86,7 @@ describe("fetchGithubIssues", () => {
 
     await expect(fetchGithubIssues("acme/gone")).rejects.toThrow();
 
-    // GITHUB_MAX_RETRIES is 3: a retry loop would make 4 calls.
+    // MAX_RETRIES is 3: a retry loop would make 4 calls.
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

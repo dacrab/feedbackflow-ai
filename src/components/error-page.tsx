@@ -1,7 +1,11 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
 import { Button, CenteredState } from "@/components/ui/ui";
 
+/** Every error boundary renders through here, so reporting sits with the render
+ *  and no boundary can drift into silently swallowing the error it shows. */
 export function ErrorPage({
   error,
   reset,
@@ -13,6 +17,10 @@ export function ErrorPage({
   title?: string | undefined;
   description?: string | undefined;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <CenteredState
       className="min-h-[50vh] p-8"

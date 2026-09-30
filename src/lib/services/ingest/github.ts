@@ -1,14 +1,16 @@
 import "server-only";
 
 import { z } from "zod";
-import {
-  GITHUB_MAX_PAGES,
-  GITHUB_MAX_RETRIES,
-  GITHUB_PER_PAGE,
-  GITHUB_RETRY_BASE_DELAY_MS,
-  GITHUB_TIMEOUT_MS,
-} from "@/lib/constants";
 import { withRetry } from "@/lib/utils";
+
+const PER_PAGE = 100;
+/** Bounds pages per repo so a huge backlog cannot pin a user-triggered sync
+ *  (and its SSE stream) for the whole maxDuration window. Hitting the cap exits
+ *  like a normal completion: partial results are kept. */
+const MAX_PAGES = 10;
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 400;
+const TIMEOUT_MS = 30_000;
 
 const IssueSchema = z.object({
   id: z.number(),
@@ -24,7 +26,7 @@ export type GithubIssue = z.infer<typeof IssueSchema>;
 const FATAL_ERROR = /GitHub fetch failed: (401|403|404|422)/;
 
 async function fetchPage(repo: string, page: number, token?: string): Promise<GithubIssue[]> {
-  const url = `https://api.github.com/repos/${repo}/issues?state=open&per_page=${GITHUB_PER_PAGE}&page=${page}&sort=updated&direction=desc`;
+  const url = `https://api.github.com/repos/${repo}/issues?state=open&per_page=${PER_PAGE}&page=${page}&sort=updated&direction=desc`;
   const res = await fetch(url, {
     headers: {
       "User-Agent": "feedbackflow-ai",
@@ -32,7 +34,7 @@ async function fetchPage(repo: string, page: number, token?: string): Promise<Gi
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     next: { revalidate: 0 },
-    signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
   // A schema failure throws like a fetch failure, so API drift retries.
@@ -41,16 +43,16 @@ async function fetchPage(repo: string, page: number, token?: string): Promise<Gi
 
 export async function fetchGithubIssues(repo: string, token?: string): Promise<GithubIssue[]> {
   const issues: GithubIssue[] = [];
-  for (let page = 1; page <= GITHUB_MAX_PAGES; page++) {
+  for (let page = 1; page <= MAX_PAGES; page++) {
     try {
       const batch = await withRetry(() => fetchPage(repo, page, token), {
-        retries: GITHUB_MAX_RETRIES,
-        baseDelay: GITHUB_RETRY_BASE_DELAY_MS,
+        retries: MAX_RETRIES,
+        baseDelay: RETRY_BASE_DELAY_MS,
         abortOn: FATAL_ERROR,
       });
       if (batch.length === 0) break;
       issues.push(...batch.filter((issue) => !issue.pull_request));
-      if (batch.length < GITHUB_PER_PAGE) break;
+      if (batch.length < PER_PAGE) break;
     } catch (e) {
       if (page === 1) throw e; // nothing fetched yet, so fail loudly
       break; // keep what we have on later-page failures

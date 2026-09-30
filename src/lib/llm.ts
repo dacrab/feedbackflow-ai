@@ -4,13 +4,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
-import {
-  LLM_MAX_RETRIES,
-  LLM_MAX_TOPICS,
-  MAX_RAW_CONTENT_LENGTH,
-  MAX_SEVERITY,
-  RATE_LIMITS,
-} from "@/lib/constants";
+import { LLM_MAX_TOPICS, MAX_RAW_CONTENT_LENGTH, MAX_SEVERITY, RATE_LIMITS } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
 import { type Analysis, AnalysisSchema, type LLMProvider } from "@/lib/types";
 
@@ -21,6 +15,9 @@ export type LLMOptions = { provider: LLMProvider; model: string; apiKey: string 
 export const FATAL_LLM_ERROR =
   /rate.?limit|per.?day|quota|credit|unauthorized|invalid.?api.?key|abort/i;
 
+/** The SDK's own retry budget: it backs off and honours Retry-After. */
+const MAX_RETRIES = 2;
+
 /** Raised by this app's own per-user limiter. Transient, and must not be
  *  classified as a fatal provider error. */
 export class ThrottledError extends Error {
@@ -30,8 +27,7 @@ export class ThrottledError extends Error {
   }
 }
 
-// Interpolated from the same constants the schema validates against, so the
-// model is never told a range the response would be rejected for.
+// Interpolated, so the model is never told a range the schema would reject.
 const SYSTEM_PROMPT =
   "You are a feedback classifier. Respond ONLY with a single valid JSON object, no markdown, no explanation:\n" +
   '{"sentiment":"positive|neutral|negative","topics":["tag1","tag2"],"severity_score":1,"summary":"one sentence"}\n' +
@@ -81,7 +77,7 @@ export async function analyzeFeedback({
     system: SYSTEM_PROMPT,
     output: Output.object({ schema: AnalysisSchema }),
     prompt: `Classify this feedback:\n${normalize(text)}`,
-    maxRetries: LLM_MAX_RETRIES,
+    maxRetries: MAX_RETRIES,
     ...(signal ? { abortSignal: signal } : {}),
   });
   return output;

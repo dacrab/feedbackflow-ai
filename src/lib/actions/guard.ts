@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { requireAuth } from "@/lib/api";
-import { RATE_LIMITS, SECRET_MAX_LENGTH } from "@/lib/constants";
+import { RATE_LIMITS } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
 
 /** Authenticates and charges the rate limit, before any database work. */
@@ -48,7 +48,10 @@ export function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
-/** Shared shape for any stored credential (LLM key, GitHub token). */
+/** Bounds the plaintext of any stored credential (LLM key, GitHub token);
+ *  keys are encrypted before they reach the database, so the stored value is
+ *  longer than what this allows in. */
+const SECRET_MAX_LENGTH = 512;
 export const secretSchema = z.string().max(SECRET_MAX_LENGTH);
 
 export function parse<T>(schema: z.ZodType<T>, value: unknown): T {

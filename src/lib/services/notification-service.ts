@@ -4,13 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, userNotifications } from "@/db/schema";
-import {
-  DIGEST_WINDOW_HOURS,
-  HIGH_SEVERITY_THRESHOLD,
-  MAX_SEVERITY,
-  SLACK_MAX_TEXT,
-  SLACK_TIMEOUT_MS,
-} from "@/lib/constants";
+import { DIGEST_WINDOW_HOURS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { tryDecrypt } from "@/lib/crypto";
 import type { Analysis } from "@/lib/types";
 
@@ -24,6 +18,11 @@ function slackEscape(text: string): string {
 
 // One digest is a summary; more rows than anyone reads just bloat the payload.
 const DIGEST_MAX_ROWS = 20;
+
+// Slack rejects payloads over ~4000 characters; stay well under that.
+const SLACK_MAX_TEXT = 3500;
+// A stalled webhook would otherwise hold the cron request open past its budget.
+const SLACK_TIMEOUT_MS = 10_000;
 
 async function notifySlack(text: string, url: string) {
   try {

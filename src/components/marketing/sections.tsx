@@ -200,7 +200,7 @@ export function AppPreview() {
 
           <div className="p-4 sm:p-6 space-y-4">
             <div>
-              <Eyebrow className="mb-2">overview</Eyebrow>
+              <Eyebrow className="mb-2">sample data</Eyebrow>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                 <MetricCard label="total" value="1,247" delta={38} />
                 <MetricCard label="positive" value="64%" />

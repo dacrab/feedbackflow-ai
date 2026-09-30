@@ -10,11 +10,9 @@ const isProtectedRoute = createRouteMatcher([
   // auth.protect() 404s non-document requests, breaking the SSE stream.
 ]);
 
-// `strict: true` makes Clerk mint a per-request nonce, sign it into a request
-// header, and add `script-src 'strict-dynamic' 'nonce-…'` — which is how Next
-// picks it up and stamps every script it renders. Directives below are merged
-// onto Clerk's defaults, so its extra host allow-list stays (inert under
-// 'strict-dynamic') and cannot be removed.
+// `strict: true` makes Clerk mint a per-request nonce and add
+// `script-src 'strict-dynamic' 'nonce-…'`, which is how Next stamps every
+// script it renders. The directives below merge onto Clerk's own defaults.
 export default clerkMiddleware(
   async (auth, req) => {
     if (isProtectedRoute(req)) await auth.protect();
