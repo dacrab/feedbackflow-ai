@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { rateLimitResponse, requireCron } from "@/lib/api";
-import { RATE_LIMITS, RUN_RETENTION_MS } from "@/lib/constants";
+import { DAY_MS, RATE_LIMITS } from "@/lib/constants";
 import { pruneOldRuns, sweepExpired } from "@/lib/rate-limit";
 import { runDigest } from "@/lib/services/digest-service";
 import { runIngest } from "@/lib/services/ingest-service";
@@ -12,9 +12,14 @@ export const dynamic = "force-dynamic";
 // the platform default — so 300 stays a literal here and in /api/sync.
 export const maxDuration = 300;
 
-// Leaves headroom under maxDuration so the loop exits and finalizeRun runs
+// Leaves headroom under maxDuration so the loop exits and finalizeRun runs,
 // instead of the platform killing the function with the run row unfinished.
-const CRON_BUDGET_MS = (maxDuration - 20) * 1000;
+const CRON_HEADROOM_SEC = 20;
+const CRON_BUDGET_MS = (maxDuration - CRON_HEADROOM_SEC) * 1000;
+
+/** Settings only ever shows the latest run, so older rows are storage cost
+ *  with no reader. */
+const RUN_RETENTION_MS = 30 * DAY_MS;
 
 export async function GET(req: Request) {
   const authError = requireCron(req);

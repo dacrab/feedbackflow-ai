@@ -7,7 +7,6 @@ import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { feedbackItems, userSources } from "@/db/schema";
-import { ADD_SOURCE_INGEST_LIMIT } from "@/lib/constants";
 import { encrypt } from "@/lib/crypto";
 import { runIngest } from "@/lib/services/ingest-service";
 import { uuidSchema } from "@/lib/types";
@@ -19,6 +18,9 @@ const repoSchema = z
 const tokenSchema = secretSchema.min(1);
 const patchSchema = z.object({ enabled: z.boolean() });
 
+/** Keeps the fire-and-forget ingest after an add inside the callback window. */
+const INGEST_MAX_ITEMS = 20;
+
 export async function addSource(repoRaw: string, token?: string) {
   const userId = await requireUser();
   const repo = parse(repoSchema, repoRaw);
@@ -27,20 +29,16 @@ export async function addSource(repoRaw: string, token?: string) {
   const source = await insertSource(userId, repo, ghToken);
 
   after(() => {
-    // Detached ingest of just this source, capped so it fits the callback
-    // window; cron covers the rest.
-    runIngest({ userId, sourceId: source.id, maxItems: ADD_SOURCE_INGEST_LIMIT }).catch((e) =>
+    // Detached ingest of just this source; cron covers the rest.
+    runIngest({ userId, sourceId: source.id, maxItems: INGEST_MAX_ITEMS }).catch((e) =>
       captureException(e),
     );
   });
   revalidatePath("/settings");
 }
 
-/**
- * The unique index on (user_id, repo) is the real guard against duplicates: it
- * turns a concurrent double-submit into a constraint violation instead of a
- * second row, which a check-then-insert could not.
- */
+/** The unique index on (user_id, repo) is the real guard against duplicates: a
+ *  concurrent double-submit becomes a violation, not a second row. */
 async function insertSource(userId: string, repo: string, token: string | undefined) {
   try {
     const [row] = await db
@@ -82,10 +80,9 @@ export async function deleteSource(id: string) {
     .limit(1);
   if (!source) return;
 
-  // Items are keyed `${repo}#${issueId}`, so the repo prefix identifies exactly
-  // this source's rows. Deleting them here is what stops a removed repo from
-  // living on in the inbox, dashboard and trend with no way to remove it.
-  // feedback_analyses cascades from feedback_items.
+  // Items are keyed `${repo}#${issueId}`, so the prefix identifies exactly this
+  // source's rows; without this a removed repo lives on in the inbox and
+  // dashboard. feedback_analyses cascades from feedback_items.
   await db.transaction(async (tx) => {
     await tx
       .delete(feedbackItems)

@@ -181,7 +181,6 @@ export async function runIngest(options: RunIngestOptions = {}): Promise<RunInge
       continue;
     }
 
-    // Filled in place so the finally block reports partial counts on a throw.
     const stats = newStats();
     try {
       await syncUser(userId, sources, await getUserLLMOpts(userId), options, stats);

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Button, ButtonLink, Input, Muted, PageHeader, Select } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
-import { INBOX_PAGE_SIZE, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
+import { MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
 import { getFeedbackItems } from "@/lib/services/feedback-service";
 import {
   FEEDBACK_STATUS_OPTIONS,
@@ -11,6 +11,8 @@ import {
   SENTIMENT_OPTIONS,
 } from "@/lib/types";
 import { InboxList } from "./inbox-list";
+
+const PAGE_SIZE = 20;
 
 const SearchParamsSchema = z.object({
   sentiment: z.enum(SENTIMENT_OPTIONS).optional(),
@@ -61,14 +63,14 @@ export default async function InboxPage({
 
   async function load(target: number) {
     return getFeedbackItems(userId, {
-      limit: INBOX_PAGE_SIZE,
-      offset: (target - 1) * INBOX_PAGE_SIZE,
+      limit: PAGE_SIZE,
+      offset: (target - 1) * PAGE_SIZE,
       filters: { ...filters, sort },
     });
   }
 
   const requested = await load(page);
-  const totalPages = Math.max(1, Math.ceil(requested.total / INBOX_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(requested.total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   // A stale ?page= asks for an offset past the last row, where the query
   // returns nothing; only then is a second read worth paying for.

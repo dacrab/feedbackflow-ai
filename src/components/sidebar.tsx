@@ -7,8 +7,11 @@ import { useState } from "react";
 import { Brand } from "@/components/logo";
 import { NAV_ITEMS } from "@/components/nav-items";
 import { IconButton, Muted } from "@/components/ui/ui";
-import { SIDEBAR_COLLAPSED_COOKIE, SIDEBAR_COOKIE_MAX_AGE_SEC } from "@/lib/constants";
+import { SIDEBAR_COLLAPSED_COOKIE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+
+/** A year: the collapse preference should survive a long weekend, not a decade. */
+const COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 365;
 
 export function Sidebar({
   userEmail,
@@ -24,7 +27,7 @@ export function Sidebar({
     const next = !collapsed;
     setCollapsed(next);
     // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not widely supported
-    document.cookie = `${SIDEBAR_COLLAPSED_COOKIE}=${next};path=/;max-age=${SIDEBAR_COOKIE_MAX_AGE_SEC}`;
+    document.cookie = `${SIDEBAR_COLLAPSED_COOKIE}=${next};path=/;max-age=${COOKIE_MAX_AGE_SEC}`;
   }
 
   return (

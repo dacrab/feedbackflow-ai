@@ -1,7 +1,6 @@
 "use client";
 
 import { ErrorPage } from "@/components/error-page";
-import { useReportError } from "@/lib/report-error";
 
 export default function GlobalError({
   error,
@@ -10,8 +9,6 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useReportError(error);
-
   // Renders outside the root layout, so it sets its own font.
   return (
     <html lang="en">

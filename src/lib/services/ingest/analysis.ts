@@ -113,8 +113,7 @@ export async function analyzeAndStore(
       onProgress("analysis_ok", `analyzed ${count}/${items.length}`);
       if (analysis.severity_score >= HIGH_SEVERITY_THRESHOLD) highSeverity.push(analysis);
     }
-    // An exhausted provider quota or a rejected key fails for every remaining
-    // item too. Our own throttle clears on its own, so it does not stop the pass.
+    // An exhausted quota or a rejected key fails every remaining item too.
     if (fatal) {
       hasError = true;
       break;

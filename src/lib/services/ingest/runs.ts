@@ -3,9 +3,12 @@ import "server-only";
 import { and, eq, isNull, lt } from "drizzle-orm";
 import { db } from "@/db/client";
 import { ingestRuns } from "@/db/schema";
-import { ACTIVE_RUN_WINDOW_MS } from "@/lib/constants";
 
-// Filled in place, so the caller can finalize the run row with partial counts.
+/** Past this, a run still open was killed by the platform rather than still
+ *  working: /api/sync caps maxDuration at 300s. */
+const STALE_AFTER_MS = 10 * 60_000;
+
+/** Mutable: a run that dies partway is finalised with the counts it reached. */
 export interface SyncStats {
   fetched: number;
   inserted: number;
@@ -32,7 +35,7 @@ export async function reclaimStaleRuns(userId: string) {
       and(
         eq(ingestRuns.userId, userId),
         isNull(ingestRuns.finishedAt),
-        lt(ingestRuns.startedAt, new Date(Date.now() - ACTIVE_RUN_WINDOW_MS)),
+        lt(ingestRuns.startedAt, new Date(Date.now() - STALE_AFTER_MS)),
       ),
     );
 }

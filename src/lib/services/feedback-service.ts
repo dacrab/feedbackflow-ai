@@ -4,7 +4,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
-import { MAX_SEARCH_TERM_LENGTH, PREVIEW_CONTENT_CHARS } from "@/lib/constants";
+import { MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
 import type {
   FeedbackAnalysisData,
   FeedbackItemWithAnalysis,
@@ -12,6 +12,9 @@ import type {
   InboxSort,
   Sentiment,
 } from "@/lib/types";
+
+/** The list loads a prefix of each row; the full body stays on the detail page. */
+const PREVIEW_CONTENT_CHARS = 240;
 
 const feedbackSelect = {
   id: feedbackItems.id,
@@ -42,10 +45,8 @@ function escapeLike(term: string): string {
   return term.replace(/[\\%_]/g, "\\$&");
 }
 
-/** An absent or undefined field means "not filtered on". The `| undefined` is
- *  spelled out because exactOptionalPropertyTypes otherwise forbids a caller
- *  from passing the key at all with an undefined value — which is exactly what
- *  an untouched inbox filter is. */
+/** An absent field means "not filtered on"; the explicit `| undefined` is
+ *  required by exactOptionalPropertyTypes for a caller to omit the key. */
 export type FeedbackFilters = {
   sentiment?: Sentiment | undefined;
   status?: FeedbackStatus | undefined;
