@@ -5,8 +5,6 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
 
-const webhookSecret = process.env["CLERK_WEBHOOK_SECRET"];
-
 const ClerkEventSchema = z.object({
   type: z.string(),
   data: z.record(z.string(), z.unknown()),
@@ -20,15 +18,17 @@ const ClerkUserSchema = z.object({
 });
 
 async function handle(req: Request) {
+  // Read per request so a runtime env injection is not missed.
+  const webhookSecret = process.env["CLERK_WEBHOOK_SECRET"];
   if (!webhookSecret) {
     return NextResponse.json({ error: "CLERK_WEBHOOK_SECRET not configured" }, { status: 500 });
   }
 
-  const svix_id = req.headers.get("svix-id");
-  const svix_timestamp = req.headers.get("svix-timestamp");
-  const svix_signature = req.headers.get("svix-signature");
+  const svixId = req.headers.get("svix-id");
+  const svixTimestamp = req.headers.get("svix-timestamp");
+  const svixSignature = req.headers.get("svix-signature");
 
-  if (!(svix_id && svix_timestamp && svix_signature)) {
+  if (!(svixId && svixTimestamp && svixSignature)) {
     return NextResponse.json({ error: "missing svix headers" }, { status: 400 });
   }
 
@@ -39,27 +39,25 @@ async function handle(req: Request) {
   try {
     evt = ClerkEventSchema.parse(
       wh.verify(body, {
-        "svix-id": svix_id,
-        "svix-timestamp": svix_timestamp,
-        "svix-signature": svix_signature,
+        "svix-id": svixId,
+        "svix-timestamp": svixTimestamp,
+        "svix-signature": svixSignature,
       }),
     );
   } catch {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
 
-  const eventType = evt.type;
+  const { type: eventType } = evt;
 
-  // Clerk sends many event types (session.*, organization.*, ...). Only the
-  // user.* events carry the shape we care about — acknowledge the rest.
+  // Only user.* events carry a shape we use; ack everything else.
   if (!eventType.startsWith("user.")) {
     return NextResponse.json({ received: true });
   }
 
   const parsed = ClerkUserSchema.safeParse(evt.data);
   if (!parsed.success) {
-    // A user.* event with an unexpected shape (e.g. a new Clerk event type)
-    // must not 500 — ack it so Clerk stops retrying.
+    // Ack an unexpected shape rather than 500, so Clerk stops retrying.
     return NextResponse.json({ received: true });
   }
   const data = parsed.data;

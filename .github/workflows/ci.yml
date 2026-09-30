@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "renovate/**"]
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,13 +22,33 @@ jobs:
         with:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
       - run: bun install --frozen-lockfile
 
+      # Not SHA-pinned like the other actions; pin it when the real digest is
+      # known rather than guessing one.
       - uses: dopplerhq/cli-action@v4
-
-      - name: Check
-        run: bun run typecheck && bun run lint
-      - name: Test
-        run: doppler run -- bun run test
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+
+      # Runs before typecheck: `next build` generates next-env.d.ts and
+      # .next/types, without which tsc has no Next ambient types.
+      - name: Build
+        run: doppler run -- bun run build
+
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      # A hand-audited palette drifts; this fails instead.
+      - name: Contrast
+        run: bun run contrast
+      # Needs no secrets: env vars and the database are mocked per file.
+      # Coverage gates the tenant-isolation modules.
+      - name: Test
+        run: bun run test:coverage
+      - name: Knip
+        run: doppler run -- bun run knip
+      - name: Drizzle check
+        run: bun run db:check

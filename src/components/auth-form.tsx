@@ -1,5 +1,3 @@
-"use client";
-
 import { SignIn, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/ui";
@@ -18,7 +16,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
 
   return (
-    <div className="space-y-6 font-mono">
+    <div className="space-y-6">
       <PageHeader eyebrow={isSignup ? "new user" : "authentication"} title={mode} />
 
       {isSignup ? (

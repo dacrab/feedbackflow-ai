@@ -1,9 +1,10 @@
 import * as Sentry from "@sentry/nextjs";
-import { rateLimitMiddleware, requireAuth, UnauthorizedError } from "@/lib/api";
+import { jsonError, rateLimitResponse, requireAuth, UnauthorizedError } from "@/lib/api";
 import { RATE_LIMITS } from "@/lib/constants";
 import { runIngest } from "@/lib/services/ingest-service";
 
-export const dynamic = "force-dynamic";
+// Literal, not imported: Next's static extraction rejects identifiers. See
+// /api/cron for the same value and the reason it cannot be shared.
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
@@ -11,18 +12,17 @@ export async function POST(req: Request) {
   try {
     userId = await requireAuth();
   } catch (err) {
-    if (err instanceof UnauthorizedError) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
-    }
+    if (err instanceof UnauthorizedError) return jsonError("unauthorized", 401);
     throw err;
   }
 
-  const rl = await rateLimitMiddleware(req, `sync:${userId}`, RATE_LIMITS.sync);
+  // The user id is already an unforgeable identity; adding IP would only let a
+  // session holder mint a fresh bucket by rotating the header.
+  const rl = await rateLimitResponse(`sync:${userId}`, RATE_LIMITS.sync);
   if (rl) return rl;
 
   const enc = new TextEncoder();
   const abortCtrl = new AbortController();
-
   req.signal.addEventListener("abort", () => abortCtrl.abort());
 
   const stream = new ReadableStream({
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       try {
         send("fetching", "connecting...");
         const { fetched, inserted, analyzed } = await runIngest({
-          onProgress: (event) => send(event.stage, event.message),
+          onProgress: (stage, message) => send(stage, message),
           signal: abortCtrl.signal,
           userId,
         });
@@ -47,7 +47,8 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         Sentry.captureException(err, { extra: { context: "api-sync" } });
-        send("error", err instanceof Error ? err.message : "sync failed");
+        // Upstream/DB text can leak internals, and React strips it in production.
+        send("error", "sync failed — check your sources and LLM settings, then try again");
       } finally {
         ctrl.close();
       }
@@ -56,9 +57,11 @@ export async function POST(req: Request) {
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      "Content-Type": "text/event-stream; charset=utf-8",
+      // X-Accel-Buffering: a buffering proxy would hold every event until
+      // the stream closes.
+      "Cache-Control": "no-store, no-transform",
+      "X-Accel-Buffering": "no",
     },
   });
 }

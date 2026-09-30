@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/actions", () => ({
   saveSettings: vi.fn().mockResolvedValue(undefined),
@@ -13,7 +13,11 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { LLMSettingsCard } from "./llm-settings-card";
 
-afterEach(cleanup);
+// Call counts accumulate across tests otherwise, so `toHaveBeenCalledOnce`
+// would only pass by accident of ordering.
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("LLMSettingsCard", () => {
   it("renders provider and model selects", () => {

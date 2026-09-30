@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Dark mode is driven by the `.dark` class that next-themes toggles, not by
+   the OS, so `dark:` utilities have to follow the same selector. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -12,10 +16,29 @@
   --color-card: oklch(100% 0 0);
 
   --color-chart-1: oklch(55% 0.2 250);
-  --color-chart-2: oklch(65% 0.15 165);
-  --color-chart-3: oklch(70% 0.12 85);
-  --color-chart-4: oklch(65% 0.2 145);
+  --color-chart-2: oklch(60% 0.15 165);
+  --color-chart-3: oklch(64% 0.12 85);
+  --color-chart-4: oklch(59% 0.2 145);
   --color-chart-5: oklch(55% 0.15 25);
+
+  /* Semantic accents. Tailwind's raw *-500 palette only clears 2.2-4.4:1 on a
+     white card, and every one of these is rendered at text-xs; these values
+     clear 4.5:1 in both modes. */
+  --color-good: oklch(55% 0.15 150);
+  --color-warn: oklch(58% 0.16 60);
+  --color-danger: oklch(59% 0.19 25);
+  --color-info: oklch(57% 0.17 255);
+  --color-accent: oklch(59% 0.2 300);
+
+  /* --color-border is a decorative hairline; a control outline needs the 3:1
+     of WCAG 1.4.11 to be perceivable at all. */
+  --color-control: oklch(66% 0 0);
+
+  /* The auth panel paints bg-foreground, so it inverts per mode and cannot
+     use background/N: that composites to 2.7:1 in dark mode. */
+  --color-inverse-muted: oklch(78% 0 0);
+  --color-inverse-subtle: oklch(62% 0 0);
+  --color-inverse-accent: oklch(80% 0.17 150);
 }
 
 .dark {
@@ -25,6 +48,17 @@
   --color-muted-foreground: oklch(65% 0 0);
   --color-border: oklch(22% 0 0);
   --color-card: oklch(14% 0 0);
+
+  --color-good: oklch(60% 0.15 150);
+  --color-warn: oklch(60% 0.16 60);
+  --color-danger: oklch(60% 0.19 25);
+  --color-info: oklch(60% 0.17 255);
+  --color-accent: oklch(60% 0.2 300);
+  --color-control: oklch(48% 0 0);
+
+  --color-inverse-muted: oklch(38% 0 0);
+  --color-inverse-subtle: oklch(52% 0 0);
+  --color-inverse-accent: oklch(45% 0.17 150);
 }
 
 @layer base {
@@ -38,13 +72,12 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-mono;
   }
 
   button,
   [role="button"],
   a,
-  select,
   input[type="checkbox"],
   input[type="radio"],
   label[for] {
@@ -96,20 +129,32 @@
   }
 }
 
-@layer utilities {
-  .animate-slide-down {
-    animation: slideDown 0.15s ease-out;
-  }
+/* @utility, not a plain class in @layer utilities, so the names can still take
+   variants such as hover: and md:. */
+@utility animate-slide-down {
+  animation: slideDown 0.15s ease-out;
+}
 
-  .animate-fade-up {
-    animation: fadeUp 0.2s ease-out;
-  }
+@utility animate-fade-up {
+  animation: fadeUp 0.2s ease-out;
+}
 
-  .animate-slide-right {
-    animation: slideRight 0.25s ease-out;
-  }
+@utility animate-slide-right {
+  animation: slideRight 0.25s ease-out;
+}
 
+@utility animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Unlayered, so it outranks Tailwind's own @layer utilities without needing
+   !important: the transform-based entrance animations are exactly the trigger
+   for motion-sensitive users. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-down,
+  .animate-fade-up,
+  .animate-slide-right,
   .animate-fade-in {
-    animation: fadeIn 0.2s ease-out;
+    animation: none;
   }
 }

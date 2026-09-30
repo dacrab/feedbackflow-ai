@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "ignoreUnknown": true, "includes": ["**", "!drizzle"] },
   "css": { "parser": { "tailwindDirectives": true } },
@@ -12,61 +12,56 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended",
       "a11y": {
         "noSvgWithoutTitle": "off",
-        "useButtonType": "warn"
+        "useButtonType": "error"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": {
-          "level": "warn",
+          "level": "error",
           "options": { "maxAllowedComplexity": 15 }
         },
-        "noForEach": "off",
         "noUselessUndefined": "error",
         "useLiteralKeys": "off",
-        "useSimplifiedLogicExpression": "warn"
+        "useSimplifiedLogicExpression": "error"
       },
       "correctness": {
-        "noUnusedFunctionParameters": "warn",
         "noUnusedImports": "error",
         "noUnusedVariables": "error",
-        "useExhaustiveDependencies": "warn",
+        "useExhaustiveDependencies": "error",
         "useHookAtTopLevel": "error"
       },
       "performance": {
-        "noAccumulatingSpread": "warn",
-        "noDelete": "warn"
+        "noAccumulatingSpread": "error",
+        "noDelete": "error"
       },
       "security": {
-        "noDangerouslySetInnerHtml": "warn"
+        "noDangerouslySetInnerHtml": "error"
       },
       "suspicious": {
-        "noArrayIndexKey": "warn",
+        "noArrayIndexKey": "error",
         "noCommentText": "off",
         "noConsole": "warn",
         "noDebugger": "error",
         "noConfusingVoidType": "error",
         "noDoubleEquals": "error",
         "noExplicitAny": "error",
-        "noImplicitAnyLet": "warn",
+        "noImplicitAnyLet": "error",
         "noMisleadingInstantiator": "error",
         "noRedeclare": "error",
         "noSelfCompare": "error",
         "noVar": "error"
       },
       "style": {
-        "noNonNullAssertion": "warn",
+        "noNonNullAssertion": "error",
         "noParameterAssign": "error",
         "noUselessElse": "error",
         "noUnusedTemplateLiteral": "error",
-        "useCollapsedElseIf": "warn",
-        "useConsistentArrayType": "warn",
-        "useConsistentBuiltinInstantiation": "error",
+        "useCollapsedElseIf": "error",
         "useConst": "error",
         "useDefaultParameterLast": "error",
         "useImportType": "error",
-        "useSelfClosingElements": "warn",
+        "useSelfClosingElements": "error",
         "useShorthandAssign": "error",
         "useSingleVarDeclarator": "error",
         "useTemplate": "error",
@@ -80,7 +75,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/db/seed.ts"],
+      "includes": ["src/db/seed.ts", "scripts/*.mjs"],
       "linter": {
         "rules": {
           "suspicious": {

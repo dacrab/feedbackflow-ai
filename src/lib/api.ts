@@ -6,16 +6,20 @@ import { NextResponse } from "next/server";
 import { cache } from "react";
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
+import { PROVISIONING_MESSAGE } from "@/lib/constants";
 import { timingSafeEqual } from "@/lib/crypto";
 import { type RateLimitConfig, rateLimit } from "@/lib/rate-limit";
 
-// Typed so route handlers can distinguish auth failures from other errors
-// (e.g. a DB provisioning error) instead of matching on message text.
+// Typed so handlers can tell an auth failure from a DB error.
 export class UnauthorizedError extends Error {
   constructor() {
     super("unauthorized");
     this.name = "UnauthorizedError";
   }
+}
+
+export function jsonError(message: string, status: number, headers?: HeadersInit) {
+  return NextResponse.json({ error: message }, { status, ...(headers && { headers }) });
 }
 
 export const getServerSession = cache(async () => {
@@ -26,9 +30,7 @@ export const getServerSession = cache(async () => {
     .from(user)
     .where(eq(user.id, userId))
     .limit(1);
-  if (!row) {
-    throw new Error("account is being provisioned — please try again in a moment");
-  }
+  if (!row) throw new Error(PROVISIONING_MESSAGE);
   return { user: { id: userId, email: row.email, name: row.name } };
 });
 
@@ -38,7 +40,12 @@ export async function requireAuth(): Promise<string> {
   return session.user.id;
 }
 
-function isValidCronRequest(req: Request): boolean {
+/** Returns a 401 response when the caller is not the cron scheduler. Only the
+ *  bearer scheme Vercel sends exists: a second header scheme would be a second
+ *  secret to rotate and a second place to get the comparison wrong. */
+export function requireCron(req: Request): Response | undefined {
+  // Fails closed, so an authenticated user cannot trigger a platform-wide
+  // ingest/digest, and a misconfigured deploy cannot silently run open.
   const cronSecret = process.env["CRON_SECRET"];
   const authHeader = req.headers.get("authorization");
   if (
@@ -46,39 +53,19 @@ function isValidCronRequest(req: Request): boolean {
     authHeader?.startsWith("Bearer ") &&
     timingSafeEqual(authHeader.slice("Bearer ".length), cronSecret)
   ) {
-    return true;
+    return undefined;
   }
-  const token = req.headers.get("x-cron-token");
-  const cronToken = process.env["CRON_TOKEN"];
-  return !!(cronToken && token && timingSafeEqual(token, cronToken));
+  return jsonError("unauthorized", 401);
 }
 
-export function requireCron(req: Request): Response | undefined {
-  if (isValidCronRequest(req)) return undefined;
-  return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-}
-
-export async function rateLimitMiddleware(
-  req: Request,
-  prefix: string,
+/** Keyed on a caller-chosen identity, not a request header: `x-forwarded-for`
+ *  is trivially rotated, so trusting it would make the limit meaningless. */
+export async function rateLimitResponse(
+  identity: string,
   config: RateLimitConfig,
 ): Promise<Response | undefined> {
-  const ip = clientIp(req);
-  const ok = await rateLimit(`${prefix}:${ip}`, config);
-  if (!ok)
-    return NextResponse.json(
-      { error: "too many requests" },
-      { status: 429, headers: { "Retry-After": String(config.windowMs / 1000) } },
-    );
-  return undefined;
-}
-
-function clientIp(req: Request): string {
-  // Platform-set headers are trusted. In x-forwarded-for the leftmost values
-  // come from the client and are trivially spoofable; only the rightmost entry
-  // is appended by the trusted proxy, so fall back to that.
-  const realIp = req.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
-  const lastForwarded = req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
-  return lastForwarded || "unknown";
+  if (await rateLimit(identity, config)) return undefined;
+  return jsonError("too many requests", 429, {
+    "Retry-After": String(Math.ceil(config.windowMs / 1000)),
+  });
 }

@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 
 let _db: ReturnType<typeof drizzle> | undefined;
 
+// Lazy, so `next build` (no DATABASE_URL) does not throw at import time.
 function getDb() {
   if (!_db) {
     const url = process.env["DATABASE_URL"];
@@ -13,7 +14,7 @@ function getDb() {
 }
 
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
-  get(_target, prop, receiver) {
-    return Reflect.get(getDb() as object, prop, receiver);
+  get(_target, prop) {
+    return Reflect.get(getDb() as object, prop);
   },
 });

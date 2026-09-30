@@ -1,90 +1,90 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, EmptyState, Input, Muted, Select, TextButton } from "@/components/ui/ui";
+import { Card, EmptyState, ExternalLink, Muted, Select, TextButton } from "@/components/ui/ui";
 import { addNotification, deleteNotification, updateNotification } from "@/lib/actions";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import type { HookRow } from "@/lib/services/settings-service";
 import { confirmDelete, useAction } from "@/lib/use-action";
-import { EnabledStatus, ListItem, ListSection, RowActions } from "./list-item";
+import { AddResourceForm, ResourceList, ResourceRow } from "./list-item";
+
+const SLACK_WEBHOOK_DOCS = "https://api.slack.com/messaging/webhooks";
+const SEVERITIES = Array.from({ length: MAX_SEVERITY }, (_, i) => i + 1);
 
 function WebhookItem({ hook }: { hook: HookRow }) {
-  const [editingSeverity, setEditingSeverity] = useState(false);
-  const [minSeverity, setMinSeverity] = useState(
-    hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
-  );
+  const threshold = hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD;
+  const [editing, setEditing] = useState(false);
+  const [minSeverity, setMinSeverity] = useState(threshold);
   const { run, pending } = useAction();
 
-  function cancelEdit() {
-    setMinSeverity(hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD);
-    setEditingSeverity(false);
-  }
-
-  function onDelete() {
-    confirmDelete("delete this webhook?", () =>
-      run(() => deleteNotification(hook.id), "webhook deleted"),
-    );
+  function saveSeverity() {
+    run(() => updateNotification(hook.id, { minSeverity }), "updated").then((ok) => {
+      // Only close on success.
+      if (ok) setEditing(false);
+    });
   }
 
   return (
-    <ListItem>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-medium">slack webhook</p>
-          <EnabledStatus enabled={hook.enabled} />
-        </div>
-        <RowActions
-          enabled={hook.enabled}
-          pending={pending}
-          onToggle={() =>
-            run(
-              () => updateNotification(hook.id, { enabled: !hook.enabled }),
-              hook.enabled ? "disabled" : "enabled",
-            )
-          }
-          onDelete={onDelete}
-        />
-      </div>
-
+    <ResourceRow
+      title="slack webhook"
+      enabled={hook.enabled}
+      pending={pending}
+      onToggle={() =>
+        run(
+          () => updateNotification(hook.id, { enabled: !hook.enabled }),
+          hook.enabled ? "disabled" : "enabled",
+        )
+      }
+      onDelete={() =>
+        confirmDelete("delete this webhook?", () =>
+          run(() => deleteNotification(hook.id), "webhook deleted"),
+        )
+      }
+    >
       <div className="flex items-center gap-2">
         <Muted>alert on severity ≥</Muted>
-        {editingSeverity ? (
+        {editing ? (
           <div className="flex items-center gap-2 animate-slide-down">
             <Select
+              aria-label="minimum severity"
               size="xs"
               value={String(minSeverity)}
               onChange={(e) => setMinSeverity(Number(e.target.value))}
               className="w-16"
             >
-              {Array.from({ length: MAX_SEVERITY }, (_, i) => i + 1).map((n) => (
+              {SEVERITIES.map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
               ))}
             </Select>
             <TextButton
-              className="text-green-500 hover:text-green-400"
+              className="text-good hover:text-good/80"
               disabled={pending}
-              onClick={() => {
-                run(() => updateNotification(hook.id, { minSeverity }), "updated");
-                setEditingSeverity(false);
-              }}
+              onClick={saveSeverity}
             >
               save
             </TextButton>
-            <TextButton onClick={cancelEdit}>cancel</TextButton>
+            <TextButton
+              onClick={() => {
+                setMinSeverity(threshold);
+                setEditing(false);
+              }}
+            >
+              cancel
+            </TextButton>
           </div>
         ) : (
           <TextButton
             className="font-medium text-foreground hover:text-muted-foreground"
-            onClick={() => setEditingSeverity(true)}
+            onClick={() => setEditing(true)}
           >
-            {hook.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD}
+            {threshold}
             <Muted className="ml-1">edit</Muted>
           </TextButton>
         )}
       </div>
-    </ListItem>
+    </ResourceRow>
   );
 }
 
@@ -92,48 +92,33 @@ export function NotificationsCard({ hooks }: { hooks: HookRow[] }) {
   const [slackUrl, setSlackUrl] = useState("");
   const { run, pending } = useAction();
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    run(async () => {
-      await addNotification(slackUrl);
-      setSlackUrl("");
-    }, "webhook added");
-  }
-
   return (
     <Card title="notifications">
-      <form onSubmit={onSubmit} className="space-y-2">
-        <Input
-          variant="sm"
-          placeholder="https://hooks.slack.com/services/..."
-          value={slackUrl}
-          onChange={(e) => setSlackUrl(e.target.value)}
-          type="url"
-        />
-        <Muted>
-          alerts sent when feedback severity meets the threshold.{" "}
-          <a
-            href="https://api.slack.com/messaging/webhooks"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2 hover:text-foreground transition-colors"
-          >
-            get webhook ↗
-          </a>
-        </Muted>
-        <Button
-          type="submit"
-          size="sm"
-          isLoading={pending}
-          loadingText="adding..."
-          disabled={!slackUrl}
-          className="w-full"
-        >
-          add webhook
-        </Button>
-      </form>
+      <AddResourceForm
+        id="hook-url"
+        label="slack webhook url"
+        placeholder="https://hooks.slack.com/services/..."
+        submitLabel="add webhook"
+        value={slackUrl}
+        onValueChange={setSlackUrl}
+        onSubmit={() =>
+          run(async () => {
+            await addNotification(slackUrl);
+            setSlackUrl("");
+          }, "webhook added")
+        }
+        pending={pending}
+        disabled={!slackUrl}
+        inputType="url"
+        hint={
+          <Muted>
+            alerts sent when feedback severity meets the threshold.{" "}
+            <ExternalLink href={SLACK_WEBHOOK_DOCS}>get webhook ↗</ExternalLink>
+          </Muted>
+        }
+      />
 
-      <ListSection>
+      <ResourceList>
         {hooks.length === 0 ? (
           <EmptyState
             title="no webhooks configured"
@@ -142,7 +127,7 @@ export function NotificationsCard({ hooks }: { hooks: HookRow[] }) {
         ) : (
           hooks.map((h) => <WebhookItem key={h.id} hook={h} />)
         )}
-      </ListSection>
+      </ResourceList>
     </Card>
   );
 }

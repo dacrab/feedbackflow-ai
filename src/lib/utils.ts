@@ -1,35 +1,49 @@
 import { twMerge } from "tailwind-merge";
-import { HIGH_SEVERITY_THRESHOLD, MEDIUM_SEVERITY_THRESHOLD } from "@/lib/constants";
+import { HIGH_SEVERITY_THRESHOLD } from "@/lib/constants";
+import type { Sentiment } from "@/lib/types";
 
 export function cn(...inputs: (string | undefined | null | false | 0)[]) {
   return twMerge(...inputs);
 }
 
+// React strips server-thrown messages in production, replacing them with this.
+// Detected so callers fall back to their own copy.
+const RSC_REDACTED_PREFIX = "An error occurred in the Server Components render";
+
 export function handleActionError(e: unknown, fallback = "Action failed") {
-  return e instanceof Error ? e.message : fallback;
+  if (e instanceof Error && e.message && !e.message.startsWith(RSC_REDACTED_PREFIX)) {
+    return e.message;
+  }
+  return fallback;
 }
 
-export const sevColor = (severity: number) =>
-  severity >= HIGH_SEVERITY_THRESHOLD
-    ? "text-red-500"
-    : severity >= MEDIUM_SEVERITY_THRESHOLD
-      ? "text-orange-500"
-      : "text-muted-foreground";
+type SeverityBand = "high" | "medium" | "low";
 
-export const sevLabel = (severity: number) =>
-  severity >= HIGH_SEVERITY_THRESHOLD
-    ? "high severity"
-    : severity >= MEDIUM_SEVERITY_THRESHOLD
-      ? "medium severity"
-      : "low severity";
+/** HIGH is shared with the notify/alerts path, so both agree on "critical". */
+const MEDIUM_SEVERITY = 3;
 
-const SENTIMENT_COLOR_MAP: Record<string, string> = {
-  positive: "text-green-500",
-  negative: "text-red-500",
+const SEV_BAND_COLOR: Record<SeverityBand, string> = {
+  high: "text-danger",
+  medium: "text-warn",
+  low: "text-muted-foreground",
 };
 
-export const sentimentColor = (sentiment: string) =>
-  SENTIMENT_COLOR_MAP[sentiment] ?? "text-muted-foreground";
+function sevBand(severity: number): SeverityBand {
+  if (severity >= HIGH_SEVERITY_THRESHOLD) return "high";
+  if (severity >= MEDIUM_SEVERITY) return "medium";
+  return "low";
+}
+
+export const sevColor = (severity: number) => SEV_BAND_COLOR[sevBand(severity)];
+export const sevLabel = (severity: number) => `${sevBand(severity)} severity`;
+
+const SENTIMENT_COLOR: Record<Sentiment, string> = {
+  positive: "text-good",
+  neutral: "text-muted-foreground",
+  negative: "text-danger",
+};
+
+export const sentimentColor = (sentiment: Sentiment) => SENTIMENT_COLOR[sentiment];
 
 export const formatDateUTC = (iso: string) =>
   new Date(iso).toLocaleString("en-US", {
@@ -41,18 +55,15 @@ export const formatDateUTC = (iso: string) =>
     minute: "2-digit",
   });
 
-export const formatShortDate = (isoDate: string) => {
-  const parts = isoDate.split("-");
-  return `${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
-};
+/** "2026-06-15" -> "06-15" (chart axis label; the year is always the current one). */
+export const formatShortDate = (day: string) => day.slice(5);
 
 const MINUTE_SEC = 60;
 const HOUR_SEC = 60 * MINUTE_SEC;
 const DAY_SEC = 24 * HOUR_SEC;
 const HOUR_MS = HOUR_SEC * 1000;
 
-export const getDateNHoursAgo = (hours: number) =>
-  new Date(Date.now() - hours * HOUR_MS).toISOString();
+export const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR_MS);
 
 export function timeAgo(date: Date | string): string {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -65,20 +76,26 @@ export function timeAgo(date: Date | string): string {
 export interface RetryOptions {
   retries: number;
   baseDelay: number;
+  /** Stop retrying as soon as an error matches — retrying can't help. */
   abortOn?: RegExp;
+  signal?: AbortSignal;
 }
 
 export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions): Promise<T> {
+  const attempts = Math.max(0, opts.retries) + 1;
   let lastErr: unknown;
-  for (let attempt = 0; attempt <= opts.retries; attempt++) {
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       return await fn();
     } catch (err) {
       lastErr = err;
+      if (opts.signal?.aborted) break;
       if (opts.abortOn?.test(String(err))) break;
-      if (attempt < opts.retries)
+      if (attempt < attempts - 1) {
         await new Promise((r) => setTimeout(r, opts.baseDelay * (attempt + 1)));
+      }
     }
   }
-  throw lastErr;
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }

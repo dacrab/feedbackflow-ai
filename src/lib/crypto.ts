@@ -1,5 +1,11 @@
-import crypto from "node:crypto";
+import "server-only";
 
+import crypto from "node:crypto";
+import * as Sentry from "@sentry/nextjs";
+
+/** HKDF salt. A stored-key derivation parameter, not display text: changing it
+ *  invalidates every provider key already encrypted in the database, so it is
+ *  deliberately not derived from APP_NAME. */
 const SALT = "feedbackflow-aes-256-gcm";
 const VERSION = "v1";
 const KEY_BYTES = 32;
@@ -25,32 +31,36 @@ export function encrypt(plain: string): string {
   return `${VERSION}:${Buffer.concat([iv, tag, enc]).toString("base64")}`;
 }
 
-export function decrypt(b64: string): string {
+export function decrypt(payload: string): string {
+  // Resolve the key first: a missing key is an operator problem, not bad data.
+  const k = getKey();
+  if (!payload.startsWith(`${VERSION}:`)) throw new Error("unsupported ciphertext version");
+  const buf = Buffer.from(payload.slice(VERSION.length + 1), "base64");
   try {
-    const payload = b64.startsWith(`${VERSION}:`) ? b64.slice(VERSION.length + 1) : b64;
-    const buf = Buffer.from(payload, "base64");
-    const decipher = crypto.createDecipheriv(
-      "aes-256-gcm",
-      getKey(),
-      buf.subarray(0, GCM_IV_BYTES),
-    );
+    const decipher = crypto.createDecipheriv("aes-256-gcm", k, buf.subarray(0, GCM_IV_BYTES));
     decipher.setAuthTag(buf.subarray(GCM_IV_BYTES, AUTH_TAG_END));
     return Buffer.concat([decipher.update(buf.subarray(AUTH_TAG_END)), decipher.final()]).toString(
       "utf8",
     );
-  } catch {
-    throw new Error("decryption failed");
+  } catch (e) {
+    throw new Error("decryption failed", { cause: e });
   }
 }
 
-const DUMMY = Buffer.alloc(64);
-
-export function timingSafeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) {
-    crypto.timingSafeEqual(DUMMY, DUMMY);
-    return false;
+// One undecryptable row must never abort a whole user's sync.
+export function tryDecrypt(cipher: string | null, context: string): string | undefined {
+  if (!cipher) return undefined;
+  try {
+    return decrypt(cipher);
+  } catch (e) {
+    Sentry.captureException(e, { extra: { context } });
+    return undefined;
   }
-  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Hash first: fixed-length buffers, so no length leak and equal cost.
+export function timingSafeEqual(a: string, b: string): boolean {
+  const ha = crypto.createHash("sha256").update(a).digest();
+  const hb = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
 }

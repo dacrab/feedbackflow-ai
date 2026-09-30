@@ -21,17 +21,21 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-
-      - run: bun install --frozen-lockfile
+        with:
+          persist-credentials: false
 
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
-          format: table
-          exit-code: '1'
+          format: sarif
+          output: trivy.sarif
           severity: CRITICAL,HIGH
+          # One unfixable advisory in a devDependency otherwise redlines the
+          # build forever with nothing to do about it.
+          ignore-unfixed: true
+          scanners: vuln,secret,misconfig
+          exit-code: '1'
 
-
-
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif

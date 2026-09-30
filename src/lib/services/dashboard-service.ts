@@ -3,13 +3,10 @@ import "server-only";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems, feedbackTopics, feedbackTrend } from "@/db/schema";
-import { DASHBOARD_TOP_TOPICS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
+import { DAY_MS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { formatShortDate } from "@/lib/utils";
 
-const DASHBOARD_WINDOW_DAYS = 30;
-const DASHBOARD_WINDOW_MS = DASHBOARD_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-
-interface ComputedMetrics {
+export interface DashboardData {
   total: number;
   positive: number;
   neutral: number;
@@ -21,9 +18,6 @@ interface ComputedMetrics {
   trendValues: number[];
   trendDelta: number;
   topTopics: Array<{ topic: string; value: number }>;
-}
-
-export interface DashboardData extends ComputedMetrics {
   severityHist: Record<number, number>;
 }
 
@@ -65,8 +59,12 @@ function buildSeverityHist(rows: Array<{ score: number; cnt: number }>): Record<
   return hist;
 }
 
+const WINDOW_DAYS = 30;
+const TOP_TOPICS = 10;
+
 export async function getDashboard(userId: string): Promise<DashboardData> {
-  const since = new Date(Date.now() - DASHBOARD_WINDOW_MS);
+  const since = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
+  const sinceDay = sql`${since}::date`;
   const base = and(eq(feedbackItems.userId, userId), gte(feedbackItems.createdAt, since));
 
   const [summaryRows, severityRows, trendRows, topicRows] = await Promise.all([
@@ -99,7 +97,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
         delta: feedbackTrend.delta,
       })
       .from(feedbackTrend)
-      .where(and(eq(feedbackTrend.userId, userId), gte(feedbackTrend.day, sql`${since}::date`)))
+      .where(and(eq(feedbackTrend.userId, userId), gte(feedbackTrend.day, sinceDay)))
       .orderBy(feedbackTrend.day),
 
     db
@@ -108,9 +106,9 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
         cnt: feedbackTopics.cnt,
       })
       .from(feedbackTopics)
-      .where(eq(feedbackTopics.userId, userId))
+      .where(and(eq(feedbackTopics.userId, userId), gte(feedbackTopics.day, sinceDay)))
       .orderBy(desc(feedbackTopics.cnt))
-      .limit(DASHBOARD_TOP_TOPICS),
+      .limit(TOP_TOPICS),
   ]);
 
   const { total, positive, neutral, negative, highSeverity, avgSeverity, positiveShare } =

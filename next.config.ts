@@ -1,4 +1,4 @@
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -32,8 +32,14 @@ export default withSentryConfig(nextConfig, {
   authToken: process.env["SENTRY_AUTH_TOKEN"] ?? "",
   silent: !process.env["CI"],
   widenClientFileUpload: true,
+  // Treeshaking is configured under `webpack`, which is the only shape
+  // SentryBuildWebpackOptions accepts in v10. It has no effect while Next
+  // bundles with Turbopack, so it is a no-op today and kept only so switching
+  // back to webpack needs no config change.
   webpack: {
     treeshake: { removeDebugLogging: true },
-    automaticVercelMonitors: true,
   },
+  // Creates the Sentry cron monitor for the daily ingest; this repo has a
+  // schedule in vercel.json and was getting no alerting for it.
+  _experimental: { vercelCronsMonitoring: true },
 });

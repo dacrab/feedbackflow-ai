@@ -3,15 +3,35 @@ import "server-only";
 import * as Sentry from "@sentry/nextjs";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { feedbackAnalyses, highSeverityAnalyses, userNotifications } from "@/db/schema";
-import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY, SLACK_TIMEOUT_MS } from "@/lib/constants";
-import { decrypt } from "@/lib/crypto";
-import type { FeedbackAnalysisData } from "@/lib/types";
+import { feedbackAnalyses, userNotifications } from "@/db/schema";
+import {
+  DIGEST_WINDOW_HOURS,
+  HIGH_SEVERITY_THRESHOLD,
+  MAX_SEVERITY,
+  SLACK_MAX_TEXT,
+  SLACK_TIMEOUT_MS,
+} from "@/lib/constants";
+import { tryDecrypt } from "@/lib/crypto";
+import type { Analysis } from "@/lib/types";
+
+type WebhookEntry = { url: string; minSeverity: number };
+
+// Slack mrkdwn treats & < > as control characters, so issue text (public,
+// attacker-authored) could inject @mentions or links without this.
+function slackEscape(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// One digest is a summary; more rows than anyone reads just bloat the payload.
+const DIGEST_MAX_ROWS = 20;
 
 async function notifySlack(text: string, url: string) {
   try {
     const res = await fetch(url, {
       method: "POST",
+      // url is user-supplied: a redirect would walk us into the private
+      // network, or downgrade to http.
+      redirect: "manual",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
       signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
@@ -24,8 +44,6 @@ async function notifySlack(text: string, url: string) {
   }
 }
 
-type WebhookEntry = { url: string; minSeverity: number };
-
 async function getWebhooks(userId: string): Promise<WebhookEntry[]> {
   const rows = await db
     .select({
@@ -36,72 +54,67 @@ async function getWebhooks(userId: string): Promise<WebhookEntry[]> {
     .where(and(eq(userNotifications.userId, userId), eq(userNotifications.enabled, true)));
 
   return rows.flatMap((h) => {
-    try {
-      if (!h.secretCipher) return [];
-      return [
-        {
-          url: decrypt(h.secretCipher),
-          minSeverity: h.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD,
-        },
-      ];
-    } catch (e) {
-      Sentry.captureException(e, { extra: { context: "get-webhooks-decrypt" } });
-      return [];
-    }
+    const url = tryDecrypt(h.secretCipher, "get-webhooks-decrypt");
+    return url ? [{ url, minSeverity: h.config.minSeverity ?? HIGH_SEVERITY_THRESHOLD }] : [];
   });
 }
 
+// One webhook query + decrypt for the whole batch, not one per item.
 export async function notifyHighSeverityFeedback(
   userId: string,
-  analysis: FeedbackAnalysisData,
+  analyses: readonly Analysis[],
 ): Promise<void> {
+  if (analyses.length === 0) return;
   const webhooks = await getWebhooks(userId);
-  const msg = `🚨 High severity (${analysis.severity_score}/${MAX_SEVERITY}): ${analysis.summary}`;
-  const promises: Promise<void>[] = [];
-  for (const { url, minSeverity } of webhooks) {
-    if (analysis.severity_score >= minSeverity) promises.push(notifySlack(msg, url));
-  }
-  await Promise.all(promises);
+  if (webhooks.length === 0) return;
+
+  await Promise.all(
+    analyses.flatMap((a) => {
+      const msg = `🚨 High severity (${a.severity_score}/${MAX_SEVERITY}): ${slackEscape(a.summary)}`;
+      return webhooks
+        .filter((w) => a.severity_score >= w.minSeverity)
+        .map((w) => notifySlack(msg, w.url));
+    }),
+  );
 }
 
 export async function sendDailyDigest(
   userId: string,
-  sinceISO: string,
+  since: Date,
 ): Promise<{ total: number; high: number }> {
-  const [rows, webhooks] = await Promise.all([
+  const [topRows, webhooks, [countRow]] = await Promise.all([
     db
       .select({
-        summary: highSeverityAnalyses.summary,
-        severityScore: highSeverityAnalyses.severityScore,
+        summary: feedbackAnalyses.summary,
+        severityScore: feedbackAnalyses.severityScore,
       })
-      .from(highSeverityAnalyses)
+      .from(feedbackAnalyses)
       .where(
         and(
-          eq(highSeverityAnalyses.userId, userId),
-          gte(highSeverityAnalyses.createdAt, new Date(sinceISO)),
+          eq(feedbackAnalyses.userId, userId),
+          gte(feedbackAnalyses.severityScore, HIGH_SEVERITY_THRESHOLD),
+          gte(feedbackAnalyses.createdAt, since),
         ),
       )
-      .orderBy(desc(highSeverityAnalyses.severityScore)),
+      .orderBy(desc(feedbackAnalyses.severityScore))
+      .limit(DIGEST_MAX_ROWS),
     getWebhooks(userId),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(feedbackAnalyses)
+      .where(and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, since))),
   ]);
 
-  const total = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(feedbackAnalyses)
-    .where(
-      and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, new Date(sinceISO))),
-    )
-    .then((r) => Number(r[0]?.count ?? 0));
+  if (topRows.length === 0 || webhooks.length === 0) return { total: 0, high: 0 };
 
-  if (!(rows.length && webhooks.length)) return { total, high: 0 };
+  const total = Number(countRow?.count ?? 0);
+  const body = [
+    `🔥 *Daily Digest* — ${total} items in last ${DIGEST_WINDOW_HOURS}h, top ${topRows.length} high severity`,
+    ...topRows.map((a) => `• [sev ${a.severityScore}] ${slackEscape(a.summary)}`),
+  ].join("\n");
+  const text = body.length > SLACK_MAX_TEXT ? `${body.slice(0, SLACK_MAX_TEXT)}\n…truncated` : body;
 
-  const lines = [
-    `🔥 *Daily Digest* — ${total} items in last 24h, ${rows.length} high severity`,
-    ...rows.map((a) => `• [sev ${a.severityScore}] ${a.summary}`),
-  ];
-  const msg = lines.join("\n");
+  await Promise.all(webhooks.map(({ url }) => notifySlack(text, url)));
 
-  await Promise.all(webhooks.map(({ url }) => notifySlack(msg, url)));
-
-  return { total, high: rows.length };
+  return { total, high: topRows.length };
 }

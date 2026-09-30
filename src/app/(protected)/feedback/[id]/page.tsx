@@ -1,7 +1,8 @@
 import { IconArrowLeft } from "@tabler/icons-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, Muted, SentimentBadge } from "@/components/ui/ui";
+import { Card, KeyValue, Muted, SentimentBadge, TopicTag } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
 import { MAX_SEVERITY } from "@/lib/constants";
 import { getFeedbackItem } from "@/lib/services/feedback-service";
@@ -9,31 +10,31 @@ import { uuidSchema } from "@/lib/types";
 import { formatDateUTC, sevColor } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
-function TopicTag({ topic }: { topic: string }) {
-  return (
-    <span className="px-1.5 py-0.5 rounded border border-border bg-muted/30 text-xs">{topic}</span>
-  );
-}
-
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5">{children}</dd>
-    </div>
-  );
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const userId = await requireAuth();
+  const { id } = await params;
+  const parsed = uuidSchema.safeParse(id);
+  if (!parsed.success) return { title: "not found" };
+  const item = await getFeedbackItem(userId, parsed.data);
+  const summary = item?.feedback_analyses?.summary;
+  return { title: summary ? summary.slice(0, 60) : "feedback" };
 }
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireAuth();
-  const { id: rawId } = await params;
-  const parsedId = uuidSchema.safeParse(rawId);
+  const { id } = await params;
+  const parsedId = uuidSchema.safeParse(id);
   if (!parsedId.success) notFound();
   const item = await getFeedbackItem(userId, parsedId.data);
   if (!item) notFound();
-  const a = item.feedback_analyses;
 
-  const severityColor = sevColor(a?.severity_score ?? 0);
+  const a = item.feedback_analyses;
+  const created = formatDateUTC(item.created_at);
+  const topics = a?.topics ?? [];
 
   return (
     <div className="space-y-4">
@@ -50,22 +51,14 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           <Card title="summary">
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-base font-medium leading-snug">{a?.summary || "no summary"}</h1>
+              {/* Sole owner of the status widget, so it cannot disagree with a
+                  read-only copy until revalidation lands. */}
               <StatusChanger id={item.id} initial={a?.status ?? "New"} />
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <span suppressHydrationWarning>{formatDateUTC(item.created_at)}</span>
-              <span>·</span>
-              <span>{item.source}</span>
-              <SentimentBadge sentiment={a?.sentiment} />
-              {a?.severity_score ? (
-                <span className={severityColor}>
-                  severity {a.severity_score}/{MAX_SEVERITY}
-                </span>
-              ) : null}
-            </div>
-            {a?.topics && a.topics.length > 0 && (
+            <Muted suppressHydrationWarning>{created}</Muted>
+            {topics.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {a.topics.map((t) => (
+                {topics.map((t) => (
                   <TopicTag key={t} topic={t} />
                 ))}
               </div>
@@ -85,55 +78,36 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
               <Muted>no analysis yet</Muted>
             ) : (
               <dl className="space-y-3">
-                <Detail label="sentiment">
+                <KeyValue label="sentiment">
                   <SentimentBadge sentiment={a.sentiment} />
-                </Detail>
-                <Detail label="severity">
-                  <span className={`text-2xl font-medium leading-none ${severityColor}`}>
+                </KeyValue>
+                <KeyValue label="severity">
+                  <span
+                    className={`text-2xl font-medium leading-none ${sevColor(a.severity_score)}`}
+                  >
                     {a.severity_score}
                     <span className="text-sm font-normal text-muted-foreground">
                       /{MAX_SEVERITY}
                     </span>
                   </span>
-                </Detail>
-                <Detail label="status">
-                  <span className="text-sm">{a.status.toLowerCase()}</span>
-                </Detail>
-                <Detail label="source">
-                  <span className="text-sm">{item.source}</span>
-                </Detail>
-                {a.topics && a.topics.length > 0 && (
-                  <Detail label="topics">
-                    <div className="flex flex-wrap gap-1">
-                      {a.topics.map((t) => (
-                        <TopicTag key={t} topic={t} />
-                      ))}
-                    </div>
-                  </Detail>
-                )}
+                </KeyValue>
               </dl>
             )}
           </Card>
 
           <Card title="metadata">
             <dl className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">id</dt>
-                <dd
-                  className="font-mono text-muted-foreground truncate max-w-[120px]"
-                  title={item.id}
-                >
+              <KeyValue label="id" layout="row">
+                <span className="font-mono text-muted-foreground" title={item.id}>
                   {item.id}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">created</dt>
-                <dd suppressHydrationWarning>{formatDateUTC(item.created_at)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">source</dt>
-                <dd>{item.source}</dd>
-              </div>
+                </span>
+              </KeyValue>
+              <KeyValue label="created" layout="row">
+                <Muted suppressHydrationWarning>{created}</Muted>
+              </KeyValue>
+              <KeyValue label="source" layout="row">
+                {item.source}
+              </KeyValue>
             </dl>
           </Card>
         </div>

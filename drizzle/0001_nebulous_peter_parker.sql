@@ -6,9 +6,7 @@ DROP POLICY IF EXISTS "user_notifications_owner" ON "user_notifications";
 DROP POLICY IF EXISTS "user_settings_owner" ON "user_settings";
 DROP POLICY IF EXISTS "user_sources_owner" ON "user_sources";
 --> statement-breakpoint
--- Truncate app tables (dev branch - no real data)
-TRUNCATE "feedback_analyses", "feedback_items", "ingest_runs", "user_notifications", "user_settings", "user_sources" CASCADE;
---> statement-breakpointCREATE TYPE "public"."notification_type" AS ENUM('slack');--> statement-breakpoint
+CREATE TYPE "public"."notification_type" AS ENUM('slack');--> statement-breakpoint
 CREATE TYPE "public"."source_type" AS ENUM('github');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,

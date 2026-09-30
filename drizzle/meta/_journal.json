@@ -57,6 +57,13 @@
       "when": 1786449592105,
       "tag": "0007_sour_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790765917562,
+      "tag": "0008_hot_rafael_vega",
+      "breakpoints": true
     }
   ]
 }

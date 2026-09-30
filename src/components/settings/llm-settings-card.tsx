@@ -1,180 +1,78 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Input, Muted, Panel, Select } from "@/components/ui/ui";
+import {
+  Button,
+  Card,
+  ExternalLink,
+  Input,
+  Muted,
+  maskedFieldClass,
+  Panel,
+  Select,
+  StatusDot,
+} from "@/components/ui/ui";
 import { deleteSettings, saveSettings, updateSettingsModel } from "@/lib/actions";
 import { LLM_PROVIDERS } from "@/lib/llm-providers";
 import { isLLMProvider, type LLMProvider } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
 
-function useLLMSettingsActions({
-  configured,
-  provider,
-  model,
-  apiKey,
-  editingKey,
-  setProvider,
-  setModel,
-  setApiKey,
-  setEditingKey,
-  run,
-}: {
-  configured: boolean;
-  provider: LLMProvider;
-  model: string;
-  apiKey: string;
-  editingKey: boolean;
-  setProvider: (p: LLMProvider) => void;
-  setModel: (m: string) => void;
-  setApiKey: (k: string) => void;
-  setEditingKey: (e: boolean) => void;
-  run: (fn: () => Promise<unknown>, msg?: string) => Promise<boolean>;
-}) {
-  function handleSave() {
-    if (configured && !editingKey) {
-      run(() => updateSettingsModel(model), "model updated");
-    } else {
-      if (!apiKey) return;
-      run(async () => {
-        await saveSettings(provider, model, apiKey);
-        setApiKey("");
-        setEditingKey(false);
-      }, "saved");
-    }
-  }
+const DEFAULT_PROVIDER = "openrouter";
+const defaultModelFor = (provider: LLMProvider) =>
+  LLM_PROVIDERS.find((p) => p.id === provider)?.defaultModel ?? "";
 
-  function handleProviderChange(p: string) {
-    if (!isLLMProvider(p)) return;
-    setProvider(p);
-    setModel(LLM_PROVIDERS.find((x) => x.id === p)?.defaultModel ?? "");
-    if (configured) setEditingKey(true);
-  }
-
-  function handleCancelEdit() {
-    setEditingKey(false);
-    setApiKey("");
-  }
-
-  function handleDelete() {
-    run(async () => {
-      await deleteSettings();
-      setEditingKey(true);
-      setApiKey("");
-    }, "removed");
-  }
-
-  return { handleSave, handleProviderChange, handleCancelEdit, handleDelete };
-}
-
-function ApiKeySection({
-  configured,
-  hasKey,
-  editingKey,
-  provider,
-  providerKeyUrl,
-  apiKey,
-  onApiKeyChange,
-  onEditClick,
-}: {
-  configured: boolean;
-  hasKey: boolean;
-  editingKey: boolean;
-  provider: LLMProvider;
-  providerKeyUrl: string | undefined;
-  apiKey: string;
-  onApiKeyChange: (k: string) => void;
-  onEditClick: () => void;
-}) {
-  return (
-    <div className="flex-1 space-y-1.5">
-      <div className="flex items-center justify-between">
-        <Muted>api key</Muted>
-        <div className="flex items-center gap-2">
-          {configured && hasKey && !editingKey && (
-            <span className="text-xs text-green-500">● key saved</span>
-          )}
-          <a
-            href={providerKeyUrl ?? "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-          >
-            get key ↗
-          </a>
-        </div>
-      </div>
-      {editingKey || !configured ? (
-        <div className="animate-slide-down">
-          <Input
-            variant="sm"
-            type="password"
-            autoComplete="off"
-            value={apiKey}
-            onChange={(e) => onApiKeyChange(e.target.value)}
-            placeholder={`paste ${provider} api key...`}
-            autoFocus={editingKey && configured}
-          />
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={onEditClick}
-          className="w-full h-8 px-2 rounded border border-border bg-muted/30 text-left text-sm text-muted-foreground hover:border-foreground transition-colors"
-        >
-          ••••••••••••••••
-        </button>
-      )}
-    </div>
-  );
-}
+/** What the save button is for. `configured` is prop-derived and goes stale
+ *  until revalidation, so the mode lives in state. */
+type Mode = "unset" | "key" | "model";
 
 export function LLMSettingsCard({
   initialProvider,
   initialModel,
   hasKey,
-  className,
 }: {
   initialProvider: LLMProvider | null;
   initialModel: string | null;
   hasKey: boolean;
-  className?: string;
 }) {
   const configured = !!(initialProvider && initialModel);
-  const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? "openrouter");
-  const [model, setModel] = useState<string>(
-    initialModel ?? LLM_PROVIDERS.find((p) => p.id === "openrouter")?.defaultModel ?? "",
-  );
+  const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? DEFAULT_PROVIDER);
+  const [model, setModel] = useState<string>(initialModel ?? defaultModelFor(DEFAULT_PROVIDER));
   const [apiKey, setApiKey] = useState("");
   const [editingKey, setEditingKey] = useState(!configured);
   const { run, pending } = useAction();
 
   const providerMeta = LLM_PROVIDERS.find((p) => p.id === provider);
+  const mode: Mode = !configured ? "unset" : editingKey ? "key" : "model";
 
-  const { handleSave, handleProviderChange, handleCancelEdit, handleDelete } =
-    useLLMSettingsActions({
-      configured,
-      provider,
-      model,
-      apiKey,
-      editingKey,
-      setProvider,
-      setModel,
-      setApiKey,
-      setEditingKey,
-      run,
-    });
+  function save() {
+    if (mode === "model") {
+      run(() => updateSettingsModel(model), "model updated");
+      return;
+    }
+    run(async () => {
+      await saveSettings(provider, model, apiKey);
+      setApiKey("");
+      setEditingKey(false);
+    }, "saved");
+  }
+
+  function changeProvider(next: string) {
+    if (!isLLMProvider(next)) return;
+    setProvider(next);
+    setModel(defaultModelFor(next));
+    if (configured) setEditingKey(true);
+  }
 
   return (
-    <Card title="llm provider" className={className ?? ""}>
+    <Card title="llm provider">
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="space-y-1.5" htmlFor="llm-provider">
           <Muted>provider</Muted>
           <Select
             id="llm-provider"
             className="w-full"
-            size="sm"
             value={provider}
-            onChange={(e) => handleProviderChange(e.target.value)}
+            onChange={(e) => changeProvider(e.target.value)}
           >
             {LLM_PROVIDERS.map((p) => (
               <option key={p.id} value={p.id}>
@@ -189,7 +87,6 @@ export function LLMSettingsCard({
           <Select
             id="llm-model"
             className="w-full"
-            size="sm"
             value={model}
             onChange={(e) => setModel(e.target.value)}
           >
@@ -203,44 +100,76 @@ export function LLMSettingsCard({
       </div>
 
       <div className="flex gap-3 items-end">
-        <ApiKeySection
-          configured={configured}
-          hasKey={hasKey}
-          editingKey={editingKey}
-          provider={provider}
-          providerKeyUrl={providerMeta?.keyUrl}
-          apiKey={apiKey}
-          onApiKeyChange={setApiKey}
-          onEditClick={() => setEditingKey(true)}
-        />
+        <div className="flex-1 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="llm-api-key">
+              <Muted>api key</Muted>
+            </label>
+            <div className="flex items-center gap-2">
+              {configured && hasKey && !editingKey && <StatusDot tone="ok">● key saved</StatusDot>}
+              {providerMeta && <ExternalLink href={providerMeta.keyUrl}>get key ↗</ExternalLink>}
+            </div>
+          </div>
+          {mode === "model" ? (
+            <button type="button" onClick={() => setEditingKey(true)} className={maskedFieldClass}>
+              ••••••••••••••••
+            </button>
+          ) : (
+            <div className="animate-slide-down">
+              <Input
+                id="llm-api-key"
+                type="password"
+                autoComplete="off"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={`paste ${provider} api key...`}
+                autoFocus={mode === "key"}
+              />
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 pb-0.5">
           <Button
             variant="primary"
-            size="sm"
             isLoading={pending}
             loadingText="saving..."
-            disabled={editingKey || !configured ? !apiKey : false}
-            onClick={handleSave}
+            disabled={mode === "model" ? false : !apiKey}
+            onClick={save}
           >
-            {configured && !editingKey ? "update model" : "save"}
+            {mode === "model" ? "update model" : "save"}
           </Button>
-          {editingKey && configured && (
-            <Button size="sm" onClick={handleCancelEdit}>
+          {mode === "key" && (
+            <Button
+              onClick={() => {
+                setEditingKey(false);
+                setApiKey("");
+              }}
+            >
               cancel
             </Button>
           )}
           {configured && (
-            <Button size="sm" variant="ghost" disabled={pending} onClick={handleDelete}>
+            <Button
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                run(async () => {
+                  await deleteSettings();
+                  setApiKey("");
+                  setEditingKey(true);
+                }, "removed")
+              }
+            >
               remove
             </Button>
           )}
         </div>
       </div>
 
-      {configured && (
+      {configured && initialProvider && initialModel && (
         <Panel className="flex items-center gap-2">
-          <span className="text-xs text-green-500">●</span>
+          <StatusDot tone="ok">●</StatusDot>
           <Muted>
             {initialProvider} · {initialModel}
           </Muted>
