@@ -13,11 +13,6 @@ concurrency:
 
 permissions:
   contents: read
-  # upload-sarif needs both: security-events to publish the SARIF to code
-  # scanning, and actions:read to look up its own run for the job UUID. Without
-  # the latter it fails with "Resource not accessible by integration".
-  security-events: write
-  actions: read
 
 jobs:
   trivy:
@@ -32,15 +27,13 @@ jobs:
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
-          format: sarif
-          output: trivy.sarif
+          # Table output, not SARIF: this is a private repo without GitHub
+          # Advanced Security, so code scanning is off and upload-sarif can only
+          # fail. exit-code below is what actually gates the workflow.
+          format: table
           severity: CRITICAL,HIGH
           # One unfixable advisory in a devDependency otherwise redlines the
           # build forever with nothing to do about it.
           ignore-unfixed: true
           scanners: vuln,secret,misconfig
           exit-code: '1'
-
-      - uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy.sarif
