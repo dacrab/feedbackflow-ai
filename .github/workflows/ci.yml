@@ -17,6 +17,11 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Steps that shell out to `doppler run` need the token in their own env.
+    # Declaring it on the CLI install step alone never reached them, so every
+    # one of them died with "Doppler Error: you must provide a token".
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -29,8 +34,6 @@ jobs:
       # Not SHA-pinned like the other actions; pin it when the real digest is
       # known rather than guessing one.
       - uses: dopplerhq/cli-action@v4
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
 
       # Runs before typecheck: `next build` generates next-env.d.ts and
       # .next/types, without which tsc has no Next ambient types.
@@ -49,6 +52,8 @@ jobs:
       - name: Test
         run: bun run test:coverage
       - name: Knip
-        run: doppler run -- bun run knip
+        # The knip script already wraps itself in `doppler run`; wrapping it here
+        # too only nested one more Doppler process.
+        run: bun run knip
       - name: Drizzle check
         run: bun run db:check
