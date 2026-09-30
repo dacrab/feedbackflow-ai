@@ -2,7 +2,7 @@ import "server-only";
 
 import { lt, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { rateLimits } from "@/db/schema";
+import { ingestRuns, rateLimits } from "@/db/schema";
 import { RATE_LIMITS } from "@/lib/constants";
 
 export interface RateLimitConfig {
@@ -12,17 +12,21 @@ export interface RateLimitConfig {
 
 const CLEANUP_P = 0.01;
 
-// Rows older than the longest configured window can never count again,
-// regardless of which bucket they belong to.
 const MAX_WINDOW_MS = Math.max(...Object.values(RATE_LIMITS).map((config) => config.windowMs));
 
-// Delete rows whose window has fully elapsed. The random 1% sweep in
-// rateLimit() is defense in depth only: it needs traffic to fire, so cron
-// calls this deterministically to evict keys orphaned by one-off visitors.
+async function deleteStale(cutoff: Date) {
+  await db.delete(rateLimits).where(lt(rateLimits.windowStartedAt, cutoff));
+}
+
+// Deterministic eviction; the 1% sweep in rateLimit() needs traffic to fire.
+// Both share one cutoff: a per-bucket cutoff would reset longer windows.
 export async function sweepExpired(): Promise<void> {
-  await db
-    .delete(rateLimits)
-    .where(lt(rateLimits.windowStartedAt, new Date(Date.now() - MAX_WINDOW_MS)));
+  await deleteStale(new Date(Date.now() - MAX_WINDOW_MS));
+}
+
+/** Runs older than this can never be the "last run" anyone looks at. */
+export async function pruneOldRuns(retentionMs: number): Promise<void> {
+  await db.delete(ingestRuns).where(lt(ingestRuns.startedAt, new Date(Date.now() - retentionMs)));
 }
 
 export async function rateLimit(
@@ -33,7 +37,7 @@ export async function rateLimit(
   const windowStart = new Date(now.getTime() - windowMs);
 
   if (Math.random() < CLEANUP_P) {
-    await db.delete(rateLimits).where(lt(rateLimits.windowStartedAt, windowStart));
+    await deleteStale(new Date(now.getTime() - MAX_WINDOW_MS));
   }
 
   const [row] = await db

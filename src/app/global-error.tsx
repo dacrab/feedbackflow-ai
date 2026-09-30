@@ -1,8 +1,7 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
 import { ErrorPage } from "@/components/error-page";
+import { useReportError } from "@/lib/report-error";
 
 export default function GlobalError({
   error,
@@ -11,13 +10,12 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
+  useReportError(error);
 
+  // Renders outside the root layout, so it sets its own font.
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground p-8 font-mono">
+      <body className="font-mono">
         <ErrorPage error={error} reset={reset} />
       </body>
     </html>

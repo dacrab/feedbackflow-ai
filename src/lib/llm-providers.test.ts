@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { LLM_PROVIDERS } from "./llm-providers";
 import { LLM_PROVIDER_IDS, LLMProviderSchema } from "./types";

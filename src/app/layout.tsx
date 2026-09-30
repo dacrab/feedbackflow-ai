@@ -5,23 +5,23 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import { APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FeedbackFlow",
+  title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
   description: "AI-powered feedback analysis and insights",
+  metadataBase: new URL(process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000"),
   icons: { icon: "/icon.svg" },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Set per request by the CSP middleware in src/proxy.ts. Inline scripts
-  // (next-themes) and Clerk's clerk-js loader must carry it to survive the
-  // strict script-src policy.
+  // Stamped per request by the CSP middleware in src/proxy.ts.
   const nonce = (await headers()).get("x-nonce");
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen font-sans">
+      <body className="min-h-screen">
         <ClerkProvider dynamic {...(nonce ? { nonce } : {})}>
           <ThemeProvider
             attribute="class"

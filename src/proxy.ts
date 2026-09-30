@@ -1,44 +1,43 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { LOGIN_PATH, SIGNUP_PATH } from "@/lib/constants";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/inbox(.*)",
   "/feedback(.*)",
   "/settings(.*)",
-  "/sync(.*)",
+  // /api/* handlers authenticate themselves. Never add /api/sync here:
+  // auth.protect() 404s non-document requests, breaking the SSE stream.
 ]);
 
-// Strict nonce-based CSP, generated per request. With `strict: true` Clerk
-// emits `script-src ... 'strict-dynamic' 'nonce-...'`, signs the nonce into a
-// `content-security-policy` REQUEST header, and propagates both to the
-// response — which is how Next.js picks the nonce up and stamps every script
-// tag it renders (the documented middleware nonce pattern). Directives below
-// are merged additively onto Clerk's defaults.
-//
-// Deliberate deviations from a hand-rolled policy:
-// - script-src keeps NO http:/https: wildcard fallback: under 'strict-dynamic'
-//   modern browsers ignore host/scheme sources anyway, and non-supporting
-//   legacy browsers fall back to 'unsafe-inline', which Clerk keeps listed.
-//   That is tighter than a blanket `https:` fallback while remaining safe.
-// - Clerk's defaults allow-list js.stripe.com / maps.googleapis.com hosts we
-//   do not use. They are inert under 'strict-dynamic' and cannot be removed
-//   via the additive directives API.
+// `strict: true` makes Clerk mint a per-request nonce, sign it into a request
+// header, and add `script-src 'strict-dynamic' 'nonce-…'` — which is how Next
+// picks it up and stamps every script it renders. Directives below are merged
+// onto Clerk's defaults, so its extra host allow-list stays (inert under
+// 'strict-dynamic') and cannot be removed.
 export default clerkMiddleware(
   async (auth, req) => {
     if (isProtectedRoute(req)) await auth.protect();
   },
   {
+    // Without these, auth.protect() bounces to Clerk's hosted portal.
+    signInUrl: LOGIN_PATH,
+    signUpUrl: SIGNUP_PATH,
     contentSecurityPolicy: {
       strict: true,
       directives: {
-        // React style props and third-party inline styles require it;
-        // Tailwind classes themselves compile into a stylesheet.
+        // Recharts sets inline styles; 'strict-dynamic' does not cover style-src.
         "style-src": ["'self'", "'unsafe-inline'"],
+        // Named hosts, not a blanket `https:`, which would let injected
+        // script exfiltrate to anywhere. LLM/webhook calls are server-side.
         "connect-src": [
           "'self'",
-          "https:", // Sentry ingest beacons + LLM/webhook egress are server-side; browser needs Sentry only
+          "https://*.ingest.sentry.io",
+          "wss://*.ingest.sentry.io",
+          "https://clerk-telemetry.com",
+          "https://*.clerk-telemetry.com",
         ],
-        "img-src": ["'self'", "data:", "https:"], // data: for Sentry Replay screenshots
+        "img-src": ["'self'", "data:", "https:"],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
         "frame-ancestors": ["'self'"],

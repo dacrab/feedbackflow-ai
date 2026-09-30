@@ -1,23 +1,14 @@
 "use client";
 
-import {
-  IconChevronLeft,
-  IconHome,
-  IconInbox,
-  IconLogout,
-  IconSettings,
-} from "@tabler/icons-react";
+import { IconChevronLeft, IconLogout } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Logo } from "@/components/logo";
+import { Brand } from "@/components/logo";
+import { NAV_ITEMS } from "@/components/nav-items";
+import { IconButton, Muted } from "@/components/ui/ui";
+import { SIDEBAR_COLLAPSED_COOKIE, SIDEBAR_COOKIE_MAX_AGE_SEC } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/dashboard", label: "dashboard", icon: IconHome },
-  { href: "/inbox", label: "inbox", icon: IconInbox },
-  { href: "/settings", label: "settings", icon: IconSettings },
-];
 
 export function Sidebar({
   userEmail,
@@ -29,6 +20,13 @@ export function Sidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
 
+  function toggleCollapsed() {
+    const next = !collapsed;
+    setCollapsed(next);
+    // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not widely supported
+    document.cookie = `${SIDEBAR_COLLAPSED_COOKIE}=${next};path=/;max-age=${SIDEBAR_COOKIE_MAX_AGE_SEC}`;
+  }
+
   return (
     <aside
       className={cn(
@@ -39,24 +37,21 @@ export function Sidebar({
       <div
         className={cn(
           "flex h-14 items-center border-b border-border",
-          collapsed ? "justify-center px-2" : "gap-2 px-4",
+          collapsed ? "justify-center px-2" : "px-4",
         )}
       >
-        <Logo />
-        {!collapsed && (
-          <span className="text-sm transition-opacity duration-150 opacity-100">feedbackflow</span>
-        )}
+        <Brand label={collapsed ? null : undefined} className={collapsed ? "" : "font-normal"} />
       </div>
 
       <nav className="flex-1 py-2 px-2">
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center rounded text-sm transition-colors mb-1",
                 collapsed ? "justify-center p-2" : "gap-2 px-2 py-1.5",
@@ -74,42 +69,29 @@ export function Sidebar({
 
       <div className="border-t border-border p-2">
         <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "gap-2 px-2 py-1")}>
-          <div
-            className="h-6 w-6 rounded bg-muted flex items-center justify-center text-xs shrink-0"
-            title={collapsed ? userEmail : undefined}
-          >
+          <div className="h-6 w-6 rounded bg-muted flex items-center justify-center text-xs shrink-0">
             {userEmail.charAt(0).toLowerCase()}
           </div>
           {!collapsed && (
-            <div className="flex-1 min-w-0 transition-opacity duration-150 opacity-100">
-              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
-            </div>
+            <Muted className="flex-1 min-w-0 truncate" title={userEmail}>
+              {userEmail}
+            </Muted>
           )}
           <form action="/logout" method="POST">
-            <button
-              type="submit"
+            <IconButton
+              className={cn("rounded", collapsed ? "p-1.5" : "p-1")}
               title="logout"
               aria-label="logout"
-              className={cn(
-                "rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
-                collapsed ? "p-1.5" : "p-1",
-              )}
             >
               <IconLogout className="h-3.5 w-3.5" />
-            </button>
+            </IconButton>
           </form>
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          const next = !collapsed;
-          setCollapsed(next);
-          // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not widely supported
-          document.cookie = `sidebar-collapsed=${next};path=/;max-age=${60 * 60 * 24 * 365}`;
-        }}
-        className="flex items-center justify-center h-8 border-t border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      <IconButton
+        className="h-8 border-t border-border"
+        onClick={toggleCollapsed}
         title={collapsed ? "expand" : "collapse"}
         aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}
         aria-expanded={!collapsed}
@@ -117,7 +99,7 @@ export function Sidebar({
         <IconChevronLeft
           className={cn("h-3.5 w-3.5 transition-transform duration-200", collapsed && "rotate-180")}
         />
-      </button>
+      </IconButton>
     </aside>
   );
 }

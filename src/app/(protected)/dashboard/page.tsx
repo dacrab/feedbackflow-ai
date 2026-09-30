@@ -1,10 +1,13 @@
 import "server-only";
 
+import type { Metadata } from "next";
 import { Card, MetricCard, PageHeader } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
 import { HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/lib/constants";
 import { getDashboard } from "@/lib/services/dashboard-service";
 import { SentimentChart, SeverityChart, TopicsChart, TrendChart } from "./charts";
+
+export const metadata: Metadata = { title: "dashboard" };
 
 function ChartCard({
   label,
@@ -46,7 +49,7 @@ export default async function DashboardPage() {
       <PageHeader eyebrow="overview" title="dashboard" />
 
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="total" value={m.total} delta={m.trendDelta} />
+        <MetricCard label="total" value={m.total} delta={m.trendDelta} note="vs prev day" />
         <MetricCard label="positive" value={`${m.positiveShare}%`} />
         <MetricCard
           label="critical"
@@ -63,7 +66,7 @@ export default async function DashboardPage() {
         <ChartCard
           label="sentiment"
           footer={
-            <div className="flex justify-center gap-4 mt-2 text-xs">
+            <div className="flex justify-center gap-4 text-xs">
               {sentimentData.map((s) => (
                 <div key={s.name} className="flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} />

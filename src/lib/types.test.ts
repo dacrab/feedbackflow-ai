@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
   FEEDBACK_STATUS_OPTIONS,

@@ -1,8 +1,6 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { Button, Card, Input, MetricCard, Select, SentimentBadge, StatusBadge } from "./ui";
-
-afterEach(cleanup);
 
 describe("MetricCard", () => {
   it("renders label prefixed with // and the value", () => {
@@ -93,18 +91,23 @@ describe("Card", () => {
 });
 
 describe("Input", () => {
-  it("renders with default variant", () => {
+  it("applies the sm size by default", () => {
     render(<Input placeholder="default" />);
-    expect(screen.getByPlaceholderText("default")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("default")).toHaveClass("h-8", "px-2");
   });
 
-  it("renders with sm variant", () => {
-    render(<Input variant="sm" placeholder="small" />);
-    expect(screen.getByPlaceholderText("small")).toBeInTheDocument();
+  it("accepts an explicit size", () => {
+    render(<Input size="xs" placeholder="small" />);
+    expect(screen.getByPlaceholderText("small")).toHaveClass("h-7");
   });
 });
 
 describe("Button", () => {
+  it("defaults to type=button so it cannot submit a form by accident", () => {
+    render(<Button>click me</Button>);
+    expect(screen.getByRole("button", { name: "click me" })).toHaveAttribute("type", "button");
+  });
+
   it("renders children", () => {
     render(<Button>click me</Button>);
     expect(screen.getByRole("button", { name: "click me" })).toBeInTheDocument();

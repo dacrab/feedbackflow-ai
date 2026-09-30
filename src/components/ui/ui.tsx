@@ -1,21 +1,92 @@
 import { IconChevronDown } from "@tabler/icons-react";
+import Link from "next/link";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
-import { cn, sentimentColor } from "@/lib/utils";
+import { cn, sentimentColor, sevColor, sevLabel } from "@/lib/utils";
 
-export const statusColor: Record<FeedbackStatus, string> = {
-  New: "text-muted-foreground",
-  Acknowledged: "text-blue-500",
-  Actioned: "text-purple-500",
+/** One entry per triage state: the read-only badge and the bulk-action chip
+ *  are the same hue, and adding a status means touching exactly one line. */
+const statusStyles: Record<Exclude<FeedbackStatus, "New">, { text: string; chip: string }> = {
+  Acknowledged: { text: "text-info", chip: "bg-info/10 text-info hover:bg-info/20" },
+  Actioned: { text: "text-accent", chip: "bg-accent/10 text-accent hover:bg-accent/20" },
 };
 
-export const statusChip: Record<"Acknowledged" | "Actioned", string> = {
-  Acknowledged: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
-  Actioned: "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20",
-};
+export const statusChipClass = (status: Exclude<FeedbackStatus, "New">) =>
+  statusStyles[status].chip;
 
-export function SentimentBadge({ sentiment }: { sentiment?: Sentiment | null | undefined }) {
+export type StatusTone = keyof typeof statusToneClass;
+export const statusToneClass = {
+  ok: "text-good",
+  bad: "text-danger",
+  idle: "text-muted-foreground",
+} as const;
+
+export function StatusDot({
+  tone,
+  children,
+  className,
+}: {
+  tone: StatusTone;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <span className={cn("text-xs", statusToneClass[tone], className)}>{children}</span>;
+}
+
+export function SentimentBadge({
+  sentiment,
+  className,
+}: {
+  sentiment?: Sentiment | null | undefined;
+  className?: string;
+}) {
   if (!sentiment) return null;
-  return <span className={`text-xs ${sentimentColor(sentiment)}`}>{sentiment}</span>;
+  return <span className={cn("text-xs", sentimentColor(sentiment), className)}>{sentiment}</span>;
+}
+
+export function StatusBadge({ status }: { status?: FeedbackStatus | null | undefined }) {
+  if (!status || status === "New") return null;
+  return <span className={`text-xs ${statusStyles[status].text}`}>[{status.toLowerCase()}]</span>;
+}
+
+export function SeverityChip({ score, className }: { score: number; className?: string }) {
+  return (
+    <span
+      className={cn("text-xs font-mono font-medium tabular-nums", sevColor(score), className)}
+      title={sevLabel(score)}
+    >
+      {score || "·"}
+    </span>
+  );
+}
+
+export function TopicTag({ topic }: { topic: string }) {
+  return (
+    <span className="px-1.5 py-0.5 rounded border border-border bg-muted/30 text-xs">{topic}</span>
+  );
+}
+
+export function ExternalLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "underline underline-offset-2 hover:text-foreground transition-colors",
+        className,
+      )}
+    >
+      {children}
+    </a>
+  );
 }
 
 export function MetricCard({
@@ -30,14 +101,12 @@ export function MetricCard({
   note?: string;
 }) {
   return (
-    <div className="rounded border border-border bg-card px-4 py-3 space-y-1">
+    <div className="rounded border border-control bg-card px-4 py-3 space-y-1">
       <Eyebrow>{label}</Eyebrow>
       <div className="flex items-end justify-between gap-2">
         <p className="text-2xl font-medium leading-none">{value}</p>
         {delta !== undefined && (
-          <span
-            className={`text-xs font-mono mb-0.5 ${delta >= 0 ? "text-green-500" : "text-red-500"}`}
-          >
+          <span className={`text-xs font-mono mb-0.5 ${delta >= 0 ? "text-good" : "text-danger"}`}>
             {delta >= 0 ? "↑" : "↓"}
             {Math.abs(delta)}
           </span>
@@ -46,11 +115,6 @@ export function MetricCard({
       {note && <Muted>{note}</Muted>}
     </div>
   );
-}
-
-export function StatusBadge({ status }: { status?: FeedbackStatus | null | undefined }) {
-  if (!status || status === "New") return null;
-  return <span className={`text-xs ${statusColor[status]}`}>[{status.toLowerCase()}]</span>;
 }
 
 export function PageHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
@@ -76,7 +140,7 @@ export function CenteredState({
   className?: string;
 }) {
   return (
-    <div className={cn("flex min-h-screen items-center justify-center p-4 font-mono", className)}>
+    <div className={cn("flex min-h-screen items-center justify-center p-4", className)}>
       <div className="text-center space-y-4">
         {eyebrow && <Muted className="text-sm">{eyebrow}</Muted>}
         <h1 className="text-xl font-medium">{title}</h1>
@@ -117,6 +181,25 @@ export function TextButton({
   );
 }
 
+export function IconButton({
+  className = "",
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="text-center py-6 space-y-1">
@@ -136,42 +219,66 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded border border-border bg-card p-4 space-y-4", className)}>
+    <div className={cn("rounded border border-control bg-card p-4 space-y-4", className)}>
       <Eyebrow>{title}</Eyebrow>
       {children}
     </div>
   );
 }
 
-export function Skeleton({ className = "" }: { className?: string }) {
-  return (
-    <div className={cn("animate-pulse rounded border border-border bg-muted/30", className)} />
-  );
-}
-
 export function Panel({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded border border-border bg-muted/20 px-3 py-2", className)}
+      className={cn("rounded border border-control bg-muted/20 px-3 py-2", className)}
       {...props}
     />
   );
 }
 
-export function Input({
-  className = "",
-  variant = "default",
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { variant?: "default" | "sm" }) {
-  const size = variant === "sm" ? "h-8 px-2" : "h-10 px-3";
+/** Surface for a stack of rows separated by hairlines. */
+export function Rows({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <input
-      className={cn(
-        "w-full rounded border border-border bg-muted/30 text-sm outline-none focus:border-foreground transition-colors",
-        size,
-        className,
-      )}
+    <div
+      className={cn("rounded border border-control divide-y divide-border", className)}
       {...props}
+    />
+  );
+}
+
+/** A dt/dd pair. `row` lays the label and value out side by side. */
+export function KeyValue({
+  label,
+  layout = "stack",
+  className = "",
+  children,
+}: {
+  label: string;
+  layout?: "stack" | "row";
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (layout === "row") {
+    return (
+      <div className={cn("flex justify-between gap-2", className)}>
+        <dt className="text-muted-foreground">{label}</dt>
+        <dd className="truncate">{children}</dd>
+      </div>
+    );
+  }
+  return (
+    <div className={className}>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5">{children}</dd>
+    </div>
+  );
+}
+
+export function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div
+      role="status"
+      aria-label="loading"
+      className={cn("animate-pulse rounded border border-control bg-muted/30", className)}
     />
   );
 }
@@ -181,41 +288,38 @@ const btnVariant = {
   outline: "border border-border hover:bg-muted",
   ghost: "text-muted-foreground hover:text-foreground hover:bg-muted",
 };
-const btnSize = { default: "h-10 px-4", sm: "h-8 px-3", xs: "h-7 px-2 text-xs" };
-const selectSize = { default: "h-10 px-3", sm: "h-8 px-2", xs: "h-7 px-2 text-xs" };
+const btnSize = { sm: "h-8 px-2 text-sm", xs: "h-7 px-2 text-xs", lg: "px-6 py-3 text-sm" };
+export type ControlSize = keyof typeof btnSize;
 
 function buttonClass(
   variant: keyof typeof btnVariant,
-  size: keyof typeof btnSize,
+  size: ControlSize,
   extra: string,
   className: string,
 ) {
-  return cn(
-    "rounded text-sm transition-colors",
-    btnVariant[variant],
-    btnSize[size],
-    extra,
-    className,
-  );
+  return cn("rounded transition-colors", btnVariant[variant], btnSize[size], extra, className);
 }
 
 export function Button({
   className = "",
   variant = "outline",
-  size = "default",
+  size = "sm",
+  // A Button inside a form must not submit it by accident.
+  type = "button",
   isLoading,
   loadingText,
   children,
   disabled,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "outline" | "ghost";
-  size?: "default" | "sm" | "xs";
+  variant?: keyof typeof btnVariant;
+  size?: ControlSize;
   isLoading?: boolean;
   loadingText?: string;
 }) {
   return (
     <button
+      type={type}
       className={buttonClass(variant, size, "disabled:opacity-50", className)}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
@@ -229,34 +333,32 @@ export function Button({
 export function ButtonLink({
   className = "",
   variant = "outline",
-  size = "default",
+  size = "sm",
   children,
   ...props
-}: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-  variant?: "primary" | "outline" | "ghost";
-  size?: "default" | "sm" | "xs";
+}: React.ComponentProps<typeof Link> & {
+  variant?: keyof typeof btnVariant;
+  size?: ControlSize;
 }) {
   return (
-    <a className={buttonClass(variant, size, "inline-flex items-center", className)} {...props}>
+    <Link className={buttonClass(variant, size, "inline-flex items-center", className)} {...props}>
       {children}
-    </a>
+    </Link>
   );
 }
 
 export function Select({
   className = "",
-  size = "default",
+  size = "sm",
   children,
   ...props
-}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
-  size?: "default" | "sm" | "xs";
-}) {
+}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> & { size?: ControlSize }) {
   return (
     <div className={cn("relative inline-flex items-center", className)}>
       <select
         className={cn(
-          "w-full appearance-none rounded border border-border bg-card text-foreground text-sm outline-none focus:border-foreground transition-colors pr-7 disabled:opacity-50",
-          selectSize[size],
+          "w-full appearance-none rounded border border-control bg-card text-foreground text-sm outline-none focus:border-foreground transition-colors pr-7 disabled:opacity-50",
+          btnSize[size],
         )}
         {...props}
       >
@@ -266,3 +368,24 @@ export function Select({
     </div>
   );
 }
+
+const fieldBase = "w-full rounded border border-control bg-muted/30 text-sm transition-colors";
+
+export function Input({
+  className = "",
+  size = "sm",
+  ...props
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & { size?: ControlSize }) {
+  return (
+    <input
+      className={cn(fieldBase, btnSize[size], "outline-none focus:border-foreground", className)}
+      {...props}
+    />
+  );
+}
+
+export const maskedFieldClass = cn(
+  fieldBase,
+  btnSize.sm,
+  "text-left text-muted-foreground focus-within:border-foreground hover:border-foreground",
+);

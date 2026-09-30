@@ -1,16 +1,21 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/db/seed.ts", "src/app/**", "src/components/**"],
-  "ignoreExportsUsedInFile": true,
-  "ignoreBinaries": ["doppler"],
+  "entry": [
+    "src/db/seed.ts",
+    "src/app/**/{page,layout,route,loading,error,global-error,not-found}.{ts,tsx}",
+    "src/components/**/*.{ts,tsx}"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "*.{ts,mts,mjs}"],
   "ignore": ["vitest.server-only.ts"],
+  "ignoreBinaries": ["doppler"],
+  "ignoreDependencies": ["tailwindcss"],
   "rules": {
     "files": "error",
     "dependencies": "error",
     "devDependencies": "error",
-    "unlisted": "warn",
-    "exports": "warn",
+    "unlisted": "error",
+    "exports": "error",
     "types": "error",
-    "duplicates": "off"
+    "duplicates": "error"
   }
 }

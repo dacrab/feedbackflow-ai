@@ -6,30 +6,43 @@ import { db } from "@/db/client";
 import { userNotifications } from "@/db/schema";
 import { DIGEST_WINDOW_HOURS } from "@/lib/constants";
 import { sendDailyDigest } from "@/lib/services/notification-service";
-import { getDateNHoursAgo } from "@/lib/utils";
+import { hoursAgo } from "@/lib/utils";
 
-export async function runDigest(): Promise<{ total: number; high: number }> {
-  const since = getDateNHoursAgo(DIGEST_WINDOW_HOURS);
+// Bounded batches: an unbounded fan-out is thousands of concurrent Neon
+// requests on one cron hit.
+const USER_BATCH_SIZE = 10;
+
+export interface DigestResult {
+  total: number;
+  high: number;
+  failed: number;
+}
+
+export async function runDigest(): Promise<DigestResult> {
+  const since = hoursAgo(DIGEST_WINDOW_HOURS);
   const userIds = await db
     .selectDistinct({ userId: userNotifications.userId })
     .from(userNotifications)
     .where(eq(userNotifications.enabled, true));
 
-  const results = await Promise.allSettled(
-    userIds.map(({ userId }) =>
-      sendDailyDigest(userId, since).catch((e) => {
-        Sentry.captureException(e, { extra: { context: "digest", userId } });
-        return { total: 0, high: 0 };
-      }),
-    ),
-  );
+  const totals: DigestResult = { total: 0, high: 0, failed: 0 };
 
-  let total = 0;
-  let high = 0;
-  for (const r of results) {
-    if (r.status !== "fulfilled") continue;
-    total += r.value.total;
-    high += r.value.high;
+  for (let i = 0; i < userIds.length; i += USER_BATCH_SIZE) {
+    const batch = userIds.slice(i, i + USER_BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(({ userId }) => sendDailyDigest(userId, since)),
+    );
+
+    for (const result of results) {
+      if (result.status === "rejected") {
+        totals.failed++;
+        Sentry.captureException(result.reason, { extra: { context: "digest" } });
+        continue;
+      }
+      totals.total += result.value.total;
+      totals.high += result.value.high;
+    }
   }
-  return { total, high };
+
+  return totals;
 }

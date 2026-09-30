@@ -1,9 +1,11 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cn,
   formatDateUTC,
-  getDateNHoursAgo,
+  formatShortDate,
   handleActionError,
+  hoursAgo,
   sentimentColor,
   sevColor,
   sevLabel,
@@ -19,7 +21,7 @@ describe("cn", () => {
   it("returns empty string for all falsy", () => expect(cn(false, null, undefined, 0)).toBe(""));
   it("last Tailwind class wins", () => {
     expect(cn("p-4", "p-2")).toBe("p-2");
-    expect(cn("text-red-500", "text-blue-500")).toBe("text-blue-500");
+    expect(cn("text-danger", "text-blue-500")).toBe("text-blue-500");
   });
 });
 
@@ -32,9 +34,9 @@ describe("formatDateUTC", () => {
 
 describe("sevColor", () => {
   it.each([
-    [5, "text-red-500"],
-    [4, "text-red-500"],
-    [3, "text-orange-500"],
+    [5, "text-danger"],
+    [4, "text-danger"],
+    [3, "text-warn"],
     [2, "text-muted-foreground"],
     [1, "text-muted-foreground"],
   ])("returns %s for severity %s", (severity, expected) => {
@@ -56,11 +58,18 @@ describe("sevLabel", () => {
 
 describe("sentimentColor", () => {
   it.each([
-    ["positive", "text-green-500"],
+    ["positive", "text-good"],
     ["neutral", "text-muted-foreground"],
-    ["negative", "text-red-500"],
-  ])("returns %s for %s", (sentiment, expected) => {
+    ["negative", "text-danger"],
+  ] as const)("returns %s for %s", (sentiment, expected) => {
     expect(sentimentColor(sentiment)).toBe(expected);
+  });
+});
+
+describe("formatShortDate", () => {
+  it("keeps month and day only", () => {
+    expect(formatShortDate("2024-06-15")).toBe("06-15");
+    expect(formatShortDate("2024-12-01")).toBe("12-01");
   });
 });
 
@@ -89,18 +98,18 @@ describe("timeAgo", () => {
   });
 });
 
-describe("getDateNHoursAgo", () => {
+describe("hoursAgo", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("returns ISO string exactly N hours ago", () => {
+  it("returns a Date exactly N hours ago", () => {
     vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
-    expect(getDateNHoursAgo(2)).toBe("2024-01-10T10:00:00.000Z");
+    expect(hoursAgo(2).toISOString()).toBe("2024-01-10T10:00:00.000Z");
   });
 
   it("handles 0 hours (now)", () => {
     vi.setSystemTime(new Date("2024-01-10T12:00:00.000Z"));
-    expect(getDateNHoursAgo(0)).toBe("2024-01-10T12:00:00.000Z");
+    expect(hoursAgo(0).toISOString()).toBe("2024-01-10T12:00:00.000Z");
   });
 });
 
@@ -116,6 +125,14 @@ describe("handleActionError", () => {
 
   it("returns a custom fallback for non-Error values", () => {
     expect(handleActionError(null, "custom fallback")).toBe("custom fallback");
+  });
+
+  it("returns the fallback for React's production redaction string", () => {
+    const redacted = new Error(
+      "An error occurred in the Server Components render. The specific message is omitted in production builds.",
+    );
+    expect(handleActionError(redacted, "too many requests")).toBe("too many requests");
+    expect(handleActionError(redacted)).toBe("Action failed");
   });
 });
 
@@ -149,6 +166,20 @@ describe("withRetry", () => {
   it("handles zero retries", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("no retry"));
     await expect(withRetry(fn, { retries: 0, baseDelay: 0 })).rejects.toThrow("no retry");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("still attempts once with a negative retry budget", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error("bad budget"));
+    await expect(withRetry(fn, { retries: -1, baseDelay: 0 })).rejects.toThrow("bad budget");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops retrying once the signal is aborted", async () => {
+    const ctrl = new AbortController();
+    ctrl.abort();
+    const fn = vi.fn().mockRejectedValue(new Error("cancelled"));
+    await expect(withRetry(fn, { ...opts, signal: ctrl.signal })).rejects.toThrow("cancelled");
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

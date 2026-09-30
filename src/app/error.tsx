@@ -1,13 +1,9 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
 import { ErrorPage } from "@/components/error-page";
+import { useReportError } from "@/lib/report-error";
 
 export default function RootError({ error, reset }: { error: Error; reset: () => void }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
+  useReportError(error);
   return <ErrorPage error={error} reset={reset} />;
 }

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { APP_NAME } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 export function Logo({ className = "h-7 w-7" }: { className?: string }) {
   return (
@@ -21,18 +23,20 @@ export function Brand({
   href,
   className = "",
   logoClassName,
+  label = APP_NAME.toLowerCase(),
 }: {
   href?: string;
   className?: string;
   logoClassName?: string;
+  label?: React.ReactNode;
 }) {
   const inner = (
     <>
-      <Logo className={logoClassName ?? "h-7 w-7"} />
-      <span>feedbackflow</span>
+      <Logo {...(logoClassName ? { className: logoClassName } : {})} />
+      {label && <span>{label}</span>}
     </>
   );
-  const innerClass = `flex items-center gap-2 text-sm ${className}`;
+  const innerClass = cn("flex items-center gap-2 text-sm", className);
   return href ? (
     <Link href={href} className={innerClass}>
       {inner}

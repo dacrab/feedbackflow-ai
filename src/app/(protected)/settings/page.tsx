@@ -1,20 +1,19 @@
+import type { Metadata } from "next";
 import { DataSourcesCard } from "@/components/settings/data-sources-card";
 import { LLMSettingsCard } from "@/components/settings/llm-settings-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
 import { SystemHealthCard } from "@/components/settings/system-health-card";
 import { Muted, PageHeader } from "@/components/ui/ui";
-import { getServerSession } from "@/lib/api";
+import { getServerSession, requireAuth } from "@/lib/api";
 import { getSettingsData } from "@/lib/services/settings-service";
 
-export default async function SettingsPage() {
-  const session = await getServerSession();
-  const userId = session?.user?.id;
-  const user = session?.user;
-  if (!userId) return null;
+export const metadata: Metadata = { title: "settings" };
 
+export default async function SettingsPage() {
+  const userId = await requireAuth();
+  // getServerSession is cache()-wrapped, so this is a memo hit.
+  const user = (await getServerSession())?.user;
   const data = await getSettingsData(userId);
-  const enabledSources = data.sources.filter((s) => s.enabled);
-  const enabledHooks = data.hooks.filter((h) => h.enabled);
 
   return (
     <div className="space-y-6">
@@ -37,9 +36,9 @@ export default async function SettingsPage() {
           />
         </div>
         <SystemHealthCard
-          enabledSources={enabledSources.length}
+          enabledSources={data.sources.filter((s) => s.enabled).length}
           totalSources={data.sources.length}
-          enabledHooks={enabledHooks.length}
+          enabledHooks={data.hooks.filter((h) => h.enabled).length}
           lastRun={data.lastRun}
         />
         <DataSourcesCard sources={data.sources} />

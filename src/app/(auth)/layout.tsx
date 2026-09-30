@@ -12,18 +12,18 @@ const FEATURES = [
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex font-mono">
+    <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 bg-foreground text-background p-8 flex-col animate-slide-right [animation-fill-mode:both]">
-        <Brand href="/" logoClassName="h-7 w-7 invert" />
+        <Brand href="/" logoClassName="invert" className="text-inverse-muted" />
 
         <div className="flex-1 flex items-center">
           <div className="w-full space-y-6">
             <div>
-              <Eyebrow className="text-background/50 mb-4">what you get</Eyebrow>
+              <Eyebrow className="text-inverse-subtle mb-4">what you get</Eyebrow>
               <div className="space-y-4 text-sm">
                 {FEATURES.map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
-                    <span className="text-green-400 mt-0.5">→</span>
+                    <span className="text-inverse-accent mt-0.5">→</span>
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -32,10 +32,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <div className="text-xs text-background/40">next.js + neon + llm</div>
+        <div className="text-xs text-inverse-subtle">next.js + neon + llm</div>
       </div>
 
-      <div className="flex-1 flex flex-col p-8 bg-background animate-fade-up [animation-delay:100ms] [animation-fill-mode:both]">
+      <main className="flex-1 flex flex-col p-8 bg-background animate-fade-up [animation-delay:100ms] [animation-fill-mode:both]">
         <Link
           href="/"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit"
@@ -52,7 +52,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {children}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

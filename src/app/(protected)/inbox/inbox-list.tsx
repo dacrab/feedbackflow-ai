@@ -3,22 +3,39 @@
 import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Button, EmptyState, SentimentBadge, StatusBadge, statusChip } from "@/components/ui/ui";
+import {
+  Button,
+  EmptyState,
+  Muted,
+  Rows,
+  SentimentBadge,
+  SeverityChip,
+  StatusBadge,
+  statusChipClass,
+  TopicTag,
+} from "@/components/ui/ui";
 import { bulkUpdateStatus } from "@/lib/actions";
-import type { FeedbackItemWithAnalysis } from "@/lib/types";
+import type { FeedbackItemWithAnalysis, FeedbackStatus } from "@/lib/types";
 import { useAction } from "@/lib/use-action";
-import { cn, formatDateUTC, sevColor, sevLabel } from "@/lib/utils";
+import { formatDateUTC } from "@/lib/utils";
 
-const BULK_STATUSES: readonly ("Acknowledged" | "Actioned")[] = ["Acknowledged", "Actioned"];
+const BULK_STATUSES: readonly Exclude<FeedbackStatus, "New">[] = ["Acknowledged", "Actioned"];
 
-export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] }) {
+/** The inbox rows and the bar that acts on the selected ones. Selection lives
+ *  here because the checkboxes and the bulk buttons have to agree about what is
+ *  selected, and the page that owns them is a server component. */
+export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { run, pending: isPending } = useAction();
 
-  const allSelected = items.length > 0 && selected.size === items.length;
+  // Membership, not a count: two pages of equal size would otherwise show
+  // "select all" checked with nothing visible selected.
+  const visible = items.map((i) => i.id);
+  const selectedOnPage = visible.filter((id) => selected.has(id));
+  const allSelected = visible.length > 0 && selectedOnPage.length === visible.length;
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(items.map((i) => i.id)));
+    setSelected(allSelected ? new Set() : new Set(visible));
   }
 
   function toggle(id: string) {
@@ -30,26 +47,23 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
   }
 
   function handleBulk(status: string) {
-    // Only clear the selection on success; failures surface via toast.
-    run(() => bulkUpdateStatus(Array.from(selected), status), "status updated").then((ok) => {
+    run(() => bulkUpdateStatus(selectedOnPage, status), "status updated").then((ok) => {
       if (ok) setSelected(new Set());
     });
   }
 
   return (
     <>
-      {selected.size > 0 && (
+      {selectedOnPage.length > 0 && (
         <div className="flex items-center gap-3 p-2 rounded border border-border bg-muted text-sm animate-slide-down">
-          <span>{selected.size} selected</span>
+          <span>{selectedOnPage.length} selected</span>
           {BULK_STATUSES.map((status) => (
             <Button
               key={status}
-              size="xs"
               variant="ghost"
-              type="button"
               onClick={() => handleBulk(status)}
               disabled={isPending}
-              className={cn(statusChip[status])}
+              className={statusChipClass(status)}
             >
               Mark {status}
             </Button>
@@ -57,7 +71,7 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
         </div>
       )}
 
-      <div className="rounded border border-border bg-card divide-y divide-border">
+      <Rows className="bg-card">
         {items.length === 0 ? (
           <EmptyState
             title="no items found"
@@ -73,11 +87,11 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                 aria-label="Select all items"
                 className="h-3.5 w-3.5 rounded border-border"
               />
-              <span>select all</span>
+              <Muted>select all</Muted>
             </div>
             {items.map((item) => {
               const analysis = item.feedback_analyses;
-              const severity = analysis?.severity_score ?? 0;
+              const topic = analysis?.topics[0];
 
               return (
                 <div
@@ -92,14 +106,10 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                     className="h-3.5 w-3.5 rounded border-border shrink-0"
                   />
 
-                  <div
-                    className={`text-xs font-mono font-medium w-5 text-center shrink-0 ${sevColor(severity)}`}
-                    title={sevLabel(severity)}
-                    role="img"
-                    aria-label={sevLabel(severity)}
-                  >
-                    {severity || "·"}
-                  </div>
+                  <SeverityChip
+                    score={analysis?.severity_score ?? 0}
+                    className="w-5 text-center shrink-0"
+                  />
 
                   <Link href={`/feedback/${item.id}`} className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-sm">
@@ -108,18 +118,13 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
                       <StatusBadge status={analysis?.status} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      <span className="truncate max-w-[200px]">{item.raw_content}</span>
-                      {analysis?.topics?.[0] && (
-                        <>
-                          <span>·</span>
-                          <span>[{analysis.topics[0]}]</span>
-                        </>
-                      )}
+                      <Muted className="truncate max-w-[200px]">{item.raw_content}</Muted>
+                      {topic && <TopicTag topic={topic} />}
                     </div>
                   </Link>
 
                   <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-                    <span suppressHydrationWarning>{formatDateUTC(item.created_at)}</span>
+                    <Muted suppressHydrationWarning>{formatDateUTC(item.created_at)}</Muted>
                     <IconChevronRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
                   </div>
                 </div>
@@ -127,7 +132,7 @@ export function InboxBulkActions({ items }: { items: FeedbackItemWithAnalysis[] 
             })}
           </>
         )}
-      </div>
+      </Rows>
     </>
   );
 }

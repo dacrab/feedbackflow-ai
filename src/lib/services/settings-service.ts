@@ -65,6 +65,7 @@ export async function getSettingsData(userId: string): Promise<SettingsData> {
         startedAt: ingestRuns.startedAt,
         finishedAt: ingestRuns.finishedAt,
         ok: ingestRuns.ok,
+        error: ingestRuns.error,
         fetched: ingestRuns.fetched,
         inserted: ingestRuns.inserted,
         analyzed: ingestRuns.analyzed,
@@ -79,10 +80,7 @@ export async function getSettingsData(userId: string): Promise<SettingsData> {
   return {
     settings: settingsRow
       ? {
-          provider:
-            settingsRow.provider && isLLMProvider(settingsRow.provider)
-              ? settingsRow.provider
-              : null,
+          provider: isLLMProvider(settingsRow.provider) ? settingsRow.provider : null,
           model: settingsRow.model,
           hasKey: !!settingsRow.apiKeyCipher,
         }

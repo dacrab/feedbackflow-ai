@@ -1,10 +1,17 @@
 import "server-only";
 
-import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { cache } from "react";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
-import { DEFAULT_FEEDBACK_LIMIT, MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
-import type { FeedbackItemWithAnalysis, FeedbackStatus, Sentiment } from "@/lib/types";
+import { MAX_SEARCH_TERM_LENGTH, PREVIEW_CONTENT_CHARS } from "@/lib/constants";
+import type {
+  FeedbackAnalysisData,
+  FeedbackItemWithAnalysis,
+  FeedbackStatus,
+  InboxSort,
+  Sentiment,
+} from "@/lib/types";
 
 const feedbackSelect = {
   id: feedbackItems.id,
@@ -18,8 +25,8 @@ const feedbackSelect = {
   status: feedbackAnalyses.status,
 } as const;
 
-// The widest projection is the detail query (leftJoin), so its nullable
-// analysis fields drive FeedbackRow; list (innerJoin) rows stay assignable.
+// FeedbackRow comes from the detail query (leftJoin) because its nullable
+// analysis fields are the widest projection; list rows stay assignable.
 const feedbackDetailQuery = (userId: string, itemId: string) =>
   db
     .select(feedbackSelect)
@@ -35,56 +42,42 @@ function escapeLike(term: string): string {
   return term.replace(/[\\%_]/g, "\\$&");
 }
 
+/** An absent or undefined field means "not filtered on". The `| undefined` is
+ *  spelled out because exactOptionalPropertyTypes otherwise forbids a caller
+ *  from passing the key at all with an undefined value — which is exactly what
+ *  an untouched inbox filter is. */
+export type FeedbackFilters = {
+  sentiment?: Sentiment | undefined;
+  status?: FeedbackStatus | undefined;
+  topic?: string | undefined;
+  q?: string | undefined;
+  sort?: InboxSort | undefined;
+};
+
 function buildFilterConditions(filters: FeedbackFilters, userId: string) {
-  const conditions = [eq(feedbackItems.userId, userId)];
+  // Both ownership columns are pinned: it keeps the filter indexes usable and
+  // makes the inbox refuse any row where they disagree.
+  const conditions = [eq(feedbackItems.userId, userId), eq(feedbackAnalyses.userId, userId)];
   if (filters.sentiment) conditions.push(eq(feedbackAnalyses.sentiment, filters.sentiment));
   if (filters.status) conditions.push(eq(feedbackAnalyses.status, filters.status));
   if (filters.q) {
     const q = `%${escapeLike(filters.q.slice(0, MAX_SEARCH_TERM_LENGTH).toLowerCase())}%`;
-    const cond = or(
-      sql`LOWER(${feedbackItems.rawContent}) LIKE ${q} ESCAPE '\\'`,
-      sql`LOWER(${feedbackAnalyses.summary}) LIKE ${q} ESCAPE '\\'`,
+    conditions.push(
+      sql`(lower(${feedbackItems.rawContent}) LIKE ${q} ESCAPE '\\' OR lower(${feedbackAnalyses.summary}) LIKE ${q} ESCAPE '\\')`,
     );
-    if (cond) conditions.push(cond);
   }
   if (filters.topic) {
-    const topic = filters.topic.slice(0, MAX_SEARCH_TERM_LENGTH);
-    conditions.push(sql`${feedbackAnalyses.topics} @> ${JSON.stringify([topic])}`);
+    conditions.push(
+      sql`${feedbackAnalyses.topics} @> ${JSON.stringify([filters.topic.slice(0, MAX_SEARCH_TERM_LENGTH)])}`,
+    );
   }
   return conditions;
 }
 
-export type FeedbackFilters = {
-  sentiment?: Sentiment;
-  status?: FeedbackStatus;
-  topic?: string;
-  q?: string;
-  sort?: "created_desc" | "severity_desc" | "severity_asc";
-};
-
-export async function getFeedbackItems(
-  userId: string,
-  options: { limit?: number; offset?: number; filters?: FeedbackFilters } = {},
-): Promise<{ items: FeedbackItemWithAnalysis[]; total: number }> {
-  const { limit = DEFAULT_FEEDBACK_LIMIT, offset = 0, filters = {} } = options;
-
-  const orderBy =
-    filters.sort === "severity_desc"
-      ? desc(feedbackAnalyses.severityScore)
-      : filters.sort === "severity_asc"
-        ? asc(feedbackAnalyses.severityScore)
-        : desc(feedbackItems.createdAt);
-
-  // Window count returns the filtered total alongside the page in one query.
-  const rows = await db
-    .select({ ...feedbackSelect, total: sql<number>`count(*) OVER ()` })
-    .from(feedbackItems)
-    .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
-    .where(and(...buildFilterConditions(filters, userId)))
-    .orderBy(orderBy)
-    .limit(limit)
-    .offset(offset);
-  return { items: rows.map(mapFeedbackRow), total: Number(rows[0]?.total ?? 0) };
+// A leftJoin makes each analysis column independently nullable in the types,
+// though the row is all-or-nothing. sentiment is notNull, so it decides.
+function hasAnalysis(row: FeedbackRow): row is FeedbackRow & FeedbackAnalysisData {
+  return row.sentiment !== null;
 }
 
 function mapFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
@@ -93,22 +86,72 @@ function mapFeedbackRow(row: FeedbackRow): FeedbackItemWithAnalysis {
     source: row.source,
     raw_content: row.raw_content,
     created_at: row.created_at.toISOString(),
-    feedback_analyses: row.sentiment
+    feedback_analyses: hasAnalysis(row)
       ? {
           sentiment: row.sentiment,
-          topics: row.topics ?? [],
-          severity_score: row.severity_score ?? 0,
-          summary: row.summary ?? "",
-          status: row.status ?? "New",
+          topics: row.topics,
+          severity_score: row.severity_score,
+          summary: row.summary,
+          status: row.status,
         }
       : null,
   };
 }
 
-export async function getFeedbackItem(
+export async function getFeedbackItems(
   userId: string,
-  itemId: string,
-): Promise<FeedbackItemWithAnalysis | null> {
-  const [row] = await feedbackDetailQuery(userId, itemId);
-  return row ? mapFeedbackRow(row) : null;
+  options: { limit: number; offset: number; filters?: FeedbackFilters },
+): Promise<{ items: FeedbackItemWithAnalysis[]; total: number }> {
+  const { limit, offset, filters = {} } = options;
+
+  // One CTE feeds both queries: the page and its filtered total. A
+  // `count(*) OVER ()` window function has no partition, so the planner would
+  // have to materialize every matching row before emitting row 1 — rendering
+  // 20 rows at the cost of a full scan and sort.
+  const page = db.$with("page").as(
+    db
+      .select(feedbackSelect)
+      .from(feedbackItems)
+      .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
+      .where(and(...buildFilterConditions(filters, userId))),
+  );
+
+  // The list renders a one-line preview, so it does not need the full body.
+  // Column names are listed explicitly rather than derived: the two selects
+  // differ in one expression, and reflection over drizzle's column objects
+  // would be harder to read than the repetition it saved.
+  const preview = {
+    id: page.id,
+    source: page.source,
+    raw_content: sql<string>`left(${page.raw_content}, ${PREVIEW_CONTENT_CHARS})`,
+    created_at: page.created_at,
+    sentiment: page.sentiment,
+    topics: page.topics,
+    severity_score: page.severity_score,
+    summary: page.summary,
+    status: page.status,
+  };
+
+  const orderBy =
+    filters.sort === "severity_desc"
+      ? desc(page.severity_score)
+      : filters.sort === "severity_asc"
+        ? asc(page.severity_score)
+        : desc(page.created_at);
+
+  const [countRows, rows] = await Promise.all([
+    db.select({ total: sql<number>`count(*)::int` }).from(page),
+    db.select(preview).from(page).orderBy(orderBy).limit(limit).offset(offset),
+  ]);
+
+  return { items: rows.map(mapFeedbackRow), total: Number(countRows[0]?.total ?? 0) };
 }
+
+// cache(): generateMetadata and the page body both read this row in the same
+// render, so without it the detail page queries twice for one item.
+export const getFeedbackItem = cache(
+  async (userId: string, itemId: string): Promise<FeedbackItemWithAnalysis | null> => {
+    const [row] = await feedbackDetailQuery(userId, itemId);
+    return row ? mapFeedbackRow(row) : null;
+  },
+);
