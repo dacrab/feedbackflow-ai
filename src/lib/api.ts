@@ -36,7 +36,7 @@ export const getServerSession = cache(async () => {
 
 export async function requireAuth(): Promise<string> {
   const session = await getServerSession();
-  if (!session?.user?.id) throw new UnauthorizedError();
+  if (!session?.user.id) throw new UnauthorizedError();
   return session.user.id;
 }
 

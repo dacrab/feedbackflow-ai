@@ -41,9 +41,15 @@ function getModel({ provider, model, apiKey }: LLMOptions) {
   if (provider === "openrouter") {
     return createOpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" })(model);
   }
-  return createGoogleGenerativeAI({ apiKey })(model);
+  if (provider === "google") return createGoogleGenerativeAI({ apiKey })(model);
+  // Exhaustive: a new provider without a branch fails the build instead of
+  // silently being sent to Google.
+  const unhandled: never = provider;
+  throw new Error(`Unsupported LLM provider: ${String(unhandled)}`);
 }
 
+/** Strips markdown, code fences and URLs before the model sees user text: noise
+ *  that costs tokens without adding signal. */
 function normalize(text: string): string {
   return text
     .toLowerCase()

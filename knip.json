@@ -2,13 +2,11 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/db/seed.ts",
-    "src/app/**/{page,layout,route,loading,error,global-error,not-found}.{ts,tsx}",
-    "src/components/**/*.{ts,tsx}"
+    "src/app/**/{page,layout,route,loading,error,global-error,not-found}.{ts,tsx}"
   ],
   "project": ["src/**/*.{ts,tsx}", "*.{ts,mts,mjs}"],
   "ignore": ["vitest.server-only.ts"],
   "ignoreBinaries": ["doppler"],
-  "ignoreDependencies": ["tailwindcss"],
   "rules": {
     "files": "error",
     "dependencies": "error",

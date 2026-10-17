@@ -14,11 +14,11 @@ export function ErrorPage({
 }: {
   error: Error;
   reset: () => void;
-  title?: string | undefined;
-  description?: string | undefined;
+  title?: string;
+  description?: string;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    Sentry.captureException(error, { extra: { context: "error-boundary" } });
   }, [error]);
 
   return (

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems, user } from "@/db/schema";
 
@@ -6,6 +6,7 @@ import { feedbackAnalyses, feedbackItems, user } from "@/db/schema";
 // database and verifies nothing.
 const SEED_USER = { id: "seed-user", name: "Seed User", email: "seed@example.com" };
 const SEED_EXTERNAL_ID = "seed-1";
+const SEED_SOURCE = "seed";
 
 async function main() {
   await db.insert(user).values(SEED_USER).onConflictDoNothing({ target: user.id });
@@ -15,7 +16,14 @@ async function main() {
   const [existing] = await db
     .select({ id: feedbackItems.id })
     .from(feedbackItems)
-    .where(eq(feedbackItems.externalId, SEED_EXTERNAL_ID))
+    // Matches the (user_id, source, external_id) unique key, not just the id.
+    .where(
+      and(
+        eq(feedbackItems.userId, owner.id),
+        eq(feedbackItems.source, SEED_SOURCE),
+        eq(feedbackItems.externalId, SEED_EXTERNAL_ID),
+      ),
+    )
     .limit(1);
   if (existing) {
     console.log("seed data already present");
@@ -26,7 +34,7 @@ async function main() {
     .insert(feedbackItems)
     .values({
       userId: owner.id,
-      source: "seed",
+      source: SEED_SOURCE,
       externalId: SEED_EXTERNAL_ID,
       rawContent: "This is a seeded feedback item to verify Neon + Drizzle wiring.",
       originalTimestamp: new Date(),

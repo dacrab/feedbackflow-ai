@@ -34,12 +34,14 @@ function aggregateSummary(rows: SummaryRow[]) {
   let neutral = 0;
   let negative = 0;
   let highSeverity = 0;
+  // Sum-weighted from the *unrounded* per-sentiment average, then rounded once
+  // below; rounding each group first would skew the overall figure.
   let totalWeightedAvg = 0;
 
   for (const r of rows) {
-    const c = Number(r.cnt);
+    const c = r.cnt;
     total += c;
-    highSeverity += Number(r.highCnt);
+    highSeverity += r.highCnt;
     totalWeightedAvg += Number(r.avgSev) * c;
     if (r.sentiment === "positive") positive = c;
     else if (r.sentiment === "neutral") neutral = c;
@@ -55,7 +57,7 @@ function aggregateSummary(rows: SummaryRow[]) {
 function buildSeverityHist(rows: Array<{ score: number; cnt: number }>): Record<number, number> {
   const hist: Record<number, number> = {};
   for (let i = 1; i <= MAX_SEVERITY; i++) hist[i] = 0;
-  for (const r of rows) hist[r.score] = Number(r.cnt);
+  for (const r of rows) hist[r.score] = r.cnt;
   return hist;
 }
 
@@ -65,15 +67,19 @@ const TOP_TOPICS = 10;
 export async function getDashboard(userId: string): Promise<DashboardData> {
   const since = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
   const sinceDay = sql`${since}::date`;
-  const base = and(eq(feedbackItems.userId, userId), gte(feedbackItems.createdAt, since));
+  // Bucket on when the feedback was filed, not when we scraped it, so a
+  // backfilled repo does not render as a one-day spike. Matches the trend and
+  // topic views, which also use original_timestamp.
+  const base = and(eq(feedbackItems.userId, userId), gte(feedbackItems.originalTimestamp, since));
 
   const [summaryRows, severityRows, trendRows, topicRows] = await Promise.all([
     db
       .select({
         sentiment: feedbackAnalyses.sentiment,
-        cnt: sql<number>`COUNT(*)`,
-        highCnt: sql<number>`COUNT(*) FILTER (WHERE ${feedbackAnalyses.severityScore} >= ${HIGH_SEVERITY_THRESHOLD})`,
-        avgSev: sql<string>`ROUND(AVG(${feedbackAnalyses.severityScore})::numeric, 1)`,
+        cnt: sql<number>`COUNT(*)::int`,
+        highCnt: sql<number>`COUNT(*) FILTER (WHERE ${feedbackAnalyses.severityScore} >= ${HIGH_SEVERITY_THRESHOLD})::int`,
+        // Unrounded: the caller weights this by group size and rounds once.
+        avgSev: sql<string>`AVG(${feedbackAnalyses.severityScore})::numeric`,
       })
       .from(feedbackItems)
       .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
@@ -83,7 +89,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     db
       .select({
         score: feedbackAnalyses.severityScore,
-        cnt: sql<number>`COUNT(*)`,
+        cnt: sql<number>`COUNT(*)::int`,
       })
       .from(feedbackItems)
       .innerJoin(feedbackAnalyses, eq(feedbackAnalyses.feedbackItemId, feedbackItems.id))
@@ -93,8 +99,9 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     db
       .select({
         day: sql<string>`${feedbackTrend.day}::text`,
-        cnt: feedbackTrend.cnt,
-        delta: feedbackTrend.delta,
+        // The view's COUNT/LAG are bigint; cast so the driver cannot hand back a string.
+        cnt: sql<number>`${feedbackTrend.cnt}::int`,
+        delta: sql<number>`${feedbackTrend.delta}::int`,
       })
       .from(feedbackTrend)
       .where(and(eq(feedbackTrend.userId, userId), gte(feedbackTrend.day, sinceDay)))
@@ -103,7 +110,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     db
       .select({
         topic: feedbackTopics.topic,
-        cnt: feedbackTopics.cnt,
+        cnt: sql<number>`${feedbackTopics.cnt}::int`,
       })
       .from(feedbackTopics)
       .where(and(eq(feedbackTopics.userId, userId), gte(feedbackTopics.day, sinceDay)))
@@ -118,12 +125,12 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
 
   const trendData = trendRows.map((r) => ({
     day: r.day,
-    cnt: Number(r.cnt),
-    delta: Number(r.delta),
+    cnt: r.cnt,
+    delta: r.delta,
   }));
   const topTopics = topicRows.map((r) => ({
     topic: r.topic,
-    value: Number(r.cnt),
+    value: r.cnt,
   }));
 
   const lastTrend = trendData.at(-1);
@@ -138,7 +145,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     avgSeverity,
     trendLabels: trendData.map((r) => formatShortDate(r.day)),
     trendValues: trendData.map((r) => r.cnt),
-    trendDelta: Number(lastTrend?.delta ?? 0),
+    trendDelta: lastTrend?.delta ?? 0,
     topTopics,
     severityHist,
   };

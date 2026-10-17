@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems, userSources } from "@/db/schema";
-import { MAX_RAW_CONTENT_LENGTH } from "@/lib/constants";
+import { MAX_RAW_CONTENT_LENGTH, SYNC_FAILED_MESSAGE } from "@/lib/constants";
 import { tryDecrypt } from "@/lib/crypto";
 import type { LLMOptions } from "@/lib/llm";
 import { analyzeAndStore, getUserLLMOpts } from "@/lib/services/ingest/analysis";
@@ -17,10 +17,9 @@ import {
   type SyncStats,
 } from "@/lib/services/ingest/runs";
 import { notifyHighSeverityFeedback } from "@/lib/services/notification-service";
+import type { OnProgress } from "@/lib/types";
 
-type OnProgress = (stage: string, message: string) => void;
-
-type SourceRow = Pick<
+type IngestSourceRow = Pick<
   typeof userSources.$inferSelect,
   "id" | "userId" | "type" | "config" | "secretCipher"
 >;
@@ -32,7 +31,9 @@ export interface RunIngestResult {
   fetched: number;
   inserted: number;
   analyzed: number;
-  /** False if any tenant hit a provider error or the run was cancelled. */
+  /** False if any tenant hit a fatal provider error, was skipped because a run
+   *  was already in flight, or was cancelled. Transient per-item errors do not
+   *  flip it. */
   ok: boolean;
 }
 
@@ -44,7 +45,7 @@ export interface RunIngestOptions {
   maxItems?: number;
 }
 
-async function loadSources(options: RunIngestOptions): Promise<Map<string, SourceRow[]>> {
+async function loadSources(options: RunIngestOptions): Promise<Map<string, IngestSourceRow[]>> {
   const { userId, sourceId } = options;
   const conditions = [eq(userSources.enabled, true)];
   if (userId) conditions.push(eq(userSources.userId, userId));
@@ -61,7 +62,7 @@ async function loadSources(options: RunIngestOptions): Promise<Map<string, Sourc
     .from(userSources)
     .where(and(...conditions));
 
-  const byUser = new Map<string, SourceRow[]>();
+  const byUser = new Map<string, IngestSourceRow[]>();
   for (const row of rows) {
     byUser.set(row.userId, [...(byUser.get(row.userId) ?? []), row]);
   }
@@ -69,7 +70,7 @@ async function loadSources(options: RunIngestOptions): Promise<Map<string, Sourc
 }
 
 async function storeIssues(
-  src: SourceRow,
+  src: IngestSourceRow,
   token: string | undefined,
   emit: OnProgress | undefined,
 ) {
@@ -101,7 +102,7 @@ async function storeIssues(
   };
 }
 
-async function selectUnanalyzed(src: SourceRow, externalIds: string[]) {
+async function selectUnanalyzed(src: IngestSourceRow, externalIds: string[]) {
   if (externalIds.length === 0) return [];
   return db
     .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
@@ -119,7 +120,7 @@ async function selectUnanalyzed(src: SourceRow, externalIds: string[]) {
 
 async function syncUser(
   userId: string,
-  sources: SourceRow[],
+  sources: IngestSourceRow[],
   llmOpts: LLMOptions | undefined,
   options: RunIngestOptions,
   stats: SyncStats,
@@ -190,7 +191,7 @@ export async function runIngest(options: RunIngestOptions = {}): Promise<RunInge
       stats.hasError = true;
       stats.error = err instanceof Error ? err.message : String(err);
       Sentry.captureException(err, { extra: { context: "run-ingest", userId } });
-      onProgress?.("error", "sync failed — check your source permissions and LLM settings");
+      onProgress?.("error", SYNC_FAILED_MESSAGE);
     } finally {
       await finalizeRun(runId, stats, signal?.aborted === true);
     }

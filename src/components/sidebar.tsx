@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Brand } from "@/components/logo";
-import { NAV_ITEMS } from "@/components/nav-items";
+import { isNavItemActive, NAV_ITEMS } from "@/components/nav-items";
 import { IconButton, Muted } from "@/components/ui/ui";
 import { SIDEBAR_COLLAPSED_COOKIE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -48,7 +48,7 @@ export function Sidebar({
 
       <nav className="flex-1 py-2 px-2">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = isNavItemActive(pathname, item.href);
           return (
             <Link
               key={item.href}
@@ -81,7 +81,10 @@ export function Sidebar({
             </Muted>
           )}
           <form action="/logout" method="POST">
+            {/* IconButton defaults to type="button"; inside a POST form it must
+                be a submit button or logout silently does nothing. */}
             <IconButton
+              type="submit"
               className={cn("rounded", collapsed ? "p-1.5" : "p-1")}
               title="logout"
               aria-label="logout"

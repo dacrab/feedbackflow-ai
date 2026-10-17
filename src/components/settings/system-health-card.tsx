@@ -15,13 +15,16 @@ import type { IngestRunSummary } from "@/lib/types";
 import { type SyncLogLine, useSyncStream } from "@/lib/use-sync-stream";
 import { timeAgo } from "@/lib/utils";
 
-const runLabel = (ok: boolean | null): string =>
-  ok === true ? "● ok" : ok === false ? "● failed" : "● running";
+/** The dot colour, run label and log prefix for one outcome, in one place so the
+ *  three cannot disagree. */
+type Outcome = keyof typeof statusToneClass;
+const OUTCOME: Record<Outcome, { label: string; prefix: string }> = {
+  ok: { label: "● ok", prefix: "✓ " },
+  bad: { label: "● failed", prefix: "✗ " },
+  idle: { label: "● running", prefix: "· " },
+};
 
-const runTone = (ok: boolean | null) => (ok === null ? "idle" : ok ? "ok" : "bad");
-
-const logPrefix = (ok: boolean | undefined): string =>
-  ok === true ? "✓ " : ok === false ? "✗ " : "· ";
+const outcomeFor = (ok: boolean | null): Outcome => (ok === null ? "idle" : ok ? "ok" : "bad");
 
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -62,18 +65,21 @@ function SyncLog({
   return (
     <div
       ref={ref}
-      className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 space-y-0.5 shadow-lg animate-slide-down"
+      className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 shadow-lg animate-slide-down"
     >
-      {logs.map((line) => (
-        <p
-          key={line.id}
-          className={`text-xs font-mono truncate ${statusToneClass[runTone(line.ok ?? null)]}`}
-        >
-          {logPrefix(line.ok)}
-          {line.msg}
-        </p>
-      ))}
-      {syncing && <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>}
+      {/* Announced as updates stream in; the ✓/✗/· prefix is the non-colour cue. */}
+      <div role="log" aria-live="polite" aria-label="sync log" className="space-y-0.5">
+        {logs.map((line) => {
+          const outcome = outcomeFor(line.ok ?? null);
+          return (
+            <p key={line.id} className={`text-xs font-mono truncate ${statusToneClass[outcome]}`}>
+              {OUTCOME[outcome].prefix}
+              {line.msg}
+            </p>
+          );
+        })}
+        {syncing && <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>}
+      </div>
       <TextButton className="w-full text-left" onClick={onDismiss}>
         dismiss
       </TextButton>
@@ -94,6 +100,7 @@ export function SystemHealthCard({
 }) {
   const { syncing, logs, start, cancel } = useSyncStream();
   const [logOpen, setLogOpen] = useState(false);
+  const lastOutcome = outcomeFor(lastRun?.ok ?? null);
 
   return (
     <div className="relative">
@@ -115,7 +122,7 @@ export function SystemHealthCard({
           <Panel className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Muted>last run</Muted>
-              <StatusDot tone={runTone(lastRun.ok)}>{runLabel(lastRun.ok)}</StatusDot>
+              <StatusDot tone={lastOutcome}>{OUTCOME[lastOutcome].label}</StatusDot>
             </div>
             <Muted>
               {timeAgo(lastRun.startedAt)}

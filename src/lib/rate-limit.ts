@@ -37,9 +37,12 @@ export async function rateLimit(
   const windowStart = new Date(now.getTime() - windowMs);
 
   if (Math.random() < CLEANUP_P) {
-    await deleteStale(new Date(now.getTime() - MAX_WINDOW_MS));
+    await sweepExpired();
   }
 
+  // One atomic upsert per key: a bucket past its window resets to 1/now,
+  // otherwise it increments in place, so concurrent callers cannot race past
+  // the cap.
   const [row] = await db
     .insert(rateLimits)
     .values({ key: identifier, windowStartedAt: now, count: 1 })

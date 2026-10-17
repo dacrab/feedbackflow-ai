@@ -16,19 +16,21 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Stamped per request by the CSP middleware in src/proxy.ts.
+  // Stamped per request by the CSP middleware in src/proxy.ts. Spread only when
+  // present: passing `nonce: undefined` would violate exactOptionalPropertyTypes.
   const nonce = (await headers()).get("x-nonce");
+  const nonceProp = nonce ? { nonce } : {};
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen">
-        <ClerkProvider dynamic {...(nonce ? { nonce } : {})}>
+        <ClerkProvider dynamic {...nonceProp}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            {...(nonce ? { nonce } : {})}
+            {...nonceProp}
           >
             {children}
             <Toaster position="bottom-right" richColors closeButton />

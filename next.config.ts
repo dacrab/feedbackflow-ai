@@ -4,7 +4,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  typescript: { ignoreBuildErrors: false },
   serverExternalPackages: ["@neondatabase/serverless"],
   async headers() {
     return [
@@ -30,7 +29,9 @@ export default withSentryConfig(nextConfig, {
   org: process.env["SENTRY_ORG"] ?? "",
   project: process.env["SENTRY_PROJECT"] ?? "",
   authToken: process.env["SENTRY_AUTH_TOKEN"] ?? "",
-  silent: !process.env["CI"],
+  // Quiet on CI and on Vercel; a Vercel build can run without CI set, and its
+  // upload logs would otherwise interleave with the app's own build output.
+  silent: Boolean(process.env["CI"] || process.env["VERCEL"]),
   widenClientFileUpload: true,
   // Treeshaking is configured under `webpack`, which is the only shape
   // SentryBuildWebpackOptions accepts in v10. It has no effect while Next

@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
 import { withRetry } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ async function fetchPage(repo: string, page: number, token?: string): Promise<Gi
       Accept: "application/vnd.github+json",
       ...(token && { Authorization: `Bearer ${token}` }),
     },
+    // Opt out of Next's fetch cache: a replayed page would feed stale issues.
     next: { revalidate: 0 },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
@@ -55,7 +57,10 @@ export async function fetchGithubIssues(repo: string, token?: string): Promise<G
       if (batch.length < PER_PAGE) break;
     } catch (e) {
       if (page === 1) throw e; // nothing fetched yet, so fail loudly
-      break; // keep what we have on later-page failures
+      // Keep what we have, but report the partial ingest rather than returning
+      // an incomplete list with no signal.
+      Sentry.captureException(e, { extra: { context: "github-page", repo, page } });
+      break;
     }
   }
   return issues;

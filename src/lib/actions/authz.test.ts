@@ -217,10 +217,12 @@ describe("validation happens after auth, not before", () => {
   });
 
   it("caps a bulk update so one request cannot rewrite the table", async () => {
+    // Distinct, well-formed uuids: an ill-formed id would be rejected by the
+    // uuid schema first, so this would pass even with the cap removed.
     const many = Array.from(
       { length: 201 },
-      (_, i) => `1111111${String(i).padStart(1, "0")}-1111-4111-8111-111111111111`,
+      (_, i) => `11111111-1111-4111-8111-${String(i).padStart(12, "0")}`,
     );
-    await expect(feedback.bulkUpdateStatus(many, "Actioned")).rejects.toThrow();
+    await expect(feedback.bulkUpdateStatus(many, "Actioned")).rejects.toThrow(/<=200/);
   });
 });

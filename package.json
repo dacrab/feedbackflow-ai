@@ -10,7 +10,7 @@
     "lint": "biome check . --error-on-warnings",
     "lint:fix": "biome check . --write --error-on-warnings",
     "knip": "doppler run -- knip",
-    "check": "bun run typecheck && bun run lint && bun run contrast && bun run test && bun run knip",
+    "check": "bun run typecheck && bun run lint && bun run contrast && bun run test:coverage && bun run knip && bun run db:check",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "doppler run -- drizzle-kit generate",
@@ -59,14 +59,14 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
     "drizzle-kit": "^0.31.10",
     "jsdom": "^30.0.0",
     "knip": "^6.25.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10",
-    "@vitest/coverage-v8": "^4.1.10"
+    "vitest": "^4.1.10"
   },
   "packageManager": "bun@1.4.2"
 }

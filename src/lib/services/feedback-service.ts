@@ -5,6 +5,7 @@ import { cache } from "react";
 import { db } from "@/db/client";
 import { feedbackAnalyses, feedbackItems } from "@/db/schema";
 import { MAX_SEARCH_TERM_LENGTH } from "@/lib/constants";
+import { escapeLike } from "@/lib/sql";
 import type {
   FeedbackAnalysisData,
   FeedbackItemWithAnalysis,
@@ -39,11 +40,6 @@ const feedbackDetailQuery = (userId: string, itemId: string) =>
     .limit(1);
 
 type FeedbackRow = Awaited<ReturnType<typeof feedbackDetailQuery>>[number];
-
-// Escape LIKE wildcards so user input is matched literally.
-function escapeLike(term: string): string {
-  return term.replace(/[\\%_]/g, "\\$&");
-}
 
 /** An absent field means "not filtered on"; the explicit `| undefined` is
  *  required by exactOptionalPropertyTypes for a caller to omit the key. */
@@ -105,10 +101,8 @@ export async function getFeedbackItems(
 ): Promise<{ items: FeedbackItemWithAnalysis[]; total: number }> {
   const { limit, offset, filters = {} } = options;
 
-  // One CTE feeds both queries: the page and its filtered total. A
-  // `count(*) OVER ()` window function has no partition, so the planner would
-  // have to materialize every matching row before emitting row 1 — rendering
-  // 20 rows at the cost of a full scan and sort.
+  // One CTE feeds the page and its filtered total; a `count(*) OVER ()` window
+  // would make the planner materialize every matching row before emitting row 1.
   const page = db.$with("page").as(
     db
       .select(feedbackSelect)
@@ -118,9 +112,8 @@ export async function getFeedbackItems(
   );
 
   // The list renders a one-line preview, so it does not need the full body.
-  // Column names are listed explicitly rather than derived: the two selects
-  // differ in one expression, and reflection over drizzle's column objects
-  // would be harder to read than the repetition it saved.
+  // Column names are listed rather than derived: reflection over drizzle's column
+  // objects would be harder to read than the repetition it saved.
   const preview = {
     id: page.id,
     source: page.source,

@@ -1,23 +1,23 @@
 import { IconChevronDown } from "@tabler/icons-react";
 import Link from "next/link";
 import type { FeedbackStatus, Sentiment } from "@/lib/types";
-import { cn, sentimentColor, sevColor, sevLabel } from "@/lib/utils";
+import { cn, sentimentColor, sevColor, sevLabel, TONE } from "@/lib/utils";
 
 /** One entry per triage state: the read-only badge and the bulk-action chip
  *  are the same hue, and adding a status means touching exactly one line. */
 const statusStyles: Record<Exclude<FeedbackStatus, "New">, { text: string; chip: string }> = {
-  Acknowledged: { text: "text-info", chip: "bg-info/10 text-info hover:bg-info/20" },
-  Actioned: { text: "text-accent", chip: "bg-accent/10 text-accent hover:bg-accent/20" },
+  Acknowledged: { text: TONE.info, chip: "bg-info/10 text-info hover:bg-info/20" },
+  Actioned: { text: TONE.accent, chip: "bg-accent/10 text-accent hover:bg-accent/20" },
 };
 
 export const statusChipClass = (status: Exclude<FeedbackStatus, "New">) =>
   statusStyles[status].chip;
 
-export type StatusTone = keyof typeof statusToneClass;
+type StatusTone = keyof typeof statusToneClass;
 export const statusToneClass = {
-  ok: "text-good",
-  bad: "text-danger",
-  idle: "text-muted-foreground",
+  ok: TONE.good,
+  bad: TONE.danger,
+  idle: TONE.muted,
 } as const;
 
 export function StatusDot({
@@ -106,7 +106,7 @@ export function MetricCard({
       <div className="flex items-end justify-between gap-2">
         <p className="text-2xl font-medium leading-none">{value}</p>
         {delta !== undefined && (
-          <span className={`text-xs font-mono mb-0.5 ${delta >= 0 ? "text-good" : "text-danger"}`}>
+          <span className={`text-xs font-mono mb-0.5 ${delta >= 0 ? TONE.good : TONE.danger}`}>
             {delta >= 0 ? "↑" : "↓"}
             {Math.abs(delta)}
           </span>
@@ -273,11 +273,12 @@ export function KeyValue({
   );
 }
 
+/** Decorative: loading pages own a single live region, so a wall of skeletons
+ *  does not announce "loading" once per placeholder. */
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      role="status"
-      aria-label="loading"
+      aria-hidden="true"
       className={cn("animate-pulse rounded border border-control bg-muted/30", className)}
     />
   );
@@ -289,7 +290,7 @@ const btnVariant = {
   ghost: "text-muted-foreground hover:text-foreground hover:bg-muted",
 };
 const btnSize = { sm: "h-8 px-2 text-sm", xs: "h-7 px-2 text-xs", lg: "px-6 py-3 text-sm" };
-export type ControlSize = keyof typeof btnSize;
+type ControlSize = keyof typeof btnSize;
 
 function buttonClass(
   variant: keyof typeof btnVariant,

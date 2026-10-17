@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   Area,
   AreaChart,
@@ -24,20 +25,16 @@ const TOOLTIP_CONTENT_STYLE = {
   fontSize: "13px",
 };
 
-function ChartFrame({ children }: { children: React.ReactNode }) {
+type Datum = { name: string; value: number };
+
+export function TrendChart({ data }: { data: Datum[] }) {
+  // Per-instance, so two trend charts cannot share (and fight over) one gradient.
+  const gradientId = useId();
   return (
     <ResponsiveContainer width="100%" height="100%">
-      {children}
-    </ResponsiveContainer>
-  );
-}
-
-export function TrendChart({ data }: { data: { name: string; value: number }[] }) {
-  return (
-    <ChartFrame>
       <AreaChart data={data}>
         <defs>
-          <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.2} />
             <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
           </linearGradient>
@@ -50,20 +47,16 @@ export function TrendChart({ data }: { data: { name: string; value: number }[] }
           dataKey="value"
           stroke="var(--color-chart-1)"
           strokeWidth={2}
-          fill="url(#tg)"
+          fill={`url(#${gradientId})`}
         />
       </AreaChart>
-    </ChartFrame>
+    </ResponsiveContainer>
   );
 }
 
-export function SentimentChart({
-  data,
-}: {
-  data: { name: string; value: number; color: string }[];
-}) {
+export function SentimentChart({ data }: { data: (Datum & { color: string })[] }) {
   return (
-    <ChartFrame>
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
           data={data}
@@ -80,32 +73,32 @@ export function SentimentChart({
         </Pie>
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
       </PieChart>
-    </ChartFrame>
+    </ResponsiveContainer>
   );
 }
 
 export function TopicsChart({ data }: { data: { topic: string; value: number }[] }) {
   return (
-    <ChartFrame>
+    <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} layout="vertical" margin={{ left: 0 }}>
         <XAxis type="number" {...axisProps} />
         <YAxis type="category" dataKey="topic" {...axisProps} width={100} />
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Bar dataKey="value" fill="var(--color-chart-2)" radius={[0, 4, 4, 0]} />
       </BarChart>
-    </ChartFrame>
+    </ResponsiveContainer>
   );
 }
 
-export function SeverityChart({ data }: { data: { name: string; value: number }[] }) {
+export function SeverityChart({ data }: { data: Datum[] }) {
   return (
-    <ChartFrame>
+    <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
         <XAxis dataKey="name" {...axisProps} />
         <YAxis {...axisProps} width={30} />
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
         <Bar dataKey="value" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
       </BarChart>
-    </ChartFrame>
+    </ResponsiveContainer>
   );
 }

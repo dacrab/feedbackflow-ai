@@ -1,7 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
 import { jsonError, rateLimitResponse, requireAuth, UnauthorizedError } from "@/lib/api";
-import { RATE_LIMITS } from "@/lib/constants";
+import { RATE_LIMITS, SYNC_FAILED_MESSAGE } from "@/lib/constants";
 import { runIngest } from "@/lib/services/ingest-service";
+import type { SyncStage } from "@/lib/types";
 
 // Literal, not imported: Next's static extraction rejects identifiers. See
 // /api/cron for the same value and the reason it cannot be shared.
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
 
   const stream = new ReadableStream({
     async start(ctrl) {
-      const send = (stage: string, message: string) => {
+      const send = (stage: SyncStage, message: string) => {
         try {
           ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ stage, message })}\n\n`));
         } catch {
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
       } catch (err) {
         Sentry.captureException(err, { extra: { context: "api-sync" } });
         // Upstream/DB text can leak internals, and React strips it in production.
-        send("error", "sync failed — check your sources and LLM settings, then try again");
+        send("error", SYNC_FAILED_MESSAGE);
       } finally {
         ctrl.close();
       }

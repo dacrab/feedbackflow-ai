@@ -35,11 +35,14 @@ export function isPrivateHost(hostname: string): boolean {
 
 /** Postgres unique_violation. Drizzle wraps driver failures in
  *  DrizzleQueryError, which puts the pg code on `cause`, so the whole chain
- *  has to be walked or the friendly message never appears. */
+ *  has to be walked or the friendly message never appears. Depth-bounded so a
+ *  pathological cause cycle cannot hang the check. */
+const MAX_CAUSE_DEPTH = 5;
+
 export function isUniqueViolation(err: unknown): boolean {
   for (
     let e: unknown = err, depth = 0;
-    e && depth < 5;
+    e && depth < MAX_CAUSE_DEPTH;
     e = (e as { cause?: unknown }).cause, depth++
   ) {
     if (typeof e === "object" && "code" in e && (e as { code?: string }).code === "23505")
