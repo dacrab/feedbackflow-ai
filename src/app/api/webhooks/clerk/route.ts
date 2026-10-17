@@ -64,6 +64,8 @@ async function handle(req: Request) {
 
   if (eventType === "user.created" || eventType === "user.updated") {
     const clerkId = data.id;
+    // Clerk can omit the email, but the column is NOT NULL + UNIQUE, so
+    // synthesize a stable placeholder.
     const email = data.email_addresses?.[0]?.email_address ?? `${clerkId}@users.clerk.local`;
     const firstName = data.first_name ?? "";
     const lastName = data.last_name ?? "";

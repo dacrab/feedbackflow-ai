@@ -7,9 +7,7 @@ import { feedbackAnalyses, userSettings } from "@/db/schema";
 import { HIGH_SEVERITY_THRESHOLD } from "@/lib/constants";
 import { tryDecrypt } from "@/lib/crypto";
 import { analyzeFeedback, FATAL_LLM_ERROR, type LLMOptions, ThrottledError } from "@/lib/llm";
-import { type Analysis, isLLMProvider } from "@/lib/types";
-
-type OnProgress = (stage: string, message: string) => void;
+import { type Analysis, isLLMProvider, type OnProgress } from "@/lib/types";
 
 // Each missing piece throws its own cause, so the user is told what to fix.
 export async function getUserLLMOpts(userId: string): Promise<LLMOptions | undefined> {
@@ -49,8 +47,12 @@ interface ItemOutcome {
  *  as a permanent provider rejection. Provider text can also embed the prompt
  *  and raw response, so the client only ever gets an allow-listed reason. */
 function classify(err: unknown, itemId: string, onProgress: OnProgress): boolean {
-  Sentry.captureException(err, { extra: { context: "ingest-analyze", itemId } });
   const throttled = err instanceof ThrottledError;
+  // Our own limiter firing is expected backpressure, not an incident worth
+  // paging on; only genuine provider failures go to Sentry.
+  if (!throttled) {
+    Sentry.captureException(err, { extra: { context: "ingest-analyze", itemId } });
+  }
   const fatal = !throttled && FATAL_LLM_ERROR.test(String(err));
   onProgress(
     "analysis_error",

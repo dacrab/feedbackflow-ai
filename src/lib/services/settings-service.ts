@@ -27,7 +27,7 @@ export interface SettingsData {
 }
 
 export async function getSettingsData(userId: string): Promise<SettingsData> {
-  const [settingsRow, sources, hooks, lastRun] = await Promise.all([
+  const [[settingsRow], sources, hooks, [lastRun]] = await Promise.all([
     db
       .select({
         provider: userSettings.provider,
@@ -36,8 +36,7 @@ export async function getSettingsData(userId: string): Promise<SettingsData> {
       })
       .from(userSettings)
       .where(eq(userSettings.userId, userId))
-      .limit(1)
-      .then((r) => r[0]),
+      .limit(1),
     db
       .select({
         id: userSources.id,
@@ -73,8 +72,7 @@ export async function getSettingsData(userId: string): Promise<SettingsData> {
       .from(ingestRuns)
       .where(eq(ingestRuns.userId, userId))
       .orderBy(desc(ingestRuns.startedAt))
-      .limit(1)
-      .then((r) => r[0] ?? null),
+      .limit(1),
   ]);
 
   return {
@@ -87,6 +85,6 @@ export async function getSettingsData(userId: string): Promise<SettingsData> {
       : null,
     sources,
     hooks,
-    lastRun,
+    lastRun: lastRun ?? null,
   };
 }

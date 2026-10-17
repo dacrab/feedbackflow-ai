@@ -5,7 +5,7 @@ export default function NotFound() {
     <CenteredState
       eyebrow="404"
       title="page not found"
-      description="the page you&apos;re looking for doesn&apos;t exist"
+      description="the page you're looking for doesn't exist"
       action={<ButtonLink href="/dashboard">back to dashboard</ButtonLink>}
     />
   );

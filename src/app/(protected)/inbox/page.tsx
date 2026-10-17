@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { z } from "zod";
 import { Button, ButtonLink, Input, Muted, PageHeader, Select } from "@/components/ui/ui";
 import { requireAuth } from "@/lib/api";
@@ -27,6 +28,29 @@ type SearchParams = z.infer<typeof SearchParamsSchema>;
 
 const FILTER_KEYS = ["q", "sentiment", "status", "topic"] as const;
 const DEFAULT_SORT: InboxSort = "created_desc";
+
+function Pager({
+  href,
+  disabled,
+  children,
+}: {
+  href: string;
+  disabled: boolean;
+  children: ReactNode;
+}) {
+  if (disabled) {
+    return (
+      <Button size="xs" disabled>
+        {children}
+      </Button>
+    );
+  }
+  return (
+    <ButtonLink size="xs" href={href}>
+      {children}
+    </ButtonLink>
+  );
+}
 
 /** Per-param, so one invalid value cannot discard every other filter. */
 function parseInboxParams(raw: Record<string, string | string[] | undefined>) {
@@ -154,24 +178,12 @@ export default async function InboxPage({
             page {currentPage} / {totalPages}
           </Muted>
           <div className="flex gap-1">
-            {currentPage > 1 ? (
-              <ButtonLink size="xs" href={pageUrl(currentPage - 1)}>
-                ← prev
-              </ButtonLink>
-            ) : (
-              <Button size="xs" disabled>
-                ← prev
-              </Button>
-            )}
-            {currentPage < totalPages ? (
-              <ButtonLink size="xs" href={pageUrl(currentPage + 1)}>
-                next →
-              </ButtonLink>
-            ) : (
-              <Button size="xs" disabled>
-                next →
-              </Button>
-            )}
+            <Pager href={pageUrl(currentPage - 1)} disabled={currentPage <= 1}>
+              ← prev
+            </Pager>
+            <Pager href={pageUrl(currentPage + 1)} disabled={currentPage >= totalPages}>
+              next →
+            </Pager>
           </div>
         </div>
       )}

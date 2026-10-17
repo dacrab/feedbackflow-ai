@@ -19,7 +19,6 @@ function WebhookItem({ hook }: { hook: HookRow }) {
 
   function saveSeverity() {
     run(() => updateNotification(hook.id, { minSeverity }), "updated").then((ok) => {
-      // Only close on success.
       if (ok) setEditing(false);
     });
   }

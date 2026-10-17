@@ -67,7 +67,7 @@ If you sign in before your account record has synced, you'll see a "setting up y
 
 ## Checks
 
-`bun run check` runs typecheck, lint, the contrast gate, the test suite (with a coverage floor on the tenant-isolation modules), and knip. `bun run db:migrate` before `bun run dev`.
+`bun run check` runs typecheck, lint, the contrast gate, the test suite (with a coverage floor on the tenant-isolation modules), knip, and the Drizzle migration-consistency check. `bun run db:migrate` before `bun run dev`.
 
 ## Known limits
 

@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 // the platform default — so 300 stays a literal here and in /api/sync.
 export const maxDuration = 300;
 
-// Leaves headroom under maxDuration so the loop exits and finalizeRun runs,
-// instead of the platform killing the function with the run row unfinished.
+// Leaves headroom under maxDuration so finalizeRun runs before the platform
+// kills the function.
 const CRON_HEADROOM_SEC = 20;
 const CRON_BUDGET_MS = (maxDuration - CRON_HEADROOM_SEC) * 1000;
 

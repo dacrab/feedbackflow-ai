@@ -10,6 +10,9 @@ import { uuidSchema } from "@/lib/types";
 import { formatDateUTC, sevColor } from "@/lib/utils";
 import StatusChanger from "./status-changer";
 
+/** Browser-tab length; a long summary is truncated to keep the title usable. */
+const TITLE_MAX_LENGTH = 60;
+
 export async function generateMetadata({
   params,
 }: {
@@ -21,7 +24,7 @@ export async function generateMetadata({
   if (!parsed.success) return { title: "not found" };
   const item = await getFeedbackItem(userId, parsed.data);
   const summary = item?.feedback_analyses?.summary;
-  return { title: summary ? summary.slice(0, 60) : "feedback" };
+  return { title: summary ? summary.slice(0, TITLE_MAX_LENGTH) : "feedback" };
 }
 
 export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {

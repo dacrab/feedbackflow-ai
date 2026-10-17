@@ -1,13 +1,24 @@
 import { z } from "zod";
+import type { SyncStage } from "@/lib/types";
 
+// Validated as a plain string, deliberately: a stage this build does not know
+// still renders its message instead of dropping the event. The union is
+// re-applied at the type level so the producer and the one consumer stay
+// exhaustive, and this cast is the single place where the two meet.
 const SSEMessageSchema = z.object({ stage: z.string(), message: z.string() });
-export type SSEMessage = z.infer<typeof SSEMessageSchema>;
+export type SSEMessage = { stage: SyncStage; message: string };
 
-// null for a malformed block, so one bad event cannot abort the stream.
+const DATA_PREFIX = "data: ";
+
+// null for a block that is not a data event, or holds malformed JSON, so one
+// bad event cannot abort the stream.
 function parseSSEBlock(block: string): SSEMessage | null {
+  if (!block.startsWith(DATA_PREFIX)) return null;
   try {
-    const parsed = SSEMessageSchema.safeParse(JSON.parse(block.slice("data: ".length)));
-    return parsed.success ? parsed.data : null;
+    const parsed = SSEMessageSchema.safeParse(JSON.parse(block.slice(DATA_PREFIX.length)));
+    return parsed.success
+      ? { stage: parsed.data.stage as SyncStage, message: parsed.data.message }
+      : null;
   } catch {
     return null;
   }
@@ -23,7 +34,6 @@ export async function parseSSEStream(
   let buffer = "";
 
   const drain = (block: string) => {
-    if (!block.startsWith("data: ")) return;
     const event = parseSSEBlock(block);
     if (event) onEvent(event);
   };

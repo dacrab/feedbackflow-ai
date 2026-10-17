@@ -40,6 +40,8 @@ export interface FeedbackAnalysisData extends Analysis {
 export interface FeedbackItemWithAnalysis {
   id: string;
   source: string;
+  /** Full text from the detail query; truncated to a preview in list results,
+   *  so a caller that needs the whole body must read the detail query. */
   raw_content: string;
   created_at: string;
   feedback_analyses: FeedbackAnalysisData | null;
@@ -57,3 +59,15 @@ export function isLLMProvider(val: unknown): val is LLMProvider {
 export function isFeedbackStatus(val: unknown): val is FeedbackStatus {
   return FeedbackStatusSchema.safeParse(val).success;
 }
+
+/** Stages /api/sync emits. Typed so a producer typo fails the build instead of
+ *  silently mislabelling (or misrendering) a log line. */
+export type SyncStage =
+  | "fetching"
+  | "analyzing"
+  | "analysis_ok"
+  | "analysis_error"
+  | "complete"
+  | "error";
+
+export type OnProgress = (stage: SyncStage, message: string) => void;

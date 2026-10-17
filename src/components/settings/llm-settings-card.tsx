@@ -34,7 +34,9 @@ export function LLMSettingsCard({
   initialModel: string | null;
   hasKey: boolean;
 }) {
-  const configured = !!(initialProvider && initialModel);
+  const saved =
+    initialProvider && initialModel ? { provider: initialProvider, model: initialModel } : null;
+  const configured = saved !== null;
   const [provider, setProvider] = useState<LLMProvider>(initialProvider ?? DEFAULT_PROVIDER);
   const [model, setModel] = useState<string>(initialModel ?? defaultModelFor(DEFAULT_PROVIDER));
   const [apiKey, setApiKey] = useState("");
@@ -167,11 +169,11 @@ export function LLMSettingsCard({
         </div>
       </div>
 
-      {configured && initialProvider && initialModel && (
+      {saved && (
         <Panel className="flex items-center gap-2">
           <StatusDot tone="ok">●</StatusDot>
           <Muted>
-            {initialProvider} · {initialModel}
+            {saved.provider} · {saved.model}
           </Muted>
         </Panel>
       )}

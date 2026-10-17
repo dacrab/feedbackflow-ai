@@ -17,15 +17,28 @@ export function handleActionError(e: unknown, fallback = "Action failed") {
   return fallback;
 }
 
+/** The semantic text colours, one entry per token scripts/check-contrast.mjs
+ *  gates. Every map below points here, so a palette change is one edit and the
+ *  code cannot drift from the contrast check. */
+export const TONE = {
+  good: "text-good",
+  warn: "text-warn",
+  danger: "text-danger",
+  info: "text-info",
+  accent: "text-accent",
+  muted: "text-muted-foreground",
+} as const;
+
 type SeverityBand = "high" | "medium" | "low";
 
-/** HIGH is shared with the notify/alerts path, so both agree on "critical". */
+/** Local: only the high band is shared with the notify/alerts path, so medium
+ *  has no other consumer to keep in step with. */
 const MEDIUM_SEVERITY = 3;
 
 const SEV_BAND_COLOR: Record<SeverityBand, string> = {
-  high: "text-danger",
-  medium: "text-warn",
-  low: "text-muted-foreground",
+  high: TONE.danger,
+  medium: TONE.warn,
+  low: TONE.muted,
 };
 
 function sevBand(severity: number): SeverityBand {
@@ -38,9 +51,9 @@ export const sevColor = (severity: number) => SEV_BAND_COLOR[sevBand(severity)];
 export const sevLabel = (severity: number) => `${sevBand(severity)} severity`;
 
 const SENTIMENT_COLOR: Record<Sentiment, string> = {
-  positive: "text-good",
-  neutral: "text-muted-foreground",
-  negative: "text-danger",
+  positive: TONE.good,
+  neutral: TONE.muted,
+  negative: TONE.danger,
 };
 
 export const sentimentColor = (sentiment: Sentiment) => SENTIMENT_COLOR[sentiment];

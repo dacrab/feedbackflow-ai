@@ -22,8 +22,14 @@ describe("encrypt/decrypt", () => {
   });
 
   it("decrypt with invalid data throws", () => {
-    expect(() => decrypt("not-valid-base64!!!")).toThrow();
-    expect(() => decrypt(Buffer.from("too-short").toString("base64"))).toThrow();
+    // Fails the version gate before any base64 decoding.
+    expect(() => decrypt("not-versioned")).toThrow("unsupported ciphertext version");
+    // Reaches the real data path: Buffer.from silently drops the invalid
+    // characters, leaving a GCM IV that is too short.
+    expect(() => decrypt("v1:not-valid-base64!!!")).toThrow("decryption failed");
+    expect(() => decrypt(`v1:${Buffer.from("too-short").toString("base64")}`)).toThrow(
+      "decryption failed",
+    );
   });
 
   it("decrypt with tampered ciphertext throws", () => {

@@ -99,14 +99,16 @@ export async function sendDailyDigest(
       .limit(DIGEST_MAX_ROWS),
     getWebhooks(userId),
     db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(feedbackAnalyses)
       .where(and(eq(feedbackAnalyses.userId, userId), gte(feedbackAnalyses.createdAt, since))),
   ]);
 
-  if (topRows.length === 0 || webhooks.length === 0) return { total: 0, high: 0 };
+  const total = countRow?.count ?? 0;
 
-  const total = Number(countRow?.count ?? 0);
+  // Nothing to notify about, but the caller still counts what was in window.
+  if (topRows.length === 0 || webhooks.length === 0) return { total, high: 0 };
+
   const body = [
     `🔥 *Daily Digest* — ${total} items in last ${DIGEST_WINDOW_HOURS}h, top ${topRows.length} high severity`,
     ...topRows.map((a) => `• [sev ${a.severityScore}] ${slackEscape(a.summary)}`),

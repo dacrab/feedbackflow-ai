@@ -15,6 +15,9 @@ function getDb() {
 
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   get(_target, prop) {
-    return Reflect.get(getDb() as object, prop);
+    // Pass the real db as the receiver so methods are bound to it rather than
+    // to the proxy, even if drizzle ever starts using private fields.
+    const real = getDb();
+    return Reflect.get(real, prop, real);
   },
 });

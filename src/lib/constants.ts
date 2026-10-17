@@ -2,8 +2,8 @@
  *  file owns lives in that file as a named const — centralising it would add a
  *  hop without protecting anything. */
 
-/** Display name. Deliberately not reused by crypto.ts's SALT (a KDF parameter
- *  whose value must never change) or by the GitHub User-Agent token. */
+/** Display name. Deliberately not reused by crypto.ts's HKDF_INFO (a KDF
+ *  parameter whose value must never change) or by the GitHub User-Agent token. */
 export const APP_NAME = "FeedbackFlow";
 
 /** Thrown when a user row is missing. The protected error boundary compares the
@@ -16,6 +16,12 @@ export const PROVISIONING_MESSAGE = "account is being provisioned — please try
  *  portal or lands a 404 after logout. */
 export const LOGIN_PATH = "/login";
 export const SIGNUP_PATH = "/signup";
+
+/** One failure string for the sync surface: /api/sync and the ingest loop both
+ *  report the same class of error, so they must not tell the user different
+ *  things. */
+export const SYNC_FAILED_MESSAGE =
+  "sync failed — check your sources and LLM settings, then try again";
 
 /** Written by the sidebar and read by the (protected) layout, so the two cannot
  *  disagree on the name of the collapse preference. */

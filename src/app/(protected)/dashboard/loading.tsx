@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/ui";
 
 export default function Loading() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" role="status" aria-label="loading dashboard">
       <Skeleton className="h-6 w-24" />
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((k) => (

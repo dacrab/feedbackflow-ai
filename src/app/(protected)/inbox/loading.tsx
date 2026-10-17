@@ -2,7 +2,7 @@ import { Rows, Skeleton } from "@/components/ui/ui";
 
 export default function Loading() {
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="flex flex-col h-full gap-4" role="status" aria-label="loading inbox">
       <Skeleton className="h-6 w-24" />
       {/* Bar and pager are siblings of the list in the real page. */}
       <Skeleton className="h-8 w-full max-w-xs" />

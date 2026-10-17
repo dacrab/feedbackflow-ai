@@ -3,10 +3,10 @@ import "server-only";
 import crypto from "node:crypto";
 import * as Sentry from "@sentry/nextjs";
 
-/** HKDF salt. A stored-key derivation parameter, not display text: changing it
+/** HKDF `info`. A stored-key derivation parameter, not display text: changing it
  *  invalidates every provider key already encrypted in the database, so it is
  *  deliberately not derived from APP_NAME. */
-const SALT = "feedbackflow-aes-256-gcm";
+const HKDF_INFO = "feedbackflow-aes-256-gcm";
 const VERSION = "v1";
 const KEY_BYTES = 32;
 const GCM_IV_BYTES = 12;
@@ -19,7 +19,7 @@ function getKey(): Buffer {
   if (key) return key;
   const secret = process.env["ENCRYPTION_KEY"];
   if (!secret) throw new Error("ENCRYPTION_KEY is required");
-  key = Buffer.from(crypto.hkdfSync("sha256", secret, "", SALT, KEY_BYTES));
+  key = Buffer.from(crypto.hkdfSync("sha256", secret, "", HKDF_INFO, KEY_BYTES));
   return key;
 }
 

@@ -64,6 +64,13 @@
       "when": 1790765917562,
       "tag": "0008_hot_rafael_vega",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792265981910,
+      "tag": "0009_prune_dead_column_and_missing_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -56,9 +56,14 @@ export const feedbackItems = pgTable(
     index("feedback_items_user_created_idx").on(t.userId, t.createdAt),
     // Target for the feedback_analyses composite FK below.
     unique("feedback_items_user_id_id_unique").on(t.userId, t.id),
-    // OriginalTimestamp is what every time window buckets on; searching it
-    // needs a trigram index because the filter is a leading-wildcard ILIKE.
+    // Every time window buckets on the filed date.
     index("feedback_items_user_original_idx").on(t.userId, t.originalTimestamp),
+    // The inbox search filters on a leading-wildcard lower() LIKE, which no
+    // btree can serve; pg_trgm is created in migration 0008.
+    index("feedback_items_raw_content_trgm_idx").using(
+      "gin",
+      sql`lower(${t.rawContent}) gin_trgm_ops`,
+    ),
   ],
 );
 
@@ -82,6 +87,8 @@ export const feedbackAnalyses = pgTable(
     index("feedback_analyses_user_sentiment_idx").on(t.userId, t.sentiment),
     index("feedback_analyses_user_status_idx").on(t.userId, t.status),
     index("feedback_analyses_user_severity_idx").on(t.userId, t.severityScore),
+    // Serves the inbox topic filter's jsonb `@>` containment.
+    index("feedback_analyses_topics_idx").using("gin", t.topics),
     check("severity_score_range", sql`${t.severityScore} >= 1 AND ${t.severityScore} <= 5`),
     // Ownership is enforced against the parent item rather than assumed: the
     // inbox authorizes on feedback_items.user_id, the digest on this column,
@@ -124,7 +131,6 @@ export const userSettings = pgTable("user_settings", {
   provider: text("provider").notNull(),
   model: text("model").notNull(),
   apiKeyCipher: text("api_key_cipher"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const userSources = pgTable(
@@ -144,6 +150,11 @@ export const userSources = pgTable(
   (t) => [
     index("user_sources_user_id_idx").on(t.userId),
     index("user_sources_enabled_idx").on(t.userId).where(sql`enabled`),
+    // Real guard against a duplicate repo for a user: a concurrent double
+    // submit becomes a violation, not a second row.
+    uniqueIndex("user_sources_user_repo_unique")
+      .using("btree", t.userId, sql`(${t.config} ->> 'repo')`)
+      .where(sql`${t.type} = 'github'`),
   ],
 );
 

@@ -9,6 +9,7 @@ import { db } from "@/db/client";
 import { feedbackItems, userSources } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
 import { runIngest } from "@/lib/services/ingest-service";
+import { escapeLike } from "@/lib/sql";
 import { uuidSchema } from "@/lib/types";
 import { isUniqueViolation, parse, requireUser, secretSchema } from "./guard";
 
@@ -84,14 +85,14 @@ export async function deleteSource(id: string) {
   // source's rows; without this a removed repo lives on in the inbox and
   // dashboard. feedback_analyses cascades from feedback_items.
   await db.transaction(async (tx) => {
-    await tx
-      .delete(feedbackItems)
-      .where(
-        and(
-          eq(feedbackItems.userId, userId),
-          sql`${feedbackItems.externalId} LIKE ${`${source.config.repo}#%`}`,
-        ),
-      );
+    await tx.delete(feedbackItems).where(
+      and(
+        eq(feedbackItems.userId, userId),
+        // escapeLike so a repo name containing `_` or `%` cannot match (and
+        // delete) another source's items.
+        sql`${feedbackItems.externalId} LIKE ${`${escapeLike(source.config.repo)}#%`} ESCAPE '\\'`,
+      ),
+    );
     await tx.delete(userSources).where(eq(userSources.id, sourceId));
   });
 

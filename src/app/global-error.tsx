@@ -9,10 +9,11 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  // Renders outside the root layout, so it sets its own font.
+  // Renders outside the root layout, so the global stylesheet may not have
+  // loaded; set the font inline rather than relying on a Tailwind utility.
   return (
     <html lang="en">
-      <body className="font-mono">
+      <body style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
         <ErrorPage error={error} reset={reset} />
       </body>
     </html>

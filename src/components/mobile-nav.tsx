@@ -3,7 +3,7 @@
 import { IconLogout } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "@/components/nav-items";
+import { isNavItemActive, NAV_ITEMS } from "@/components/nav-items";
 import { cn } from "@/lib/utils";
 
 /** The sidebar is hidden below md, so without this there is no navigation and
@@ -14,7 +14,7 @@ export function MobileNav() {
   return (
     <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-background">
       {NAV_ITEMS.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const isActive = isNavItemActive(pathname, item.href);
         return (
           <Link
             key={item.href}
