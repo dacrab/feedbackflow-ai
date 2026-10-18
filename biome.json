@@ -5,13 +5,18 @@
   "css": { "parser": { "tailwindDirectives": true } },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "assist": {
+    "enabled": true,
     "actions": {
-      "source": { "organizeImports": "on" }
+      "source": {
+        "organizeImports": "on",
+        "useSortedKeys": "off"
+      }
     }
   },
   "linter": {
     "enabled": true,
     "rules": {
+      "preset": "recommended",
       "a11y": {
         "noSvgWithoutTitle": "off",
         "useButtonType": "error"
@@ -23,6 +28,7 @@
         },
         "noUselessUndefined": "error",
         "useLiteralKeys": "off",
+        "useMaxParams": "error",
         "useSimplifiedLogicExpression": "error"
       },
       "correctness": {
@@ -31,41 +37,66 @@
         "useExhaustiveDependencies": "error",
         "useHookAtTopLevel": "error"
       },
+      "nursery": {
+        "recommended": false,
+        "useSortedClasses": {
+          "level": "error",
+          "options": { "attributes": ["className"], "functions": ["cn"] }
+        },
+        "useTailwindShorthandClasses": "error"
+      },
       "performance": {
         "noAccumulatingSpread": "error",
-        "noDelete": "error"
+        "noDelete": "error",
+        "useTopLevelRegex": "error"
       },
       "security": {
-        "noDangerouslySetInnerHtml": "error"
-      },
-      "suspicious": {
-        "noArrayIndexKey": "error",
-        "noCommentText": "off",
-        "noConsole": "warn",
-        "noDebugger": "error",
-        "noConfusingVoidType": "error",
-        "noDoubleEquals": "error",
-        "noExplicitAny": "error",
-        "noImplicitAnyLet": "error",
-        "noMisleadingInstantiator": "error",
-        "noRedeclare": "error",
-        "noSelfCompare": "error",
-        "noVar": "error"
+        "noDangerouslySetInnerHtml": "error",
+        "noSecrets": "error"
       },
       "style": {
+        "noInferrableTypes": "error",
+        "noNestedTernary": "error",
         "noNonNullAssertion": "error",
         "noParameterAssign": "error",
-        "noUselessElse": "error",
         "noUnusedTemplateLiteral": "error",
+        "noUselessElse": "error",
+        "useAsConstAssertion": "error",
         "useCollapsedElseIf": "error",
+        "useConsistentArrayType": "error",
+        "useConsistentTypeDefinitions": "error",
         "useConst": "error",
         "useDefaultParameterLast": "error",
+        "useErrorCause": "error",
+        "useExplicitLengthCheck": "error",
+        "useForOf": "error",
+        "useGlobalThis": "error",
         "useImportType": "error",
+        "useNumericSeparators": "error",
         "useSelfClosingElements": "error",
         "useShorthandAssign": "error",
         "useSingleVarDeclarator": "error",
         "useTemplate": "error",
         "useThrowOnlyError": "error"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "error",
+        "noCommentText": "off",
+        "noConfusingVoidType": "error",
+        "noConsole": "error",
+        "noDebugger": "error",
+        "noDeprecatedImports": "error",
+        "noDoubleEquals": "error",
+        "noEmptyBlockStatements": "error",
+        "noExplicitAny": "error",
+        "noImplicitAnyLet": "error",
+        "noMisleadingInstantiator": "error",
+        "noRedeclare": "error",
+        "noSelfCompare": "error",
+        "noUnnecessaryConditions": "error",
+        "noVar": "error",
+        "useArraySortCompare": "error",
+        "useAwait": "error"
       }
     },
     "domains": {
@@ -74,6 +105,17 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "complexity": { "noExcessiveCognitiveComplexity": "off" },
+          "performance": { "useTopLevelRegex": "off" },
+          "security": { "noSecrets": "off" },
+          "suspicious": { "noEmptyBlockStatements": "off", "useAwait": "off" }
+        }
+      }
+    },
     {
       "includes": ["src/db/seed.ts", "scripts/*.mjs"],
       "linter": {

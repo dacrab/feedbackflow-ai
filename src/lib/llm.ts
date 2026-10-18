@@ -8,7 +8,11 @@ import { LLM_MAX_TOPICS, MAX_RAW_CONTENT_LENGTH, MAX_SEVERITY, RATE_LIMITS } fro
 import { rateLimit } from "@/lib/rate-limit";
 import { type Analysis, AnalysisSchema, type LLMProvider } from "@/lib/types";
 
-export type LLMOptions = { provider: LLMProvider; model: string; apiKey: string };
+export interface LLMOptions {
+  provider: LLMProvider;
+  model: string;
+  apiKey: string;
+}
 
 // "Stop, retrying cannot help". Shared by the retry budget below and the
 // ingest loop, which must break out instead of retrying every item.

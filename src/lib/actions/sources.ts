@@ -54,7 +54,7 @@ async function insertSource(userId: string, repo: string, token: string | undefi
     if (!row) throw new Error("failed to add source");
     return row;
   } catch (err) {
-    if (isUniqueViolation(err)) throw new Error("that repo is already added");
+    if (isUniqueViolation(err)) throw new Error("that repo is already added", { cause: err });
     throw err;
   }
 }

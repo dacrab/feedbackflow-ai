@@ -24,8 +24,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
       <Sidebar userEmail={email} initialCollapsed={initialCollapsed} />
 
-      <main id="main-content" className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="flex h-12 shrink-0 items-center justify-between md:justify-end px-4 border-b border-border bg-background">
+      <main id="main-content" className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-12 shrink-0 items-center justify-between border-border border-b bg-background px-4 md:justify-end">
           <Brand href="/" className="md:hidden" />
           <ThemeToggle />
         </header>

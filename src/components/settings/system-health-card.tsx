@@ -24,13 +24,16 @@ const OUTCOME: Record<Outcome, { label: string; prefix: string }> = {
   idle: { label: "● running", prefix: "· " },
 };
 
-const outcomeFor = (ok: boolean | null): Outcome => (ok === null ? "idle" : ok ? "ok" : "bad");
+const outcomeFor = (ok: boolean | null): Outcome => {
+  if (ok === null) return "idle";
+  return ok ? "ok" : "bad";
+};
 
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Panel>
       <Muted>{label}</Muted>
-      <p className="text-lg font-medium leading-tight">{value}</p>
+      <p className="font-medium text-lg leading-tight">{value}</p>
     </Panel>
   );
 }
@@ -38,7 +41,7 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
 function RunCount({ value, label }: { value: number | null; label: string }) {
   return (
     <span>
-      <span className="text-foreground font-medium">{value ?? 0}</span> <Muted>{label}</Muted>
+      <span className="font-medium text-foreground">{value ?? 0}</span> <Muted>{label}</Muted>
     </span>
   );
 }
@@ -65,20 +68,20 @@ function SyncLog({
   return (
     <div
       ref={ref}
-      className="absolute left-0 right-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border border-border bg-card p-2 shadow-lg animate-slide-down"
+      className="absolute inset-x-0 top-full z-10 mt-1 max-h-36 animate-slide-down overflow-y-auto rounded border border-border bg-card p-2 shadow-lg"
     >
       {/* Announced as updates stream in; the ✓/✗/· prefix is the non-colour cue. */}
       <div role="log" aria-live="polite" aria-label="sync log" className="space-y-0.5">
         {logs.map((line) => {
           const outcome = outcomeFor(line.ok ?? null);
           return (
-            <p key={line.id} className={`text-xs font-mono truncate ${statusToneClass[outcome]}`}>
+            <p key={line.id} className={`truncate font-mono text-xs ${statusToneClass[outcome]}`}>
               {OUTCOME[outcome].prefix}
               {line.msg}
             </p>
           );
         })}
-        {syncing && <p className="text-xs font-mono text-muted-foreground animate-pulse">· ...</p>}
+        {syncing && <p className="animate-pulse font-mono text-muted-foreground text-xs">· ...</p>}
       </div>
       <TextButton className="w-full text-left" onClick={onDismiss}>
         dismiss
@@ -129,7 +132,7 @@ export function SystemHealthCard({
               {lastRun.finishedAt && ` · ${timeAgo(lastRun.finishedAt)}`}
             </Muted>
             {lastRun.error && (
-              <div className="font-mono text-xs text-danger break-words">{lastRun.error}</div>
+              <div className="break-words font-mono text-danger text-xs">{lastRun.error}</div>
             )}
             <div className="flex gap-3 text-xs">
               <RunCount value={lastRun.fetched} label="fetched" />

@@ -56,7 +56,7 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
   return (
     <>
       {selectedOnPage.length > 0 && (
-        <div className="flex items-center gap-3 p-2 rounded border border-border bg-muted text-sm animate-slide-down">
+        <div className="flex animate-slide-down items-center gap-3 rounded border border-border bg-muted p-2 text-sm">
           <span>{selectedOnPage.length} selected</span>
           {BULK_STATUSES.map((status) => (
             <Button
@@ -80,13 +80,13 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
           />
         ) : (
           <>
-            <div className="flex items-center gap-3 p-3 text-xs text-muted-foreground border-b border-border">
+            <div className="flex items-center gap-3 border-border border-b p-3 text-muted-foreground text-xs">
               <input
                 type="checkbox"
                 checked={allSelected}
                 onChange={toggleAll}
                 aria-label="Select all items"
-                className="h-3.5 w-3.5 rounded border-border"
+                className="size-3.5 rounded border-border"
               />
               <Muted>select all</Muted>
             </div>
@@ -97,36 +97,36 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors group animate-fade-up"
+                  className="group flex animate-fade-up items-center gap-3 p-3 transition-colors hover:bg-muted/50"
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(item.id)}
                     onChange={() => toggle(item.id)}
                     aria-label={`Select: ${analysis?.summary || "feedback item"}`}
-                    className="h-3.5 w-3.5 rounded border-border shrink-0"
+                    className="size-3.5 shrink-0 rounded border-border"
                   />
 
                   <SeverityChip
                     score={analysis?.severity_score ?? 0}
-                    className="w-5 text-center shrink-0"
+                    className="w-5 shrink-0 text-center"
                   />
 
-                  <Link href={`/feedback/${item.id}`} className="flex-1 min-w-0">
+                  <Link href={`/feedback/${item.id}`} className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="truncate">{analysis?.summary || "no summary"}</span>
                       <SentimentBadge sentiment={analysis?.sentiment} />
                       <StatusBadge status={analysis?.status} />
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      <Muted className="truncate max-w-[200px]">{item.raw_content}</Muted>
+                    <div className="mt-0.5 flex items-center gap-2 text-muted-foreground text-xs">
+                      <Muted className="max-w-[200px] truncate">{item.raw_content}</Muted>
                       {topic && <TopicTag topic={topic} />}
                     </div>
                   </Link>
 
-                  <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
+                  <div className="flex shrink-0 items-center gap-3 text-muted-foreground text-xs">
                     <Muted suppressHydrationWarning>{formatDateUTC(item.created_at)}</Muted>
-                    <IconChevronRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
+                    <IconChevronRight className="size-3.5 transition-colors group-hover:text-foreground" />
                   </div>
                 </div>
               );

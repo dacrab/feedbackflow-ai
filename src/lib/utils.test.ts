@@ -182,4 +182,9 @@ describe("withRetry", () => {
     await expect(withRetry(fn, { ...opts, signal: ctrl.signal })).rejects.toThrow("cancelled");
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it("wraps a non-Error rejection in an Error", async () => {
+    const fn = vi.fn().mockRejectedValue("a string failure");
+    await expect(withRetry(fn, opts)).rejects.toThrow("a string failure");
+  });
 });

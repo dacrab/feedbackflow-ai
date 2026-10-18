@@ -29,7 +29,7 @@ const GITHUB_URL = "https://github.com/dacrab/feedbackflow-ai";
 
 export function SiteNav({ loggedIn }: { loggedIn: boolean }) {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+    <nav className="fixed inset-x-0 top-0 z-50 border-border border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <Brand href="/" className="font-medium tracking-tight" />
         <div className="flex items-center gap-4 text-sm">
@@ -42,7 +42,7 @@ export function SiteNav({ loggedIn }: { loggedIn: boolean }) {
             <>
               <Link
                 href="/login"
-                className="hidden sm:inline text-muted-foreground hover:text-foreground transition-colors"
+                className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline"
               >
                 log in
               </Link>
@@ -71,7 +71,7 @@ function Cta({
       href={href}
       variant="primary"
       size="lg"
-      className={cn("font-medium justify-center gap-2", className)}
+      className={cn("justify-center gap-2 font-medium", className)}
     >
       {children}
     </ButtonLink>
@@ -80,21 +80,21 @@ function Cta({
 
 export function Hero() {
   return (
-    <section className="relative pt-28 pb-4 overflow-hidden">
+    <section className="relative overflow-hidden pt-28 pb-4">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-40" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_70%)]" />
 
       <div className="relative mx-auto max-w-6xl px-6 pt-12 pb-20">
-        <div className="max-w-3xl mx-auto text-center animate-fade-up [animation-fill-mode:both]">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+        <div className="mx-auto max-w-3xl animate-fade-up text-center [animation-fill-mode:both]">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground text-xs">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-green-500" />
             </span>
             free tier via OpenRouter — no credit card needed
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.08]">
+          <h1 className="font-semibold text-4xl leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
             Your feedback,
             <br />
             <span className="bg-gradient-to-r from-chart-1 to-chart-2 bg-clip-text text-transparent">
@@ -104,20 +104,20 @@ export function Hero() {
             automatically.
           </h1>
 
-          <p className="mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+          <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground leading-relaxed sm:text-lg">
             Ingest GitHub issues. AI extracts sentiment, severity, and topics — so you focus on what
             actually matters.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Cta href="/signup" className="w-full sm:w-auto">
-              start for free <IconArrowRight className="h-4 w-4" />
+              start for free <IconArrowRight className="size-4" />
             </Cta>
             <ExternalLink
               href={GITHUB_URL}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded border border-border px-6 py-3 text-sm hover:bg-muted no-underline"
+              className="inline-flex w-full items-center justify-center gap-2 rounded border border-border px-6 py-3 text-sm no-underline hover:bg-muted sm:w-auto"
             >
-              <IconBrandGithub className="h-4 w-4" />
+              <IconBrandGithub className="size-4" />
               view on GitHub
             </ExternalLink>
           </div>
@@ -174,9 +174,9 @@ function SampleRow({ summary, sentiment, severity, topics, time }: SampleFeedbac
   return (
     <div className="flex items-center gap-3 px-3 py-2.5">
       <SeverityChip score={severity} className="w-4 shrink-0" />
-      <span className="flex-1 text-sm truncate">{summary}</span>
+      <span className="flex-1 truncate text-sm">{summary}</span>
       <SentimentBadge sentiment={sentiment} className="shrink-0" />
-      <Muted className="shrink-0 hidden md:inline">{topics.map((t) => `[${t}]`).join(" ")}</Muted>
+      <Muted className="hidden shrink-0 md:inline">{topics.map((t) => `[${t}]`).join(" ")}</Muted>
       <Muted className="shrink-0 text-right">{time}</Muted>
     </div>
   );
@@ -186,22 +186,22 @@ export function AppPreview() {
   return (
     <section className="pb-20">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5 dark:shadow-black/20">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/30">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-black/5 shadow-xl dark:shadow-black/20">
+          <div className="flex items-center gap-2 border-border border-b bg-muted/30 px-4 py-2.5">
             <div className="flex gap-1.5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-2.5 w-2.5 rounded-full bg-muted-foreground/20" />
+                <div key={i} className="size-2.5 rounded-full bg-muted-foreground/20" />
               ))}
             </div>
-            <div className="flex-1 flex justify-center">
+            <div className="flex flex-1 justify-center">
               <Muted>{APP_NAME.toLowerCase()} / dashboard</Muted>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6 space-y-4">
+          <div className="space-y-4 p-4 sm:p-6">
             <div>
               <Eyebrow className="mb-2">sample data</Eyebrow>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <MetricCard label="total" value="1,247" delta={38} />
                 <MetricCard label="positive" value="64%" />
                 <MetricCard
@@ -270,23 +270,23 @@ const FEATURES: Feature[] = [
 function FeatureCard({ icon: Icon, title, desc }: Feature) {
   // Not `Card`, which renders a `// title` eyebrow this surface does not have.
   return (
-    <div className="rounded border border-border bg-card p-5 hover:border-muted-foreground/30 transition-colors">
-      <div className="h-8 w-8 rounded bg-muted/60 flex items-center justify-center text-muted-foreground mb-3">
-        <Icon className="h-5 w-5" />
+    <div className="rounded border border-border bg-card p-5 transition-colors hover:border-muted-foreground/30">
+      <div className="mb-3 flex size-8 items-center justify-center rounded bg-muted/60 text-muted-foreground">
+        <Icon className="size-5" />
       </div>
-      <h3 className="font-medium tracking-tight text-sm">{title}</h3>
-      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{desc}</p>
+      <h3 className="font-medium text-sm tracking-tight">{title}</h3>
+      <p className="mt-1.5 text-muted-foreground text-xs leading-relaxed">{desc}</p>
     </div>
   );
 }
 
 export function Features() {
   return (
-    <section className="py-20 border-t border-border">
+    <section className="border-border border-t py-20">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="max-w-2xl mb-12">
+        <div className="mb-12 max-w-2xl">
           <Eyebrow className="mb-2">capabilities</Eyebrow>
-          <h2 className="text-3xl font-semibold tracking-tight">
+          <h2 className="font-semibold text-3xl tracking-tight">
             Everything to go from noise to signal
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -306,17 +306,17 @@ export function Features() {
 
 export function FinalCta() {
   return (
-    <section className="py-20 border-t border-border">
+    <section className="border-border border-t py-20">
       <div className="mx-auto max-w-6xl px-6 text-center">
-        <h2 className="text-3xl font-semibold tracking-tight">
+        <h2 className="font-semibold text-3xl tracking-tight">
           Stop reading every issue manually.
         </h2>
-        <p className="mt-4 text-muted-foreground max-w-md mx-auto">
+        <p className="mx-auto mt-4 max-w-md text-muted-foreground">
           Let AI handle the triage. You handle the decisions.
         </p>
         <div className="mt-8">
           <Cta href="/signup">
-            get started free <IconArrowRight className="h-4 w-4" />
+            get started free <IconArrowRight className="size-4" />
           </Cta>
         </div>
         <Muted className="mt-3 block">Free tier available · No credit card required</Muted>
@@ -327,8 +327,8 @@ export function FinalCta() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border py-6">
-      <div className="mx-auto max-w-6xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+    <footer className="border-border border-t py-6">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-muted-foreground text-xs sm:flex-row">
         <div className="flex items-center gap-2">
           <Logo />
           <span>

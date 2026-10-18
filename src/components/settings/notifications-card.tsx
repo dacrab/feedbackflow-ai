@@ -43,7 +43,7 @@ function WebhookItem({ hook }: { hook: HookRow }) {
       <div className="flex items-center gap-2">
         <Muted>alert on severity ≥</Muted>
         {editing ? (
-          <div className="flex items-center gap-2 animate-slide-down">
+          <div className="flex animate-slide-down items-center gap-2">
             <Select
               aria-label="minimum severity"
               size="xs"

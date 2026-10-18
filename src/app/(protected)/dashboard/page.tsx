@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     <div className="space-y-4">
       <PageHeader eyebrow="overview" title="dashboard" />
 
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <MetricCard label="total" value={m.total} delta={m.trendDelta} note="vs prev day" />
         <MetricCard label="positive" value={`${m.positiveShare}%`} />
         <MetricCard
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
             <div className="flex justify-center gap-4 text-xs">
               {sentimentData.map((s) => (
                 <div key={s.name} className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} />
+                  <div className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
                   <span className="text-muted-foreground">{s.name}</span>
                 </div>
               ))}

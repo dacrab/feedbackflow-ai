@@ -25,6 +25,11 @@ const defaultModelFor = (provider: LLMProvider) =>
  *  until revalidation, so the mode lives in state. */
 type Mode = "unset" | "key" | "model";
 
+function modeFor(configured: boolean, editingKey: boolean): Mode {
+  if (!configured) return "unset";
+  return editingKey ? "key" : "model";
+}
+
 export function LLMSettingsCard({
   initialProvider,
   initialModel,
@@ -44,7 +49,7 @@ export function LLMSettingsCard({
   const { run, pending } = useAction();
 
   const providerMeta = LLM_PROVIDERS.find((p) => p.id === provider);
-  const mode: Mode = !configured ? "unset" : editingKey ? "key" : "model";
+  const mode: Mode = modeFor(configured, editingKey);
 
   function save() {
     if (mode === "model") {
@@ -101,7 +106,7 @@ export function LLMSettingsCard({
         </label>
       </div>
 
-      <div className="flex gap-3 items-end">
+      <div className="flex items-end gap-3">
         <div className="flex-1 space-y-1.5">
           <div className="flex items-center justify-between">
             <label htmlFor="llm-api-key">

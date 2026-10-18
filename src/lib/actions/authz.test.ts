@@ -13,17 +13,24 @@ vi.hoisted(() => {
 const captured: { sql: string; params: unknown[] }[] = [];
 // Set to make the next user_sources insert violate its unique index.
 let uniqueViolation = false;
+// Set to make the next user_sources insert fail with some other error.
+let genericError = false;
+// Set to make the next source lookup return no rows.
+let sourceMissing = false;
 
 vi.mock("@/db/client", () => {
   const db = drizzle(async (sql: string, params: unknown[]) => {
     captured.push({ sql, params });
-    // deleteSource reads the source first; report one so it proceeds.
-    // pg-proxy is in array mode: each row is a positional array, and a
-    // single-column select is one value wide.
-    if (uniqueViolation && /insert into "user_sources"/.test(sql)) {
+    const isSourceInsert = /insert into "user_sources"/.test(sql);
+    if (isSourceInsert && uniqueViolation) {
       throw Object.assign(new Error("duplicate key"), { code: "23505" });
     }
-    if (/^select "config"/.test(sql)) return { rows: [[{ repo: "acme/repo" }]] };
+    if (isSourceInsert && genericError) throw new Error("boom");
+    // deleteSource reads the source first; report one so it proceeds. pg-proxy
+    // is in array mode: a single-column select is one positional value wide.
+    if (/^select "config"/.test(sql)) {
+      return { rows: sourceMissing ? [] : [[{ repo: "acme/repo" }]] };
+    }
     // An INSERT ... RETURNING id yields that row so the action can proceed.
     if (/returning "id"/.test(sql)) {
       return { rows: [{ id: "11111111-1111-4111-8111-111111111111" }] };
@@ -37,7 +44,8 @@ vi.mock("@/db/client", () => {
 });
 
 vi.mock("@/lib/api", () => ({ requireAuth: async () => "me" }));
-vi.mock("@/lib/rate-limit", () => ({ rateLimit: async () => true }));
+const { rateLimitMock } = vi.hoisted(() => ({ rateLimitMock: vi.fn(async () => true) }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/server", () => ({ after: vi.fn() }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
@@ -53,6 +61,9 @@ const statements = () => captured.map((c) => c.sql);
 beforeEach(() => {
   captured.length = 0;
   uniqueViolation = false;
+  genericError = false;
+  sourceMissing = false;
+  rateLimitMock.mockResolvedValue(true);
 });
 
 describe("sources", () => {
@@ -85,6 +96,20 @@ describe("sources", () => {
       sources.updateSource("11111111-1111-4111-8111-111111111111", { enabled: "yes" as never }),
     ).rejects.toThrow();
   });
+
+  it("rethrows an unexpected insert error instead of mapping it to a duplicate", async () => {
+    genericError = true;
+    await expect(sources.addSource(REPO)).rejects.toThrow(/Failed query/);
+  });
+
+  it("no-ops deleting a source that is not the caller's", async () => {
+    sourceMissing = true;
+    await expect(
+      sources.deleteSource("11111111-1111-4111-8111-111111111111"),
+    ).resolves.toBeUndefined();
+    // Nothing to delete, so no statement is issued.
+    expect(statements().some((s) => s.includes("delete"))).toBe(false);
+  });
 });
 
 describe("llm settings", () => {
@@ -107,6 +132,20 @@ describe("llm settings", () => {
   it("rejects an empty model", async () => {
     await expect(llm.updateSettingsModel("")).rejects.toThrow();
   });
+
+  it("updates the model scoped to the caller", async () => {
+    await llm.updateSettingsModel("gpt-5.4-nano");
+    const sql = statements().join("\n");
+    expect(sql).toContain("user_settings");
+    expect(captured.flatMap((c) => c.params)).toContain("me");
+  });
+
+  it("deletes settings scoped to the caller", async () => {
+    await llm.deleteSettings();
+    const sql = statements().join("\n");
+    expect(sql).toContain("user_settings");
+    expect(captured.flatMap((c) => c.params)).toContain("me");
+  });
 });
 
 describe("notifications", () => {
@@ -125,6 +164,23 @@ describe("notifications", () => {
     await expect(
       notifications.updateNotification("11111111-1111-4111-8111-111111111111", {}),
     ).rejects.toThrow("no fields to update");
+    expect(captured).toHaveLength(0);
+  });
+
+  it("patches enabled alone without touching the threshold", async () => {
+    await notifications.updateNotification("11111111-1111-4111-8111-111111111111", {
+      enabled: true,
+    });
+    expect(statements().join("\n")).toContain("user_notifications");
+  });
+});
+
+describe("rate limiting", () => {
+  it("refuses the action when the per-user limiter is exhausted", async () => {
+    rateLimitMock.mockResolvedValue(false);
+    await expect(
+      sources.updateSource("11111111-1111-4111-8111-111111111111", { enabled: false }),
+    ).rejects.toThrow("Too many requests");
     expect(captured).toHaveLength(0);
   });
 });

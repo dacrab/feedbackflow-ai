@@ -15,7 +15,8 @@ describe("LLMProviderSchema", () => {
 
 describe("LLM_PROVIDERS config invariants", () => {
   it("defines exactly the providers listed in LLM_PROVIDER_IDS", () => {
-    expect(LLM_PROVIDERS.map((p) => p.id).sort()).toEqual([...LLM_PROVIDER_IDS].sort());
+    const asc = (a: string, b: string) => a.localeCompare(b);
+    expect(LLM_PROVIDERS.map((p) => p.id).sort(asc)).toEqual([...LLM_PROVIDER_IDS].sort(asc));
   });
 
   it.each(LLM_PROVIDERS)("includes $id defaultModel within its models list", (provider) => {

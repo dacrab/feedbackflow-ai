@@ -5,6 +5,9 @@ import { requireAuth } from "@/lib/api";
 import { RATE_LIMITS } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
 
+const UNIQUE_LOCAL_V6 = /^f[cd][0-9a-f]{2}:/;
+const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
 /** Authenticates and charges the rate limit, before any database work. */
 export async function requireUser() {
   const userId = await requireAuth();
@@ -22,8 +25,8 @@ export function isPrivateHost(hostname: string): boolean {
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal"))
     return true;
   if (host === "::1" || host === "0.0.0.0") return true;
-  if (/^f[cd][0-9a-f]{2}:/.test(host)) return true; // unique local
-  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (UNIQUE_LOCAL_V6.test(host)) return true; // unique local
+  const v4 = IPV4.exec(host);
   if (!v4) return false;
   const [a = 0, b = 0] = v4.slice(1).map(Number);
   if (a === 0 || a === 10 || a === 127) return true;

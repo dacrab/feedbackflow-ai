@@ -11,6 +11,7 @@ vi.mock("@/db/client", () => ({
 
 vi.mock("@/db/schema", () => ({
   rateLimits: {},
+  ingestRuns: {},
 }));
 
 function mockDbCount(count: number) {
@@ -23,7 +24,7 @@ function mockDbCount(count: number) {
   deleteMock.mockReturnValue({ where: () => {} });
 }
 
-const { rateLimit } = await import("./rate-limit");
+const { rateLimit, pruneOldRuns } = await import("./rate-limit");
 
 describe("rateLimit", () => {
   beforeEach(() => {
@@ -70,5 +71,16 @@ describe("rateLimit", () => {
   it("skips cleanup most of the time", async () => {
     await rateLimit("k", { maxRequests: 1, windowMs: 1000 });
     expect(deleteMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("pruneOldRuns", () => {
+  it("deletes runs older than the retention window", async () => {
+    deleteMock.mockClear();
+    deleteMock.mockReturnValue({ where: () => {} });
+
+    await pruneOldRuns(86_400_000);
+
+    expect(deleteMock).toHaveBeenCalledOnce();
   });
 });

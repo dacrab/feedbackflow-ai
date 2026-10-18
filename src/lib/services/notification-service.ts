@@ -8,7 +8,10 @@ import { DIGEST_WINDOW_HOURS, HIGH_SEVERITY_THRESHOLD, MAX_SEVERITY } from "@/li
 import { tryDecrypt } from "@/lib/crypto";
 import type { Analysis } from "@/lib/types";
 
-type WebhookEntry = { url: string; minSeverity: number };
+interface WebhookEntry {
+  url: string;
+  minSeverity: number;
+}
 
 // Slack mrkdwn treats & < > as control characters, so issue text (public,
 // attacker-authored) could inject @mentions or links without this.
