@@ -85,7 +85,7 @@ export default async function InboxPage({
 
   const { filters, sort, page, hasFilters } = parseInboxParams(await searchParams);
 
-  async function load(target: number) {
+  function load(target: number) {
     return getFeedbackItems(userId, {
       limit: PAGE_SIZE,
       offset: (target - 1) * PAGE_SIZE,
@@ -113,15 +113,15 @@ export default async function InboxPage({
   }
 
   return (
-    <div className="flex flex-col h-full gap-4">
-      <div className="flex items-end justify-between shrink-0">
+    <div className="flex h-full flex-col gap-4">
+      <div className="flex shrink-0 items-end justify-between">
         <PageHeader eyebrow="feedback items" title="inbox" />
         <Muted className="text-sm">
           {requested.total} {hasFilters ? "filtered" : "total"}
         </Muted>
       </div>
 
-      <form className="grid gap-2 grid-cols-2 sm:flex sm:flex-wrap sm:items-center shrink-0">
+      <form className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <label htmlFor="inbox-search" className="sr-only">
           search feedback
         </label>
@@ -131,7 +131,7 @@ export default async function InboxPage({
           name="q"
           placeholder="search..."
           defaultValue={filters.q ?? ""}
-          className="col-span-2 sm:flex-1 sm:min-w-[160px] sm:max-w-xs"
+          className="col-span-2 sm:min-w-[160px] sm:max-w-xs sm:flex-1"
         />
         <Select aria-label="sentiment" name="sentiment" defaultValue={filters.sentiment ?? ""}>
           <option value="">all sentiment</option>
@@ -160,20 +160,20 @@ export default async function InboxPage({
           apply
         </Button>
         {hasFilters && (
-          <ButtonLink href="/inbox" variant="ghost" className="text-xs animate-fade-in">
+          <ButtonLink href="/inbox" variant="ghost" className="animate-fade-in text-xs">
             clear
           </ButtonLink>
         )}
       </form>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Remounts on navigation so the selection can never outlive the page
             it was made on. */}
         <InboxList key={pageUrl(currentPage)} items={items} />
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground shrink-0">
+        <div className="flex shrink-0 items-center justify-between text-muted-foreground text-xs">
           <Muted>
             page {currentPage} / {totalPages}
           </Muted>

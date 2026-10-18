@@ -16,17 +16,20 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // A stray .only would silently skip the rest of the suite in CI.
+    allowOnly: false,
     coverage: {
       provider: "v8",
       reporter: ["text-summary"],
-      include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/db/seed.ts", "src/proxy.ts"],
-      // Tenant isolation and outbound-request safety have no fallback: a
-      // refactor that drops a user_id predicate is silent. Gate on them.
+      // Only the library is gated; the UI, pages, routes and schema are
+      // presentational or declarative and are not worth brittle tests.
+      include: ["src/lib/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}"],
+      // A regression in authz, crypto or the ingest pipeline is silent, so those
+      // paths are kept covered. Not 100%: forcing every defensive branch into a
+      // test buys nothing.
       thresholds: {
-        "src/lib/actions/**": { lines: 80, functions: 80, branches: 75, statements: 80 },
-        "src/lib/api.ts": { lines: 80, functions: 80, branches: 75, statements: 80 },
-        "src/lib/crypto.ts": { lines: 90 },
+        "src/lib/**": { lines: 90, functions: 90, branches: 85, statements: 90 },
       },
     },
   },

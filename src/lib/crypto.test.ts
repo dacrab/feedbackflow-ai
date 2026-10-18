@@ -1,12 +1,17 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
+const captureException = vi.fn();
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...a: unknown[]) => captureException(...a),
+}));
+
 vi.hoisted(() => {
   process.env["ENCRYPTION_KEY"] =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 });
 
-const { encrypt, decrypt, timingSafeEqual } = await import("./crypto");
+const { encrypt, decrypt, timingSafeEqual, tryDecrypt } = await import("./crypto");
 
 describe("encrypt/decrypt", () => {
   it("roundtrip preserves plaintext", () => {
@@ -47,4 +52,20 @@ describe("timingSafeEqual", () => {
   it("returns false for different lengths", () =>
     expect(timingSafeEqual("abc", "abcd")).toBe(false));
   it("returns false for empty vs non-empty", () => expect(timingSafeEqual("", "a")).toBe(false));
+});
+
+describe("tryDecrypt", () => {
+  it("returns undefined for a missing ciphertext", () => {
+    expect(tryDecrypt(null, "ctx")).toBeUndefined();
+  });
+
+  it("returns the plaintext for a valid ciphertext", () => {
+    expect(tryDecrypt(encrypt("hello"), "ctx")).toBe("hello");
+  });
+
+  it("swallows an undecryptable row and reports it", () => {
+    // One bad row must never abort a whole user's sync.
+    expect(tryDecrypt("v1:garbage", "ctx")).toBeUndefined();
+    expect(captureException).toHaveBeenCalledOnce();
+  });
 });

@@ -33,20 +33,20 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r border-border bg-background transition-all duration-200",
+        "hidden flex-col border-border border-r bg-background transition-all duration-200 md:flex",
         collapsed ? "w-14" : "w-52",
       )}
     >
       <div
         className={cn(
-          "flex h-14 items-center border-b border-border",
+          "flex h-14 items-center border-border border-b",
           collapsed ? "justify-center px-2" : "px-4",
         )}
       >
         <Brand label={collapsed ? null : undefined} className={collapsed ? "" : "font-normal"} />
       </div>
 
-      <nav className="flex-1 py-2 px-2">
+      <nav className="flex-1 p-2">
         {NAV_ITEMS.map((item) => {
           const isActive = isNavItemActive(pathname, item.href);
           return (
@@ -56,27 +56,27 @@ export function Sidebar({
               title={collapsed ? item.label : undefined}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex items-center rounded text-sm transition-colors mb-1",
+                "mb-1 flex items-center rounded text-sm transition-colors",
                 collapsed ? "justify-center p-2" : "gap-2 px-2 py-1.5",
                 isActive
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <item.icon className="h-4 w-4 shrink-0" />
+              <item.icon className="size-4 shrink-0" />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-border p-2">
+      <div className="border-border border-t p-2">
         <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "gap-2 px-2 py-1")}>
-          <div className="h-6 w-6 rounded bg-muted flex items-center justify-center text-xs shrink-0">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-xs">
             {userEmail.charAt(0).toLowerCase()}
           </div>
           {!collapsed && (
-            <Muted className="flex-1 min-w-0 truncate" title={userEmail}>
+            <Muted className="min-w-0 flex-1 truncate" title={userEmail}>
               {userEmail}
             </Muted>
           )}
@@ -89,21 +89,21 @@ export function Sidebar({
               title="logout"
               aria-label="logout"
             >
-              <IconLogout className="h-3.5 w-3.5" />
+              <IconLogout className="size-3.5" />
             </IconButton>
           </form>
         </div>
       </div>
 
       <IconButton
-        className="h-8 border-t border-border"
+        className="h-8 border-border border-t"
         onClick={toggleCollapsed}
         title={collapsed ? "expand" : "collapse"}
         aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}
         aria-expanded={!collapsed}
       >
         <IconChevronLeft
-          className={cn("h-3.5 w-3.5 transition-transform duration-200", collapsed && "rotate-180")}
+          className={cn("size-3.5 transition-transform duration-200", collapsed && "rotate-180")}
         />
       </IconButton>
     </aside>

@@ -12,7 +12,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-background">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-border border-t bg-background md:hidden">
       {NAV_ITEMS.map((item) => {
         const isActive = isNavItemActive(pathname, item.href);
         return (
@@ -25,7 +25,7 @@ export function MobileNav() {
               isActive ? "text-foreground" : "text-muted-foreground",
             )}
           >
-            <item.icon className="h-4 w-4" />
+            <item.icon className="size-4" />
             {item.label}
           </Link>
         );
@@ -33,9 +33,9 @@ export function MobileNav() {
       <form action="/logout" method="POST" className="flex flex-1">
         <button
           type="submit"
-          className="flex w-full flex-col items-center gap-0.5 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="flex w-full flex-col items-center gap-0.5 py-2 text-muted-foreground text-xs transition-colors hover:text-foreground"
         >
-          <IconLogout className="h-4 w-4" />
+          <IconLogout className="size-4" />
           logout
         </button>
       </form>

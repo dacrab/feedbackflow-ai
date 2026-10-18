@@ -87,13 +87,14 @@ async function storeIssues(
     originalTimestamp: new Date(issue.created_at),
   }));
 
-  const inserted = rows.length
-    ? await db
-        .insert(feedbackItems)
-        .values(rows)
-        .onConflictDoNothing()
-        .returning({ id: feedbackItems.id })
-    : [];
+  const inserted =
+    rows.length > 0
+      ? await db
+          .insert(feedbackItems)
+          .values(rows)
+          .onConflictDoNothing()
+          .returning({ id: feedbackItems.id })
+      : [];
 
   return {
     fetched: issues.length,
@@ -102,7 +103,7 @@ async function storeIssues(
   };
 }
 
-async function selectUnanalyzed(src: IngestSourceRow, externalIds: string[]) {
+function selectUnanalyzed(src: IngestSourceRow, externalIds: string[]) {
   if (externalIds.length === 0) return [];
   return db
     .select({ id: feedbackItems.id, rawContent: feedbackItems.rawContent })
@@ -118,13 +119,15 @@ async function selectUnanalyzed(src: IngestSourceRow, externalIds: string[]) {
     );
 }
 
-async function syncUser(
-  userId: string,
-  sources: IngestSourceRow[],
-  llmOpts: LLMOptions | undefined,
-  options: RunIngestOptions,
-  stats: SyncStats,
-) {
+interface SyncUserArgs {
+  userId: string;
+  sources: IngestSourceRow[];
+  llmOpts: LLMOptions | undefined;
+  options: RunIngestOptions;
+  stats: SyncStats;
+}
+
+async function syncUser({ userId, sources, llmOpts, options, stats }: SyncUserArgs) {
   const { signal, maxItems, onProgress } = options;
 
   for (const src of sources) {
@@ -143,13 +146,12 @@ async function syncUser(
     if (pending.length > 0) {
       onProgress?.("analyzing", `analyzing ${pending.length} items...`);
     }
-    const { count, hasError, highSeverity } = await analyzeAndStore(
-      pending,
+    const { count, hasError, highSeverity } = await analyzeAndStore(pending, {
       userId,
       llmOpts,
-      onProgress,
+      emit: onProgress,
       signal,
-    );
+    });
     stats.analyzed += count;
     stats.hasError ||= hasError;
 
@@ -184,7 +186,13 @@ export async function runIngest(options: RunIngestOptions = {}): Promise<RunInge
 
     const stats = newStats();
     try {
-      await syncUser(userId, sources, await getUserLLMOpts(userId), options, stats);
+      await syncUser({
+        userId,
+        sources,
+        llmOpts: await getUserLLMOpts(userId),
+        options,
+        stats,
+      });
     } catch (err) {
       // One tenant failing (revoked token, deleted repo, rotated encryption
       // key) must not abort every tenant queued behind it.

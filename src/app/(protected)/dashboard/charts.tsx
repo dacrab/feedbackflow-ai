@@ -6,7 +6,6 @@ import {
   AreaChart,
   Bar,
   BarChart,
-  Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -25,7 +24,10 @@ const TOOLTIP_CONTENT_STYLE = {
   fontSize: "13px",
 };
 
-type Datum = { name: string; value: number };
+interface Datum {
+  name: string;
+  value: number;
+}
 
 export function TrendChart({ data }: { data: Datum[] }) {
   // Per-instance, so two trend charts cannot share (and fight over) one gradient.
@@ -59,18 +61,14 @@ export function SentimentChart({ data }: { data: (Datum & { color: string })[] }
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
-          data={data}
+          data={data.map((e) => ({ ...e, fill: e.color }))}
           cx="50%"
           cy="50%"
           innerRadius={60}
           outerRadius={90}
           paddingAngle={2}
           dataKey="value"
-        >
-          {data.map((e) => (
-            <Cell key={e.name} fill={e.color} />
-          ))}
-        </Pie>
+        />
         <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
       </PieChart>
     </ResponsiveContainer>

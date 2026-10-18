@@ -43,17 +43,17 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
     <div className="space-y-4">
       <Link
         href="/inbox"
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
       >
-        <IconArrowLeft className="h-3 w-3" />
+        <IconArrowLeft className="size-3" />
         back to inbox
       </Link>
 
-      <div className="grid gap-2 lg:grid-cols-3 animate-fade-up [animation-fill-mode:both]">
-        <div className="lg:col-span-2 space-y-2">
+      <div className="grid animate-fade-up gap-2 [animation-fill-mode:both] lg:grid-cols-3">
+        <div className="space-y-2 lg:col-span-2">
           <Card title="summary">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-base font-medium leading-snug">{a?.summary || "no summary"}</h1>
+              <h1 className="font-medium text-base leading-snug">{a?.summary || "no summary"}</h1>
               {/* Sole owner of the status widget, so it cannot disagree with a
                   read-only copy until revalidation lands. */}
               <StatusChanger id={item.id} initial={a?.status ?? "New"} />
@@ -69,7 +69,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           </Card>
 
           <Card title="raw content">
-            <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed bg-muted/20 rounded border border-border p-3 overflow-auto max-h-96 text-foreground/80">
+            <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/20 p-3 font-mono text-foreground/80 text-xs leading-relaxed">
               {item.raw_content || "no content"}
             </pre>
           </Card>
@@ -86,10 +86,10 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
                 </KeyValue>
                 <KeyValue label="severity">
                   <span
-                    className={`text-2xl font-medium leading-none ${sevColor(a.severity_score)}`}
+                    className={`font-medium text-2xl leading-none ${sevColor(a.severity_score)}`}
                   >
                     {a.severity_score}
-                    <span className="text-sm font-normal text-muted-foreground">
+                    <span className="font-normal text-muted-foreground text-sm">
                       /{MAX_SEVERITY}
                     </span>
                   </span>

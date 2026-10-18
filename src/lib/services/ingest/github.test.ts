@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchGithubIssues } from "./github";
 
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+
 interface Issue {
   id: number;
   title: string;
@@ -38,6 +40,20 @@ describe("fetchGithubIssues", () => {
     expect(issues.map((i) => i.id)).toEqual([1, 3]);
   });
 
+  it("sends the token as a bearer header when one is given", async () => {
+    const fetchMock = pages([issue(1)]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchGithubIssues("acme/repo", "gh-token");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer gh-token" }),
+      }),
+    );
+  });
+
   it("stops on a short page instead of paging to the cap", async () => {
     const fetchMock = pages([issue(1), issue(2)]);
     vi.stubGlobal("fetch", fetchMock);
@@ -68,17 +84,31 @@ describe("fetchGithubIssues", () => {
   });
 
   it("keeps partial results when a later page fails", async () => {
+    // withRetry uses real setTimeout sleeps; fake timers would hang them.
+    vi.useRealTimers();
+    const full = Array.from({ length: 100 }, (_, i) => issue(i + 1));
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
         const page = Number(new URL(url).searchParams.get("page") ?? 1);
-        if (page === 1) return { ok: true, json: async () => [issue(1)] } as Response;
+        // A full first page makes it ask for page 2, which then fails.
+        if (page === 1) return { ok: true, json: async () => full } as Response;
         return { ok: false, status: 500 } as Response;
       }),
     );
     // Retries are real sleeps; run them out.
-    await expect(fetchGithubIssues("acme/repo")).resolves.toMatchObject([{ id: 1 }]);
+    await expect(fetchGithubIssues("acme/repo")).resolves.toHaveLength(100);
   }, 15_000);
+
+  it("stops on an empty page", async () => {
+    const fetchMock = pages([]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const issues = await fetchGithubIssues("acme/repo");
+
+    expect(issues).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 
   it("does not retry a status that can never succeed", async () => {
     const fetchMock = vi.fn(async () => ({ ok: false, status: 404 }) as Response);

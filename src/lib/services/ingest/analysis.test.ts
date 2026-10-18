@@ -15,7 +15,10 @@ vi.mock("@/db/client", () => ({
   },
 }));
 vi.mock("@/db/schema", () => ({ feedbackAnalyses: {}, userSettings: {} }));
-vi.mock("@/sentry/nextjs", () => ({ captureException: vi.fn() }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+
+const tryDecrypt = vi.fn();
+vi.mock("@/lib/crypto", () => ({ tryDecrypt: (...a: unknown[]) => tryDecrypt(...a) }));
 
 const analyzeFeedback = vi.fn();
 vi.mock("@/lib/llm", async () => {
@@ -40,7 +43,12 @@ describe("analyzeAndStore error classification", () => {
   it("treats our own throttle as non-fatal and keeps going", async () => {
     analyzeFeedback.mockRejectedValue(new ThrottledError("openai"));
 
-    const result = await analyzeAndStore(ITEMS, "u1", OPTS, undefined, undefined);
+    const result = await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: OPTS,
+      emit: undefined,
+      signal: undefined,
+    });
 
     expect(result.hasError).toBe(false);
     // Not a permanent failure: it clears on its own next run.
@@ -51,7 +59,12 @@ describe("analyzeAndStore error classification", () => {
     analyzeFeedback.mockRejectedValue(new ThrottledError("openai"));
 
     const events: string[] = [];
-    await analyzeAndStore(ITEMS, "u1", OPTS, (_s, m) => events.push(m), undefined);
+    await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: OPTS,
+      emit: (_s, m) => events.push(m),
+      signal: undefined,
+    });
 
     expect(events.some((m) => m.includes("rate limit reached"))).toBe(true);
     expect(events.some((m) => m.includes("provider rejected"))).toBe(false);
@@ -60,7 +73,12 @@ describe("analyzeAndStore error classification", () => {
   it("breaks the loop on a fatal provider error", async () => {
     analyzeFeedback.mockRejectedValue(new Error("AI_APICallError: invalid API key"));
 
-    const result = await analyzeAndStore(ITEMS, "u1", OPTS, undefined, undefined);
+    const result = await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: OPTS,
+      emit: undefined,
+      signal: undefined,
+    });
 
     expect(result.hasError).toBe(true);
     expect(analyzeFeedback).toHaveBeenCalledTimes(1);
@@ -74,7 +92,12 @@ describe("analyzeAndStore error classification", () => {
       summary: "ok",
     });
 
-    const result = await analyzeAndStore(ITEMS, "u1", OPTS, undefined, undefined);
+    const result = await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: OPTS,
+      emit: undefined,
+      signal: undefined,
+    });
 
     expect(result.hasError).toBe(false);
     expect(result.count).toBe(2);
@@ -82,28 +105,92 @@ describe("analyzeAndStore error classification", () => {
 
   it("bails once when no LLM is configured, instead of failing every item", async () => {
     const events: string[] = [];
-    const result = await analyzeAndStore(
-      ITEMS,
-      "u1",
-      undefined,
-      (_s, m) => events.push(m),
-      undefined,
-    );
+    const result = await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: undefined,
+      emit: (_s, m) => events.push(m),
+      signal: undefined,
+    });
 
     expect(result.hasError).toBe(true);
     expect(result.count).toBe(0);
     expect(events).toHaveLength(1);
+  });
+
+  it("stops before the next item once the signal is aborted", async () => {
+    analyzeFeedback.mockResolvedValue({
+      sentiment: "positive",
+      topics: ["t"],
+      severity_score: 1,
+      summary: "ok",
+    });
+    const controller = new AbortController();
+
+    const result = await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: OPTS,
+      emit: () => controller.abort(),
+      signal: controller.signal,
+    });
+
+    // Aborted during the first item, so the loop breaks before the second.
+    expect(analyzeFeedback).toHaveBeenCalledTimes(1);
+    expect(result.count).toBe(1);
+  });
+
+  it("collects only the high-severity analyses for notification", async () => {
+    analyzeFeedback
+      .mockResolvedValueOnce({
+        sentiment: "negative",
+        topics: ["t"],
+        severity_score: 5,
+        summary: "bad",
+      })
+      .mockResolvedValueOnce({
+        sentiment: "positive",
+        topics: ["t"],
+        severity_score: 1,
+        summary: "fine",
+      })
+      .mockResolvedValueOnce({
+        sentiment: "negative",
+        topics: ["t"],
+        severity_score: 4,
+        summary: "meh",
+      });
+
+    const result = await analyzeAndStore(ITEMS, {
+      userId: "u1",
+      llmOpts: OPTS,
+      emit: undefined,
+      signal: undefined,
+    });
+
+    expect(result.count).toBe(3);
+    expect(result.highSeverity.map((a) => a.severity_score)).toEqual([5, 4]);
   });
 });
 
 describe("getUserLLMOpts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    tryDecrypt.mockReturnValue(undefined);
   });
 
   it("returns undefined when the user has no settings row", async () => {
     selectWhere.mockResolvedValue([]);
     await expect(getUserLLMOpts("u1")).resolves.toBeUndefined();
+  });
+
+  it("returns the decrypted options for a fully configured user", async () => {
+    selectWhere.mockResolvedValue([{ provider: "openai", model: "m", apiKeyCipher: "v1:x" }]);
+    tryDecrypt.mockReturnValue("sk-live");
+
+    await expect(getUserLLMOpts("u1")).resolves.toEqual({
+      provider: "openai",
+      model: "m",
+      apiKey: "sk-live",
+    });
   });
 
   it("throws a specific cause for an unknown stored provider", async () => {
@@ -118,7 +205,7 @@ describe("getUserLLMOpts", () => {
 
   it("throws when the stored key cannot be decrypted", async () => {
     selectWhere.mockResolvedValue([{ provider: "openai", model: "m", apiKeyCipher: "v1:x" }]);
-    // tryDecrypt is unmocked here, so it returns undefined for an undecryptable row.
+    // tryDecrypt returns undefined for an undecryptable row.
     await expect(getUserLLMOpts("u1")).rejects.toThrow(/No API key saved/);
   });
 });

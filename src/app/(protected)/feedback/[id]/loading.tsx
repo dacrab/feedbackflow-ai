@@ -5,7 +5,7 @@ export default function Loading() {
     <div className="flex flex-col gap-4" role="status" aria-label="loading feedback">
       <Skeleton className="h-4 w-16" />
       <div className="grid gap-2 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-2">
+        <div className="space-y-2 lg:col-span-2">
           <Skeleton className="h-40" />
           <Skeleton className="h-60" />
         </div>

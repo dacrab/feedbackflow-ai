@@ -43,13 +43,13 @@ type FeedbackRow = Awaited<ReturnType<typeof feedbackDetailQuery>>[number];
 
 /** An absent field means "not filtered on"; the explicit `| undefined` is
  *  required by exactOptionalPropertyTypes for a caller to omit the key. */
-export type FeedbackFilters = {
+export interface FeedbackFilters {
   sentiment?: Sentiment | undefined;
   status?: FeedbackStatus | undefined;
   topic?: string | undefined;
   q?: string | undefined;
   sort?: InboxSort | undefined;
-};
+}
 
 function buildFilterConditions(filters: FeedbackFilters, userId: string) {
   // Both ownership columns are pinned: it keeps the filter indexes usable and
@@ -126,16 +126,16 @@ export async function getFeedbackItems(
     status: page.status,
   };
 
-  const orderBy =
-    filters.sort === "severity_desc"
-      ? desc(page.severity_score)
-      : filters.sort === "severity_asc"
-        ? asc(page.severity_score)
-        : desc(page.created_at);
+  function orderByFor(sort: InboxSort | undefined) {
+    if (sort === "severity_desc") return desc(page.severity_score);
+    if (sort === "severity_asc") return asc(page.severity_score);
+    return desc(page.created_at);
+  }
+  const orderBy = orderByFor(filters.sort);
 
   const [countRows, rows] = await Promise.all([
-    db.select({ total: sql<number>`count(*)::int` }).from(page),
-    db.select(preview).from(page).orderBy(orderBy).limit(limit).offset(offset),
+    db.with(page).select({ total: sql<number>`count(*)::int` }).from(page),
+    db.with(page).select(preview).from(page).orderBy(orderBy).limit(limit).offset(offset),
   ]);
 
   return { items: rows.map(mapFeedbackRow), total: Number(countRows[0]?.total ?? 0) };

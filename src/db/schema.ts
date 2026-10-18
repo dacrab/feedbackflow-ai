@@ -21,13 +21,13 @@ export const analysisStatusEnum = pgEnum("analysis_status", ["New", "Acknowledge
 export const sourceTypeEnum = pgEnum("source_type", ["github"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["slack"]);
 
-export type GitHubSourceConfig = {
+export interface GitHubSourceConfig {
   repo: string;
-};
+}
 
-export type SlackNotificationConfig = {
+export interface SlackNotificationConfig {
   minSeverity?: number;
-};
+}
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),

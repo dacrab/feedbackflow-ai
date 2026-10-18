@@ -1,7 +1,7 @@
 import { Button, Input, Panel, StatusDot } from "@/components/ui/ui";
 
 function ListItem({ children }: { children: React.ReactNode }) {
-  return <Panel className="py-2.5 space-y-2">{children}</Panel>;
+  return <Panel className="space-y-2 py-2.5">{children}</Panel>;
 }
 
 function EnabledStatus({ enabled }: { enabled: boolean }) {
@@ -32,13 +32,13 @@ export function ResourceRow({
     <ListItem>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-medium truncate">{title}</p>
+          <p className="truncate font-medium text-sm">{title}</p>
           <div className="flex items-center gap-2">
             <EnabledStatus enabled={enabled} />
             {meta}
           </div>
         </div>
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex shrink-0 gap-1.5">
           <Button size="xs" variant="outline" disabled={pending} onClick={onToggle}>
             {enabled ? "disable" : "enable"}
           </Button>
@@ -53,7 +53,7 @@ export function ResourceRow({
 }
 
 export function ResourceList({ children }: { children: React.ReactNode }) {
-  return <div className="space-y-2 border-t border-border pt-3">{children}</div>;
+  return <div className="space-y-2 border-border border-t pt-3">{children}</div>;
 }
 
 /** `onSubmit` is the parent's async action, which clears the field itself

@@ -54,20 +54,30 @@ function classify(err: unknown, itemId: string, onProgress: OnProgress): boolean
     Sentry.captureException(err, { extra: { context: "ingest-analyze", itemId } });
   }
   const fatal = !throttled && FATAL_LLM_ERROR.test(String(err));
-  onProgress(
-    "analysis_error",
-    `failed: ${throttled ? "rate limit reached" : fatal ? "provider rejected the request" : "provider error"}`,
-  );
+  onProgress("analysis_error", `failed: ${failureReason(throttled, fatal)}`);
   return fatal;
+}
+
+/** The client only ever sees an allow-listed reason, so the three failure
+ *  cases are named here rather than nested at the call site. */
+function failureReason(throttled: boolean, fatal: boolean): string {
+  if (throttled) return "rate limit reached";
+  if (fatal) return "provider rejected the request";
+  return "provider error";
+}
+
+interface AnalyzeContext {
+  userId: string;
+  llmOpts: LLMOptions;
+  onProgress: OnProgress;
+  signal: AbortSignal | undefined;
 }
 
 async function analyzeItem(
   item: { id: string; rawContent: string },
-  userId: string,
-  llmOpts: LLMOptions,
-  onProgress: OnProgress,
-  signal: AbortSignal | undefined,
+  ctx: AnalyzeContext,
 ): Promise<ItemOutcome> {
+  const { userId, llmOpts, onProgress, signal } = ctx;
   try {
     const a = await analyzeFeedback({ text: item.rawContent, opts: llmOpts, userId, signal });
     const row = {
@@ -86,14 +96,24 @@ async function analyzeItem(
   }
 }
 
+export interface AnalyzeRequest {
+  userId: string;
+  llmOpts: LLMOptions | undefined;
+  emit: OnProgress | undefined;
+  signal: AbortSignal | undefined;
+}
+
+/** Analysis is best-effort; without an emitter there is nothing to report. */
+function ignoreProgress() {
+  // no emitter supplied
+}
+
 export async function analyzeAndStore(
   items: { id: string; rawContent: string }[],
-  userId: string,
-  llmOpts: LLMOptions | undefined,
-  emit: OnProgress | undefined,
-  signal: AbortSignal | undefined,
+  req: AnalyzeRequest,
 ): Promise<AnalyzeResult> {
-  const onProgress = emit ?? (() => {});
+  const { userId, llmOpts, emit, signal } = req;
+  const onProgress = emit ?? ignoreProgress;
 
   // Bail out once rather than repeating the same failure for every item.
   if (!llmOpts) {
@@ -109,7 +129,7 @@ export async function analyzeAndStore(
     if (signal?.aborted) break;
     onProgress("analyzing", `analyzing ${i + 1}/${items.length}...`);
 
-    const { analysis, fatal } = await analyzeItem(item, userId, llmOpts, onProgress, signal);
+    const { analysis, fatal } = await analyzeItem(item, { userId, llmOpts, onProgress, signal });
     if (analysis) {
       count++;
       onProgress("analysis_ok", `analyzed ${count}/${items.length}`);

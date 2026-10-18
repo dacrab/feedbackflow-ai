@@ -12,18 +12,18 @@ const FEATURES = [
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-foreground text-background p-8 flex-col animate-slide-right [animation-fill-mode:both]">
+    <div className="flex min-h-screen">
+      <div className="hidden animate-slide-right flex-col bg-foreground p-8 text-background [animation-fill-mode:both] lg:flex lg:w-1/2">
         <Brand href="/" logoClassName="invert" className="text-inverse-muted" />
 
-        <div className="flex-1 flex items-center">
+        <div className="flex flex-1 items-center">
           <div className="w-full space-y-6">
             <div>
-              <Eyebrow className="text-inverse-subtle mb-4">what you get</Eyebrow>
+              <Eyebrow className="mb-4 text-inverse-subtle">what you get</Eyebrow>
               <div className="space-y-4 text-sm">
                 {FEATURES.map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
-                    <span className="text-inverse-accent mt-0.5">→</span>
+                    <span className="mt-0.5 text-inverse-accent">→</span>
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -32,21 +32,21 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <div className="text-xs text-inverse-subtle">next.js + neon + llm</div>
+        <div className="text-inverse-subtle text-xs">next.js + neon + llm</div>
       </div>
 
-      <main className="flex-1 flex flex-col p-8 bg-background animate-fade-up [animation-delay:100ms] [animation-fill-mode:both]">
+      <main className="flex flex-1 animate-fade-up flex-col bg-background p-8 [animation-delay:100ms] [animation-fill-mode:both]">
         <Link
           href="/"
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit"
+          className="flex w-fit items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
         >
-          <IconArrowLeft className="h-3.5 w-3.5" />
+          <IconArrowLeft className="size-3.5" />
           back
         </Link>
 
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <div className="lg:hidden mb-8 flex justify-center">
+            <div className="mb-8 flex justify-center lg:hidden">
               <Brand href="/" />
             </div>
             {children}

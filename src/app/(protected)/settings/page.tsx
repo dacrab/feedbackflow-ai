@@ -21,13 +21,13 @@ export default async function SettingsPage() {
         <PageHeader eyebrow="configuration" title="settings" />
         {user && (
           <div className="text-right">
-            <p className="text-sm font-medium">{user.name ?? user.email}</p>
+            <p className="font-medium text-sm">{user.name ?? user.email}</p>
             {user.name && <Muted>{user.email}</Muted>}
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <LLMSettingsCard
             initialProvider={data.settings?.provider ?? null}

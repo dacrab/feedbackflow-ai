@@ -59,4 +59,16 @@ describe("parseSSEStream", () => {
     await parseSSEStream(streamOf([": keep-alive\nevent: x\n\n"]), (e) => events.push(e));
     expect(events).toEqual([]);
   });
+
+  it("throws when the response has no body", async () => {
+    await expect(parseSSEStream(new Response(null), () => {})).rejects.toThrow("no response body");
+  });
+
+  it("flushes a final event with no trailing blank line", async () => {
+    const events: Array<{ stage: string; message: string }> = [];
+    await parseSSEStream(streamOf(['data: {"stage":"complete","message":"done"}']), (e) =>
+      events.push(e),
+    );
+    expect(events).toEqual([{ stage: "complete", message: "done" }]);
+  });
 });

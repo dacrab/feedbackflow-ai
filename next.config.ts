@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ["@neondatabase/serverless"],
-  async headers() {
+  headers() {
     return [
       {
         source: "/(.*)",

@@ -6,7 +6,10 @@ import type { SyncStage } from "@/lib/types";
 // re-applied at the type level so the producer and the one consumer stay
 // exhaustive, and this cast is the single place where the two meet.
 const SSEMessageSchema = z.object({ stage: z.string(), message: z.string() });
-export type SSEMessage = { stage: SyncStage; message: string };
+export interface SSEMessage {
+  stage: SyncStage;
+  message: string;
+}
 
 const DATA_PREFIX = "data: ";
 
@@ -39,7 +42,7 @@ export async function parseSSEStream(
   };
 
   try {
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read();
       if (done) {
         // Flush the decoder and any event whose trailing blank line never
@@ -49,9 +52,11 @@ export async function parseSSEStream(
         return;
       }
       buffer += decoder.decode(value, { stream: true });
-      const blocks = buffer.split("\n\n");
-      buffer = blocks.pop() ?? "";
-      for (const block of blocks) drain(block);
+      // Hold back the trailing partial block; only complete ones are drained.
+      const sep = buffer.lastIndexOf("\n\n");
+      if (sep === -1) continue;
+      for (const block of buffer.slice(0, sep).split("\n\n")) drain(block);
+      buffer = buffer.slice(sep + 2);
     }
   } finally {
     reader.releaseLock();
