@@ -10,6 +10,7 @@
     "incremental": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "allowJs": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true,
