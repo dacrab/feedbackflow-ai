@@ -15,7 +15,7 @@ export default async function LandingPage() {
     .catch(() => false);
 
   return (
-    <div className="min-h-screen bg-background selection:bg-foreground/10">
+    <div className="bg-background selection:bg-foreground/10 min-h-screen">
       <SiteNav loggedIn={loggedIn} />
       <Hero />
       <AppPreview />

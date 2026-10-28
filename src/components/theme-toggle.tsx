@@ -23,7 +23,7 @@ export function ThemeToggle() {
 
   return (
     <IconButton
-      className="size-7 rounded border border-border"
+      className="border-border size-7 rounded border"
       onClick={() => setTheme(next)}
       title={`theme: ${current}`}
       aria-label={`switch to ${next} theme`}

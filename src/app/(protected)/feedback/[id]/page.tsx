@@ -43,17 +43,17 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
     <div className="space-y-4">
       <Link
         href="/inbox"
-        className="inline-flex items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs transition-colors"
       >
         <IconArrowLeft className="size-3" />
         back to inbox
       </Link>
 
-      <div className="grid animate-fade-up gap-2 [animation-fill-mode:both] lg:grid-cols-3">
+      <div className="animate-fade-up grid gap-2 [animation-fill-mode:both] lg:grid-cols-3">
         <div className="space-y-2 lg:col-span-2">
           <Card title="summary">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="font-medium text-base leading-snug">{a?.summary || "no summary"}</h1>
+              <h1 className="text-base leading-snug font-medium">{a?.summary || "no summary"}</h1>
               {/* Sole owner of the status widget, so it cannot disagree with a
                   read-only copy until revalidation lands. */}
               <StatusChanger id={item.id} initial={a?.status ?? "New"} />
@@ -69,7 +69,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           </Card>
 
           <Card title="raw content">
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/20 p-3 font-mono text-foreground/80 text-xs leading-relaxed">
+            <pre className="border-border bg-muted/20 text-foreground/80 max-h-96 overflow-auto rounded border p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">
               {item.raw_content || "no content"}
             </pre>
           </Card>
@@ -86,10 +86,10 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
                 </KeyValue>
                 <KeyValue label="severity">
                   <span
-                    className={`font-medium text-2xl leading-none ${sevColor(a.severity_score)}`}
+                    className={`text-2xl leading-none font-medium ${sevColor(a.severity_score)}`}
                   >
                     {a.severity_score}
-                    <span className="font-normal text-muted-foreground text-sm">
+                    <span className="text-muted-foreground text-sm font-normal">
                       /{MAX_SEVERITY}
                     </span>
                   </span>
@@ -101,7 +101,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           <Card title="metadata">
             <dl className="space-y-2 text-xs">
               <KeyValue label="id" layout="row">
-                <span className="font-mono text-muted-foreground" title={item.id}>
+                <span className="text-muted-foreground font-mono" title={item.id}>
                   {item.id}
                 </span>
               </KeyValue>

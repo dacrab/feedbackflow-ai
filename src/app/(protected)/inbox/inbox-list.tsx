@@ -56,7 +56,7 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
   return (
     <>
       {selectedOnPage.length > 0 && (
-        <div className="flex animate-slide-down items-center gap-3 rounded border border-border bg-muted p-2 text-sm">
+        <div className="animate-slide-down border-border bg-muted flex items-center gap-3 rounded border p-2 text-sm">
           <span>{selectedOnPage.length} selected</span>
           {BULK_STATUSES.map((status) => (
             <Button
@@ -80,13 +80,13 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
           />
         ) : (
           <>
-            <div className="flex items-center gap-3 border-border border-b p-3 text-muted-foreground text-xs">
+            <div className="border-border text-muted-foreground flex items-center gap-3 border-b p-3 text-xs">
               <input
                 type="checkbox"
                 checked={allSelected}
                 onChange={toggleAll}
                 aria-label="Select all items"
-                className="size-3.5 rounded border-border"
+                className="border-border size-3.5 rounded"
               />
               <Muted>select all</Muted>
             </div>
@@ -97,14 +97,14 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
               return (
                 <div
                   key={item.id}
-                  className="group flex animate-fade-up items-center gap-3 p-3 transition-colors hover:bg-muted/50"
+                  className="group animate-fade-up hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(item.id)}
                     onChange={() => toggle(item.id)}
                     aria-label={`Select: ${analysis?.summary || "feedback item"}`}
-                    className="size-3.5 shrink-0 rounded border-border"
+                    className="border-border size-3.5 shrink-0 rounded"
                   />
 
                   <SeverityChip
@@ -118,15 +118,15 @@ export function InboxList({ items }: { items: FeedbackItemWithAnalysis[] }) {
                       <SentimentBadge sentiment={analysis?.sentiment} />
                       <StatusBadge status={analysis?.status} />
                     </div>
-                    <div className="mt-0.5 flex items-center gap-2 text-muted-foreground text-xs">
+                    <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
                       <Muted className="max-w-[200px] truncate">{item.raw_content}</Muted>
                       {topic && <TopicTag topic={topic} />}
                     </div>
                   </Link>
 
-                  <div className="flex shrink-0 items-center gap-3 text-muted-foreground text-xs">
+                  <div className="text-muted-foreground flex shrink-0 items-center gap-3 text-xs">
                     <Muted suppressHydrationWarning>{formatDateUTC(item.created_at)}</Muted>
-                    <IconChevronRight className="size-3.5 transition-colors group-hover:text-foreground" />
+                    <IconChevronRight className="group-hover:text-foreground size-3.5 transition-colors" />
                   </div>
                 </div>
               );

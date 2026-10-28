@@ -43,7 +43,7 @@ function WebhookItem({ hook }: { hook: HookRow }) {
       <div className="flex items-center gap-2">
         <Muted>alert on severity ≥</Muted>
         {editing ? (
-          <div className="flex animate-slide-down items-center gap-2">
+          <div className="animate-slide-down flex items-center gap-2">
             <Select
               aria-label="minimum severity"
               size="xs"
@@ -75,7 +75,7 @@ function WebhookItem({ hook }: { hook: HookRow }) {
           </div>
         ) : (
           <TextButton
-            className="font-medium text-foreground hover:text-muted-foreground"
+            className="text-foreground hover:text-muted-foreground font-medium"
             onClick={() => setEditing(true)}
           >
             {threshold}

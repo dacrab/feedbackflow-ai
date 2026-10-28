@@ -17,7 +17,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     <div className="flex h-screen overflow-hidden">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:border focus:border-border focus:bg-background focus:px-3 focus:py-2 focus:text-sm"
+        className="focus:border-border focus:bg-background sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:border focus:px-3 focus:py-2 focus:text-sm"
       >
         skip to content
       </a>
@@ -25,7 +25,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       <Sidebar userEmail={email} initialCollapsed={initialCollapsed} />
 
       <main id="main-content" className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-12 shrink-0 items-center justify-between border-border border-b bg-background px-4 md:justify-end">
+        <header className="border-border bg-background flex h-12 shrink-0 items-center justify-between border-b px-4 md:justify-end">
           <Brand href="/" className="md:hidden" />
           <ThemeToggle />
         </header>

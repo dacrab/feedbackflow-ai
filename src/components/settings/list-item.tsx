@@ -32,7 +32,7 @@ export function ResourceRow({
     <ListItem>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
-          <p className="truncate font-medium text-sm">{title}</p>
+          <p className="truncate text-sm font-medium">{title}</p>
           <div className="flex items-center gap-2">
             <EnabledStatus enabled={enabled} />
             {meta}
@@ -53,7 +53,7 @@ export function ResourceRow({
 }
 
 export function ResourceList({ children }: { children: React.ReactNode }) {
-  return <div className="space-y-2 border-border border-t pt-3">{children}</div>;
+  return <div className="border-border space-y-2 border-t pt-3">{children}</div>;
 }
 
 /** `onSubmit` is the parent's async action, which clears the field itself
