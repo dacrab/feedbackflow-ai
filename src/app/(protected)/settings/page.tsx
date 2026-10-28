@@ -21,7 +21,7 @@ export default async function SettingsPage() {
         <PageHeader eyebrow="configuration" title="settings" />
         {user && (
           <div className="text-right">
-            <p className="font-medium text-sm">{user.name ?? user.email}</p>
+            <p className="text-sm font-medium">{user.name ?? user.email}</p>
             {user.name && <Muted>{user.email}</Muted>}
           </div>
         )}

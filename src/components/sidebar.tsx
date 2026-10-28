@@ -33,13 +33,13 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden flex-col border-border border-r bg-background transition-all duration-200 md:flex",
+        "border-border bg-background hidden flex-col border-r transition-all duration-200 md:flex",
         collapsed ? "w-14" : "w-52",
       )}
     >
       <div
         className={cn(
-          "flex h-14 items-center border-border border-b",
+          "border-border flex h-14 items-center border-b",
           collapsed ? "justify-center px-2" : "px-4",
         )}
       >
@@ -72,7 +72,7 @@ export function Sidebar({
 
       <div className="border-border border-t p-2">
         <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "gap-2 px-2 py-1")}>
-          <div className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-xs">
+          <div className="bg-muted flex size-6 shrink-0 items-center justify-center rounded text-xs">
             {userEmail.charAt(0).toLowerCase()}
           </div>
           {!collapsed && (
@@ -96,7 +96,7 @@ export function Sidebar({
       </div>
 
       <IconButton
-        className="h-8 border-border border-t"
+        className="border-border h-8 border-t"
         onClick={toggleCollapsed}
         title={collapsed ? "expand" : "collapse"}
         aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}

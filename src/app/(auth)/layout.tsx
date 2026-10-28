@@ -13,17 +13,17 @@ const FEATURES = [
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      <div className="hidden animate-slide-right flex-col bg-foreground p-8 text-background [animation-fill-mode:both] lg:flex lg:w-1/2">
+      <div className="animate-slide-right bg-foreground text-background hidden flex-col p-8 [animation-fill-mode:both] lg:flex lg:w-1/2">
         <Brand href="/" logoClassName="invert" className="text-inverse-muted" />
 
         <div className="flex flex-1 items-center">
           <div className="w-full space-y-6">
             <div>
-              <Eyebrow className="mb-4 text-inverse-subtle">what you get</Eyebrow>
+              <Eyebrow className="text-inverse-subtle mb-4">what you get</Eyebrow>
               <div className="space-y-4 text-sm">
                 {FEATURES.map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
-                    <span className="mt-0.5 text-inverse-accent">→</span>
+                    <span className="text-inverse-accent mt-0.5">→</span>
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -35,10 +35,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="text-inverse-subtle text-xs">next.js + neon + llm</div>
       </div>
 
-      <main className="flex flex-1 animate-fade-up flex-col bg-background p-8 [animation-delay:100ms] [animation-fill-mode:both]">
+      <main className="animate-fade-up bg-background flex flex-1 flex-col p-8 [animation-delay:100ms] [animation-fill-mode:both]">
         <Link
           href="/"
-          className="flex w-fit items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1.5 text-sm"
         >
           <IconArrowLeft className="size-3.5" />
           back

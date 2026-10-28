@@ -12,7 +12,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-border border-t bg-background md:hidden">
+    <nav className="border-border bg-background fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t md:hidden">
       {NAV_ITEMS.map((item) => {
         const isActive = isNavItemActive(pathname, item.href);
         return (
@@ -33,7 +33,7 @@ export function MobileNav() {
       <form action="/logout" method="POST" className="flex flex-1">
         <button
           type="submit"
-          className="flex w-full flex-col items-center gap-0.5 py-2 text-muted-foreground text-xs transition-colors hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground flex w-full flex-col items-center gap-0.5 py-2 text-xs transition-colors"
         >
           <IconLogout className="size-4" />
           logout

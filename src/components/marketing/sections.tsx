@@ -29,7 +29,7 @@ const GITHUB_URL = "https://github.com/dacrab/feedbackflow-ai";
 
 export function SiteNav({ loggedIn }: { loggedIn: boolean }) {
   return (
-    <nav className="fixed inset-x-0 top-0 z-50 border-border border-b bg-background/80 backdrop-blur-md">
+    <nav className="border-border bg-background/80 fixed inset-x-0 top-0 z-50 border-b backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <Brand href="/" className="font-medium tracking-tight" />
         <div className="flex items-center gap-4 text-sm">
@@ -42,7 +42,7 @@ export function SiteNav({ loggedIn }: { loggedIn: boolean }) {
             <>
               <Link
                 href="/login"
-                className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline"
+                className="text-muted-foreground hover:text-foreground hidden transition-colors sm:inline"
               >
                 log in
               </Link>
@@ -81,12 +81,12 @@ function Cta({
 export function Hero() {
   return (
     <section className="relative overflow-hidden pt-28 pb-4">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-40" />
+      <div className="absolute inset-0 bg-[size:4rem_4rem] bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] opacity-40" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_70%)]" />
 
       <div className="relative mx-auto max-w-6xl px-6 pt-12 pb-20">
-        <div className="mx-auto max-w-3xl animate-fade-up text-center [animation-fill-mode:both]">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground text-xs">
+        <div className="animate-fade-up mx-auto max-w-3xl text-center [animation-fill-mode:both]">
+          <div className="border-border bg-card text-muted-foreground mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs">
             <span className="relative flex size-2">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex size-2 rounded-full bg-green-500" />
@@ -94,17 +94,17 @@ export function Hero() {
             free tier via OpenRouter — no credit card needed
           </div>
 
-          <h1 className="font-semibold text-4xl leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl leading-[1.08] font-semibold tracking-tight sm:text-5xl lg:text-6xl">
             Your feedback,
             <br />
-            <span className="bg-gradient-to-r from-chart-1 to-chart-2 bg-clip-text text-transparent">
+            <span className="from-chart-1 to-chart-2 bg-gradient-to-r bg-clip-text text-transparent">
               analyzed &amp; triaged
             </span>
             <br />
             automatically.
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground leading-relaxed sm:text-lg">
+          <p className="text-muted-foreground mx-auto mt-6 max-w-xl text-base leading-relaxed sm:text-lg">
             Ingest GitHub issues. AI extracts sentiment, severity, and topics — so you focus on what
             actually matters.
           </p>
@@ -115,7 +115,7 @@ export function Hero() {
             </Cta>
             <ExternalLink
               href={GITHUB_URL}
-              className="inline-flex w-full items-center justify-center gap-2 rounded border border-border px-6 py-3 text-sm no-underline hover:bg-muted sm:w-auto"
+              className="border-border hover:bg-muted inline-flex w-full items-center justify-center gap-2 rounded border px-6 py-3 text-sm no-underline sm:w-auto"
             >
               <IconBrandGithub className="size-4" />
               view on GitHub
@@ -186,11 +186,11 @@ export function AppPreview() {
   return (
     <section className="pb-20">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-black/5 shadow-xl dark:shadow-black/20">
-          <div className="flex items-center gap-2 border-border border-b bg-muted/30 px-4 py-2.5">
+        <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xl shadow-black/5 dark:shadow-black/20">
+          <div className="border-border bg-muted/30 flex items-center gap-2 border-b px-4 py-2.5">
             <div className="flex gap-1.5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="size-2.5 rounded-full bg-muted-foreground/20" />
+                <div key={i} className="bg-muted-foreground/20 size-2.5 rounded-full" />
               ))}
             </div>
             <div className="flex flex-1 justify-center">
@@ -270,12 +270,12 @@ const FEATURES: Feature[] = [
 function FeatureCard({ icon: Icon, title, desc }: Feature) {
   // Not `Card`, which renders a `// title` eyebrow this surface does not have.
   return (
-    <div className="rounded border border-border bg-card p-5 transition-colors hover:border-muted-foreground/30">
-      <div className="mb-3 flex size-8 items-center justify-center rounded bg-muted/60 text-muted-foreground">
+    <div className="border-border bg-card hover:border-muted-foreground/30 rounded border p-5 transition-colors">
+      <div className="bg-muted/60 text-muted-foreground mb-3 flex size-8 items-center justify-center rounded">
         <Icon className="size-5" />
       </div>
-      <h3 className="font-medium text-sm tracking-tight">{title}</h3>
-      <p className="mt-1.5 text-muted-foreground text-xs leading-relaxed">{desc}</p>
+      <h3 className="text-sm font-medium tracking-tight">{title}</h3>
+      <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">{desc}</p>
     </div>
   );
 }
@@ -286,10 +286,10 @@ export function Features() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-12 max-w-2xl">
           <Eyebrow className="mb-2">capabilities</Eyebrow>
-          <h2 className="font-semibold text-3xl tracking-tight">
+          <h2 className="text-3xl font-semibold tracking-tight">
             Everything to go from noise to signal
           </h2>
-          <p className="mt-3 text-muted-foreground">
+          <p className="text-muted-foreground mt-3">
             One tool to ingest, analyze, and act on all your public feedback.
           </p>
         </div>
@@ -308,10 +308,10 @@ export function FinalCta() {
   return (
     <section className="border-border border-t py-20">
       <div className="mx-auto max-w-6xl px-6 text-center">
-        <h2 className="font-semibold text-3xl tracking-tight">
+        <h2 className="text-3xl font-semibold tracking-tight">
           Stop reading every issue manually.
         </h2>
-        <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+        <p className="text-muted-foreground mx-auto mt-4 max-w-md">
           Let AI handle the triage. You handle the decisions.
         </p>
         <div className="mt-8">
@@ -328,7 +328,7 @@ export function FinalCta() {
 export function SiteFooter() {
   return (
     <footer className="border-border border-t py-6">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-muted-foreground text-xs sm:flex-row">
+      <div className="text-muted-foreground mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs sm:flex-row">
         <div className="flex items-center gap-2">
           <Logo />
           <span>
@@ -336,7 +336,7 @@ export function SiteFooter() {
           </span>
         </div>
         <div className="flex items-center gap-6">
-          <ExternalLink href={GITHUB_URL} className="no-underline hover:text-foreground">
+          <ExternalLink href={GITHUB_URL} className="hover:text-foreground no-underline">
             GitHub
           </ExternalLink>
           <span>next.js · neon · openrouter · vercel</span>
