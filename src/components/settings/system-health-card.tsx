@@ -33,7 +33,7 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Panel>
       <Muted>{label}</Muted>
-      <p className="font-medium text-lg leading-tight">{value}</p>
+      <p className="text-lg leading-tight font-medium">{value}</p>
     </Panel>
   );
 }
@@ -41,7 +41,7 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
 function RunCount({ value, label }: { value: number | null; label: string }) {
   return (
     <span>
-      <span className="font-medium text-foreground">{value ?? 0}</span> <Muted>{label}</Muted>
+      <span className="text-foreground font-medium">{value ?? 0}</span> <Muted>{label}</Muted>
     </span>
   );
 }
@@ -68,7 +68,7 @@ function SyncLog({
   return (
     <div
       ref={ref}
-      className="absolute inset-x-0 top-full z-10 mt-1 max-h-36 animate-slide-down overflow-y-auto rounded border border-border bg-card p-2 shadow-lg"
+      className="animate-slide-down border-border bg-card absolute inset-x-0 top-full z-10 mt-1 max-h-36 overflow-y-auto rounded border p-2 shadow-lg"
     >
       {/* Announced as updates stream in; the ✓/✗/· prefix is the non-colour cue. */}
       <div role="log" aria-live="polite" aria-label="sync log" className="space-y-0.5">
@@ -81,7 +81,7 @@ function SyncLog({
             </p>
           );
         })}
-        {syncing && <p className="animate-pulse font-mono text-muted-foreground text-xs">· ...</p>}
+        {syncing && <p className="text-muted-foreground animate-pulse font-mono text-xs">· ...</p>}
       </div>
       <TextButton className="w-full text-left" onClick={onDismiss}>
         dismiss
@@ -132,7 +132,7 @@ export function SystemHealthCard({
               {lastRun.finishedAt && ` · ${timeAgo(lastRun.finishedAt)}`}
             </Muted>
             {lastRun.error && (
-              <div className="break-words font-mono text-danger text-xs">{lastRun.error}</div>
+              <div className="text-danger font-mono text-xs break-words">{lastRun.error}</div>
             )}
             <div className="flex gap-3 text-xs">
               <RunCount value={lastRun.fetched} label="fetched" />

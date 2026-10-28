@@ -131,7 +131,7 @@ export default async function InboxPage({
           name="q"
           placeholder="search..."
           defaultValue={filters.q ?? ""}
-          className="col-span-2 sm:min-w-[160px] sm:max-w-xs sm:flex-1"
+          className="col-span-2 sm:max-w-xs sm:min-w-[160px] sm:flex-1"
         />
         <Select aria-label="sentiment" name="sentiment" defaultValue={filters.sentiment ?? ""}>
           <option value="">all sentiment</option>
@@ -173,7 +173,7 @@ export default async function InboxPage({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex shrink-0 items-center justify-between text-muted-foreground text-xs">
+        <div className="text-muted-foreground flex shrink-0 items-center justify-between text-xs">
           <Muted>
             page {currentPage} / {totalPages}
           </Muted>

@@ -51,7 +51,7 @@ export function StatusBadge({ status }: { status?: FeedbackStatus | null | undef
 export function SeverityChip({ score, className }: { score: number; className?: string }) {
   return (
     <span
-      className={cn("font-medium font-mono text-xs tabular-nums", sevColor(score), className)}
+      className={cn("font-mono text-xs font-medium tabular-nums", sevColor(score), className)}
       title={sevLabel(score)}
     >
       {score || "·"}
@@ -61,7 +61,7 @@ export function SeverityChip({ score, className }: { score: number; className?: 
 
 export function TopicTag({ topic }: { topic: string }) {
   return (
-    <span className="rounded border border-border bg-muted/30 px-1.5 py-0.5 text-xs">{topic}</span>
+    <span className="border-border bg-muted/30 rounded border px-1.5 py-0.5 text-xs">{topic}</span>
   );
 }
 
@@ -80,7 +80,7 @@ export function ExternalLink({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "underline underline-offset-2 transition-colors hover:text-foreground",
+        "hover:text-foreground underline underline-offset-2 transition-colors",
         className,
       )}
     >
@@ -101,10 +101,10 @@ export function MetricCard({
   note?: string;
 }) {
   return (
-    <div className="space-y-1 rounded border border-control bg-card px-4 py-3">
+    <div className="border-control bg-card space-y-1 rounded border px-4 py-3">
       <Eyebrow>{label}</Eyebrow>
       <div className="flex items-end justify-between gap-2">
-        <p className="font-medium text-2xl leading-none">{value}</p>
+        <p className="text-2xl leading-none font-medium">{value}</p>
         {delta !== undefined && (
           <span className={`mb-0.5 font-mono text-xs ${delta >= 0 ? TONE.good : TONE.danger}`}>
             {delta >= 0 ? "↑" : "↓"}
@@ -121,7 +121,7 @@ export function PageHeader({ eyebrow, title }: { eyebrow: string; title: string 
   return (
     <div>
       <Eyebrow>{eyebrow}</Eyebrow>
-      <h1 className="font-medium text-xl">{title}</h1>
+      <h1 className="text-xl font-medium">{title}</h1>
     </div>
   );
 }
@@ -143,7 +143,7 @@ export function CenteredState({
     <div className={cn("flex min-h-screen items-center justify-center p-4", className)}>
       <div className="space-y-4 text-center">
         {eyebrow && <Muted className="text-sm">{eyebrow}</Muted>}
-        <h1 className="font-medium text-xl">{title}</h1>
+        <h1 className="text-xl font-medium">{title}</h1>
         <Muted className="text-sm">{description}</Muted>
         {action}
       </div>
@@ -173,7 +173,7 @@ export function TextButton({
     <button
       type="button"
       className={cn(
-        "text-muted-foreground text-xs transition-colors hover:text-foreground disabled:opacity-50",
+        "text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50",
         className,
       )}
       {...props}
@@ -190,7 +190,7 @@ export function IconButton({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+        "text-muted-foreground hover:bg-muted hover:text-foreground inline-flex items-center justify-center transition-colors",
         className,
       )}
       {...props}
@@ -219,7 +219,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-4 rounded border border-control bg-card p-4", className)}>
+    <div className={cn("border-control bg-card space-y-4 rounded border p-4", className)}>
       <Eyebrow>{title}</Eyebrow>
       {children}
     </div>
@@ -229,7 +229,7 @@ export function Card({
 export function Panel({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded border border-control bg-muted/20 px-3 py-2", className)}
+      className={cn("border-control bg-muted/20 rounded border px-3 py-2", className)}
       {...props}
     />
   );
@@ -239,7 +239,7 @@ export function Panel({ className = "", ...props }: React.HTMLAttributes<HTMLDiv
 export function Rows({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("divide-y divide-border rounded border border-control", className)}
+      className={cn("divide-border border-control divide-y rounded border", className)}
       {...props}
     />
   );
@@ -279,7 +279,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={cn("animate-pulse rounded border border-control bg-muted/30", className)}
+      className={cn("border-control bg-muted/30 animate-pulse rounded border", className)}
     />
   );
 }
@@ -358,14 +358,14 @@ export function Select({
     <div className={cn("relative inline-flex items-center", className)}>
       <select
         className={cn(
-          "w-full appearance-none rounded border border-control bg-card pr-7 text-foreground text-sm outline-none transition-colors focus:border-foreground disabled:opacity-50",
+          "border-control bg-card text-foreground focus:border-foreground w-full appearance-none rounded border pr-7 text-sm transition-colors outline-none disabled:opacity-50",
           btnSize[size],
         )}
         {...props}
       >
         {children}
       </select>
-      <IconChevronDown className="pointer-events-none absolute right-2 size-3.5 text-muted-foreground" />
+      <IconChevronDown className="text-muted-foreground pointer-events-none absolute right-2 size-3.5" />
     </div>
   );
 }
@@ -379,7 +379,7 @@ export function Input({
 }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & { size?: ControlSize }) {
   return (
     <input
-      className={cn(fieldBase, btnSize[size], "outline-none focus:border-foreground", className)}
+      className={cn(fieldBase, btnSize[size], "focus:border-foreground outline-none", className)}
       {...props}
     />
   );
@@ -388,5 +388,5 @@ export function Input({
 export const maskedFieldClass = cn(
   fieldBase,
   btnSize.sm,
-  "text-left text-muted-foreground focus-within:border-foreground hover:border-foreground",
+  "text-muted-foreground focus-within:border-foreground hover:border-foreground text-left",
 );
