@@ -1,23 +1,23 @@
 # FeedbackFlow AI
 
-An inbox for GitHub issues that tags each one with sentiment, severity, and topics.
+A calmer way to read your GitHub issues.
 
 **Live demo:** https://feedbackflow-ai.vercel.app
 
-Connect a GitHub repo and FeedbackFlow pulls its open issues into one place. Add an LLM key in Settings and each issue gets a short summary, sentiment score, severity rating, and topic tags — so you can see what needs attention without reading everything.
+Point FeedbackFlow at a repo and it gathers the open issues into one inbox. Add an LLM key and each item gets sentiment, severity, topic tags, and a one-line summary, so you can triage without opening every thread.
 
-## Features
+## What ends up in the inbox
 
-- One inbox for the latest 1,000 open issues per connected repo
-- AI summaries with sentiment, severity, and topic tags
-- Filter by sentiment, topic, severity, or triage status
-- A dashboard for sentiment over time, hot topics, and severity
-- Simple triage: New → Acknowledged → Actioned
-- Slack alerts when feedback crosses your severity threshold
+- Up to the latest 1,000 open issues per connected repo
+- A short AI summary with sentiment, severity, and topics
+- Filters for sentiment, topic, severity, and triage status
+- Charts for sentiment over time and the topics that keep coming up
+- Triage states: New, Acknowledged, and Actioned
+- Slack pings when feedback passes your severity threshold
 
-## Run it locally
+## Running it
 
-You'll need [Bun](https://bun.sh), [Doppler](https://doppler.com) for secrets, a [Neon](https://neon.tech) Postgres database, and a [Clerk](https://clerk.com) app.
+The app needs Bun, Doppler, a Neon Postgres database, and a Clerk application.
 
 ```bash
 bun install
@@ -26,21 +26,13 @@ bun db:migrate
 bun dev
 ```
 
-Open [localhost:3000](http://localhost:3000).
+It runs at [localhost:3000](http://localhost:3000). In Doppler or `.env.local`, set `DATABASE_URL`, the Clerk keys, and an `ENCRYPTION_KEY` from `openssl rand -hex 32`.
 
-If you don't use Doppler, remove the `doppler run --` prefix from the scripts in `package.json` and copy `.env.example` to `.env.local`.
+## Handy to know
 
-## Good to know
+- Only GitHub issues are imported; pull requests are filtered out.
+- LLM keys, GitHub tokens, and Slack webhooks are encrypted before storage.
+- A daily sync keeps things fresh, and "Sync now" runs one immediately.
+- Slack is the only notification channel right now.
 
-- Feedback comes from public GitHub issues; pull requests are ignored.
-- LLM keys, GitHub tokens, and Slack webhooks are encrypted before they are stored.
-- Issues sync on a daily schedule, and "Sync now" runs an immediate sync.
-- Slack is currently the only notification channel.
-
-## Built with
-
-Next.js, Neon Postgres, Drizzle, Clerk, and the Vercel AI SDK. Hosted on Vercel.
-
-## License
-
-MIT
+Under the hood: Next.js, Neon Postgres, Drizzle, Clerk, and the Vercel AI SDK. MIT licensed.
